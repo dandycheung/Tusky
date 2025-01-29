@@ -29,8 +29,8 @@
     <string name="post_sensitive_media_directions">द्रष्टुमत्र नुद्यताम्</string>
     <string name="post_media_hidden_title">प्रच्छन्नसामग्र्यः</string>
     <string name="post_sensitive_media_title">संवेदनशीलो विषयः</string>
-    <string name="post_boosted_format">%s अप्रकाशयत्</string>
-    <string name="post_username_format">\@%s</string>
+    <string name="post_boosted_format">%1$s अप्रकाशयत्</string>
+    <string name="post_username_format">\@%1$s</string>
     <string name="title_licenses">अनुज्ञापत्राणि</string>
     <string name="title_scheduled_posts">कालबद्धदौत्यानि</string>
     <string name="title_drafts">लेखविकर्षाः</string>
@@ -50,9 +50,9 @@
     <string name="title_tab_preferences">पीठिकाः</string>
     <string name="title_direct_messages">प्रत्यक्षसन्देशाः</string>
     <string name="title_public_federated">सङ्घीयाः</string>
-    <string name="notification_follow_format">%s त्वामन्वसरत्</string>
-    <string name="notification_favourite_format">%s भवदीयदौत्याय रुचिमददात्</string>
-    <string name="notification_reblog_format">%s भवदीयं दौत्यं प्राकाशयत्</string>
+    <string name="notification_follow_format">%1$s त्वामन्वसरत्</string>
+    <string name="notification_favourite_format">%1$s भवदीयदौत्याय रुचिमददात्</string>
+    <string name="notification_reblog_format">%1$s भवदीयं दौत्यं प्राकाशयत्</string>
     <string name="action_send_public">प्रेष्यताम् !</string>
     <string name="action_send">प्रेष्यताम्</string>
     <string name="action_delete_and_redraft">विनश्य पुनश्च लिख्यताम्</string>
@@ -78,8 +78,8 @@
     <string name="action_reply">प्रत्युत्तरं दीयताम्</string>
     <string name="action_quick_reply">त्वरितप्रत्युत्तरं दीयताम्</string>
     <string name="report_comment_hint">अन्यटिप्पण्यः \?</string>
-    <string name="report_username_format">आवेद्यताम् @%s</string>
-    <string name="notification_follow_request_format">%s तवाऽनुसरणार्थंं न्यवेदयत्</string>
+    <string name="report_username_format">आवेद्यताम् @%1$s</string>
+    <string name="notification_follow_request_format">%1$s तवाऽनुसरणार्थंं न्यवेदयत्</string>
     <string name="action_add_media">सामग्र्यः युज्यन्ताम्</string>
     <string name="action_open_in_web">जालसञ्चारके उद्घाट्यताम्</string>
     <string name="action_view_media">सामग्र्यः</string>
@@ -94,7 +94,7 @@
     <string name="action_view_profile">व्यक्तिविवरणम्</string>
     <string name="action_close">पिधीयताम्</string>
     <string name="action_retry">पुनः यत्यताम्</string>
-    <string name="action_unmute_desc">%s सशब्दं क्रियताम्</string>
+    <string name="action_unmute_desc">%1$s सशब्दं क्रियताम्</string>
     <string name="action_unmute">सशब्दम्</string>
     <string name="action_mute">निःशब्दम्</string>
     <string name="action_share">विभाज्यताम्</string>
@@ -106,10 +106,10 @@
     <string name="downloading_media">सामग्री अवारोप्यमाणा</string>
     <string name="download_media">सामग्री अवारोप्यताम्</string>
     <string name="action_share_as">एवं विभाज्यताम् …</string>
-    <string name="action_open_as">%s एवमुद्घाट्यताम्</string>
+    <string name="action_open_as">%1$s एवमुद्घाट्यताम्</string>
     <string name="action_copy_link">जालस्थलं प्रतिलिख्यताम्</string>
     <string name="download_image">अवारोप्यमाणम् %1$s</string>
-    <string name="action_open_media_n">उद्घाट्यताम् #%d</string>
+    <string name="action_open_media_n">उद्घाट्यताम् #%1$d</string>
     <string name="title_links_dialog">जालस्थलानि</string>
     <string name="title_mentions_dialog">उल्लेखाः</string>
     <string name="title_hashtags_dialog">निश्रेणिचिह्नशीर्षकाः</string>
@@ -139,8 +139,8 @@
     <string name="action_mention">उल्लिख्यताम्</string>
     <string name="action_unmute_conversation">सशब्द आलापः क्रियताम्</string>
     <string name="action_mute_conversation">तूष्णीमालापः क्रियताम्</string>
-    <string name="action_unmute_domain">%s सशब्दं क्रियताम्</string>
-    <string name="action_mute_domain">%s निःशब्दं क्रियताम्</string>
+    <string name="action_unmute_domain">%1$s सशब्दं क्रियताम्</string>
+    <string name="action_mute_domain">%1$s निःशब्दं क्रियताम्</string>
     <string name="confirmation_unmuted">भोक्ता सशब्दः कृतः</string>
     <string name="confirmation_unblocked">निरवरोधः कृतः</string>
     <string name="confirmation_reported">प्रेषितम्!</string>
@@ -156,9 +156,7 @@
     <string name="hint_content_warning">विषयप्रत्यादेशः</string>
     <string name="hint_compose">किं वर्तमानमस्ति \?</string>
     <string name="hint_domain">किं विशिष्टस्थलम् \?</string>
-    <string name="post_sent_long">सफलं प्रत्युत्तरप्रेषणम् ।</string>
-    <string name="post_sent">प्रेषितम्!</string>
-    <string name="confirmation_domain_unmuted">%s अनावृतः</string>
+    <string name="confirmation_domain_unmuted">%1$s अनावृतः</string>
     <string name="pref_title_notification_filters">अहं ज्ञप्यतां यदा</string>
     <string name="pref_title_notification_alert_light">ज्योत्या ज्ञप्यताम्</string>
     <string name="pref_title_notification_alert_vibrate">कम्पनेन ज्ञप्यताम्</string>
@@ -171,25 +169,24 @@
     <string name="visibility_unlisted">अनिर्दिष्टः = सार्वजनिकसमयतालिकायां मा प्रकट्यताम्</string>
     <string name="visibility_public">सार्वजनिकः‍‍‍‍= प्रकट्यतां सार्वजनिकसमयतालिकासु</string>
     <string name="dialog_mute_hide_notifications">ज्ञापनसूचनाः छाद्यन्ताम्</string>
-    <string name="dialog_mute_warning">निःशब्दं क्रियताम् @%s\?</string>
-    <string name="dialog_block_warning">किल अवरुध्यताम् @%s\?</string>
+    <string name="dialog_mute_warning">निःशब्दं क्रियताम् @%1$s\?</string>
+    <string name="dialog_block_warning">किल अवरुध्यताम् @%1$s\?</string>
     <string name="mute_domain_warning_dialog_ok">प्रदेशः छाद्यताम्</string>
-    <string name="mute_domain_warning">निश्चियेन सर्वमेव निषिद्धं भवेदेतस्य जनस्य %s \? कोऽपि विषयो न द्रष्टुं शक्यते तत्प्रदेशात् कस्यामपि समयतालिकायामुत वा ते सूचनापेटिकायाम् । भवदनुसर्तारः तस्मात्प्रदेशान्निष्क्रियन्ते ।</string>
+    <string name="mute_domain_warning">निश्चियेन सर्वमेव निषिद्धं भवेदेतस्य जनस्य %1$s \? कोऽपि विषयो न द्रष्टुं शक्यते तत्प्रदेशात् कस्यामपि समयतालिकायामुत वा ते सूचनापेटिकायाम् । भवदनुसर्तारः तस्मात्प्रदेशान्निष्क्रियन्ते ।</string>
     <string name="dialog_redraft_post_warning">विनश्य पुनः लिख्यताम् \?</string>
     <string name="dialog_delete_post_warning">दौत्यमेतन्नश्यताम्\?</string>
     <string name="dialog_unfollow_warning">व्यक्तित्वविवरणलेखायाः अनुसरणम् अपाकरणीयं किम् \?</string>
     <string name="dialog_download_image">अवारोप्यताम्</string>
     <string name="dialog_message_uploading_media">उपारोप्यमाणम्…</string>
     <string name="dialog_title_finishing_media_upload">सामग्रीणामुपारोपणसिद्धिः वर्तमाना</string>
-    <string name="dialog_whats_an_instance">कस्याऽपि विशिष्टस्थलस्य सङ्केतसूत्रमत्र टङ्कयितुं शक्यते mastodon.social, icosahedron.website, social.tchncs.de, तथेैव<a href="https://instances.social">अधिकम्</a>
-\n
-\nयदि युष्माकं व्यक्तिगतलेखाऽत्र न वर्तते तर्हि तस्य विशिष्टस्थलस्य नाम टङ्कयित्वा तत्र निर्मातुं शक्नुथ ।
-\n
-\nविशिष्टस्थलमित्युक्ते स्थलमेकं यत्र युष्माकं लेखाः आश्रिताः, किन्तु साफल्येनैवाऽन्यविशिष्टस्थलीयैः सह सम्पर्कयितुं शक्यते ।
-\n
+    <string name="dialog_whats_an_instance">कस्याऽपि विशिष्टस्थलस्य सङ्केतसूत्रमत्र टङ्कयितुं शक्यते mastodon.social, icosahedron.website, social.tchncs.de, तथेैव<a href="https://instances.social">अधिकम्</a> 
+\n 
+\nयदि युष्माकं व्यक्तिगतलेखाऽत्र न वर्तते तर्हि तस्य विशिष्टस्थलस्य नाम टङ्कयित्वा तत्र निर्मातुं शक्नुथ । 
+\n 
+\nविशिष्टस्थलमित्युक्ते स्थलमेकं यत्र युष्माकं लेखाः आश्रिताः, किन्तु साफल्येनैवाऽन्यविशिष्टस्थलीयैः सह सम्पर्कयितुं शक्यते । 
+\n 
 \nअधिकमत्र प्राप्यते <a href="https://joinmastodon.org">joinmastodon.org</a>. </string>
     <string name="hint_search_people_list">येषामुसरणं करोषि तेष्वन्विष्यताम्</string>
-    <string name="action_edit_list">सूचिः सम्पाद्यताम्</string>
     <string name="action_delete_list">सूचिर्नश्यताम्</string>
     <string name="action_rename_list">पुनः सूचिनामकरणं क्रियताम्</string>
     <string name="action_create_list">सूचिः निर्मीयताम्</string>
@@ -211,21 +208,21 @@
     <string name="pref_title_thread_filter_keywords">आलापाः</string>
     <string name="pref_title_public_filter_keywords">सार्वजनिकतालिकाः</string>
     <string name="load_more_placeholder_text">अधिकमारोप्यताम्</string>
-    <string name="replying_to">\@%s मित्रायोत्तरम्</string>
+    <string name="replying_to">\@%1$s मित्रायोत्तरम्</string>
     <string name="title_media">सामग्र्यः</string>
     <string name="pref_title_alway_open_spoiler">सर्वदा विषयसतर्कतयाऽङ्कितं दौत्यं विस्तार्यताम्</string>
     <string name="pref_title_alway_show_sensitive_media">सर्वदा संवेदनशीलविषयो दृश्यताम्</string>
     <string name="follows_you">त्वामनुसरति</string>
-    <string name="abbreviated_seconds_ago">%ds क्ष</string>
-    <string name="abbreviated_minutes_ago">%dm नि</string>
-    <string name="abbreviated_hours_ago">%dh घ</string>
-    <string name="abbreviated_years_ago">%dy वर्ष</string>
-    <string name="abbreviated_days_ago">%dd दि</string>
-    <string name="abbreviated_in_seconds">%ds क्ष</string>
-    <string name="abbreviated_in_minutes">%dm नि</string>
-    <string name="abbreviated_in_hours">%dh घ</string>
-    <string name="abbreviated_in_days">%dd दि</string>
-    <string name="abbreviated_in_years">%dy वर्ष</string>
+    <string name="abbreviated_seconds_ago">%1$ds क्ष</string>
+    <string name="abbreviated_minutes_ago">%1$dm नि</string>
+    <string name="abbreviated_hours_ago">%1$dh घ</string>
+    <string name="abbreviated_years_ago">%1$dy वर्ष</string>
+    <string name="abbreviated_days_ago">%1$dd दि</string>
+    <string name="abbreviated_in_seconds">%1$ds क्ष</string>
+    <string name="abbreviated_in_minutes">%1$dm नि</string>
+    <string name="abbreviated_in_hours">%1$dh घ</string>
+    <string name="abbreviated_in_days">%1$dd दि</string>
+    <string name="abbreviated_in_years">%1$dy वर्ष</string>
     <string name="state_follow_requested">अनुसरणं निवेदितम्</string>
     <string name="post_media_video">चलचित्राणि</string>
     <string name="post_media_images">चित्राणि</string>
@@ -238,17 +235,17 @@
 \n https://tusky.app</string>
     <string name="about_tusky_license">टस्कीत्यनावृतस्रोतो निःशुल्कतन्त्रांशः। GNU General Public License Version 3 इत्यनेनाऽनुज्ञापितः। अत्राऽनुज्ञापत्रं द्रष्टुं शक्यते:-https://www.gnu.org/licenses/gpl-3.0.en.html</string>
     <string name="about_powered_by_tusky">टस्कीत्यनेनाऽऽश्रितः</string>
-    <string name="about_tusky_version">टस्की %s</string>
+    <string name="about_tusky_version">टस्की %1$s</string>
     <string name="about_title_activity">विज्ञप्तिः</string>
     <string name="description_account_locked">कपाटितव्यक्तिविवरणलेखः</string>
     <plurals name="notification_title_summary">
-        <item quantity="one">%d नवपरस्परक्रिया</item>
-        <item quantity="other">%d नवपरस्परक्रिये</item>
+        <item quantity="one">%1$d नवपरस्परक्रिया</item>
+        <item quantity="other">%1$d नवपरस्परक्रिये</item>
     </plurals>
     <string name="notification_summary_small">%1$s च %2$s च</string>
     <string name="notification_summary_medium">%1$s, %2$s, तथैव %3$s</string>
     <string name="notification_summary_large">%1$s, %2$s, %3$s तथा च %4$d अन्येऽपि</string>
-    <string name="notification_mention_format">%s मित्रेण भवन्नामोल्लिखितम्</string>
+    <string name="notification_mention_format">%1$s मित्रेण भवन्नामोल्लिखितम्</string>
     <string name="notification_poll_description">मतदाने समाप्ते सति सूचनाः</string>
     <string name="notification_poll_name">मतदानानि</string>
     <string name="notification_favourite_description">प्रीतिः इत्यङ्किते सति ज्ञापनसूचनाः</string>
@@ -291,7 +288,6 @@
     <string name="pref_title_animate_gif_avatars">सञ्जीवितावतारः क्रियताम्</string>
     <string name="pref_title_bot_overlay">स्वचालितयन्त्रेभ्यः सूचको दृश्यताम्</string>
     <string name="pref_title_language">भाषा</string>
-    <string name="pref_title_hide_follow_button">सारणक्रमे लेखनगण्डः छाद्यताम्</string>
     <string name="pref_title_custom_tabs">क्रोमस्वीयानुकूलपीठिकाः प्रयुज्यन्ताम्</string>
     <string name="pref_title_browser_settings">जालसञ्चारकम्</string>
     <string name="app_theme_system">प्रणाल्याः परिकल्पना प्रयुज्यताम्</string>
@@ -312,7 +308,7 @@
     <string name="download_fonts">प्राक्तु भावचिह्नसमूहोऽयमवारोप्यः</string>
     <string name="system_default">प्रणाल्यां पूर्वनिविष्टम्</string>
     <string name="emoji_style">भावचिह्नशैली</string>
-    <string name="error_no_custom_emojis">भवदीयं विशिष्टस्थलं %s स्वीयानुकूलभावचिह्नरहितं वर्तते</string>
+    <string name="error_no_custom_emojis">भवदीयं विशिष्टस्थलं %1$s स्वीयानुकूलभावचिह्नरहितं वर्तते</string>
     <string name="action_compose_shortcut">लिख्यताम्</string>
     <string name="send_post_notification_saved_content">दौत्यप्रतिलिपिस्तत्र विकर्षेसु रक्षिता</string>
     <string name="send_post_notification_cancel_title">प्रेषणं निराकृतम्</string>
@@ -326,7 +322,7 @@
     <string name="action_set_caption">शीर्षकवाक्यं लिख्यताम्</string>
     <plurals name="hint_describe_for_visually_impaired">
         <item quantity="other">दृष्ट्यां येषां समस्याऽस्ति तेषांं कृते विवरणम्
-\n(%d परिमिता न्यूनाक्षरसङ्ख्या)</item>
+\n(%1$d परिमिता न्यूनाक्षरसङ्ख्या)</item>
     </plurals>
     <string name="compose_active_account_description">%1$s लेखया प्रकटनं क्रियते</string>
     <string name="action_remove_from_list">सूच्याः लेखा नश्यताम्</string>
@@ -367,7 +363,7 @@
     <string name="warning_scheduling_interval">मास्टोडोने पञ्चनिमेषपरिमितो न्यूनतमः कालबद्धसमयः ।</string>
     <string name="no_scheduled_posts">न ते कालबद्धदौत्यानि सन्ति ।</string>
     <string name="edit_poll">सम्पाद्यताम्</string>
-    <string name="poll_new_choice_hint">मतम् %d</string>
+    <string name="poll_new_choice_hint">मतम् %1$d</string>
     <string name="poll_allow_multiple_choices">बहूनि मतानि</string>
     <string name="add_poll_choice">अपरं मतं युज्यताम्</string>
     <string name="duration_7_days">७ दिनानि</string>
@@ -379,50 +375,49 @@
     <string name="duration_5_min">५ निमेषाः</string>
     <string name="create_poll_title">मतपेटिका</string>
     <string name="pref_title_enable_swipe_for_tabs">सारणहावभावस्य संयुतनं पीठिकापरिवर्तनार्थं कार्यम्</string>
-    <string name="pref_title_show_notifications_filter">सूचनाशोधकं दृश्यताम्</string>
     <string name="failed_search">अन्वेषणे विफलता जाता</string>
     <string name="title_accounts">व्यक्तित्वविवरणलेखाः</string>
     <string name="report_description_remote_instance">अन्यजालवितारकादियं व्यक्तित्वविवरणलेखा । आवेदनस्य रक्षितप्रतिलिपिरपि प्रेष्यतां वा \?</string>
     <string name="report_description_1">आवेदनमिदं जालवितारकाय प्रेष्यते । स्वीयविवरणमस्मिन् विषयेऽधो लेखितुं शक्नोषि-:</string>
     <string name="failed_fetch_posts">दौत्यानि गृहीतुं विफलता</string>
     <string name="failed_report">आवेदनप्रेषणे विफलता</string>
-    <string name="report_remote_instance">अस्मै पुरस्क्रियताम् %s</string>
+    <string name="report_remote_instance">अस्मै पुरस्क्रियताम् %1$s</string>
     <string name="hint_additional_info">अन्याः टिप्पण्यः</string>
-    <string name="report_sent_success">साफल्येनाऽऽवेदनं दत्तमस्य @%s</string>
+    <string name="report_sent_success">साफल्येनाऽऽवेदनं दत्तमस्य @%1$s</string>
     <string name="button_done">कृतम्</string>
     <string name="button_back">पूर्वम्</string>
     <string name="button_continue">निरन्तरम्</string>
     <plurals name="poll_timespan_seconds">
-        <item quantity="one">%d क्षणम्</item>
-        <item quantity="other">%d क्षणे</item>
+        <item quantity="one">%1$d क्षणम्</item>
+        <item quantity="other">%1$d क्षणे</item>
     </plurals>
     <plurals name="poll_timespan_minutes">
-        <item quantity="one">%d निमेषः शेषम्</item>
-        <item quantity="other">%d निमेषौ शेषम्</item>
+        <item quantity="one">%1$d निमेषः शेषम्</item>
+        <item quantity="other">%1$d निमेषौ शेषम्</item>
     </plurals>
     <plurals name="poll_timespan_hours">
-        <item quantity="one">%d घण्टा शेषम्</item>
-        <item quantity="other">%d घण्टे शेषम्</item>
+        <item quantity="one">%1$d घण्टा शेषम्</item>
+        <item quantity="other">%1$d घण्टे शेषम्</item>
     </plurals>
     <plurals name="poll_timespan_days">
-        <item quantity="one">%d दिनम् शेषम्</item>
-        <item quantity="other">%d दिने शेषम्</item>
+        <item quantity="one">%1$d दिनम् शेषम्</item>
+        <item quantity="other">%1$d दिने शेषम्</item>
     </plurals>
     <string name="poll_ended_created">त्वया रचितमेकं मतदानं समाप्तम्</string>
     <string name="poll_ended_voted">मतदानमेकं समाप्तं यस्मिन् त्वयाऽपि स्वीयमतं दत्तम्</string>
     <string name="poll_vote">मतम्</string>
     <string name="poll_info_closed">पिहितम्</string>
-    <string name="poll_info_time_absolute">समापनं यावत् %s</string>
+    <string name="poll_info_time_absolute">समापनं यावत् %1$s</string>
     <plurals name="poll_info_people">
-        <item quantity="one">%s जनः</item>
-        <item quantity="other">%s जनौ</item>
+        <item quantity="one">%1$s जनः</item>
+        <item quantity="other">%1$s जनौ</item>
     </plurals>
     <plurals name="poll_info_votes">
-        <item quantity="one">%s मतम्</item>
-        <item quantity="other">%s मते</item>
+        <item quantity="one">%1$s मतम्</item>
+        <item quantity="other">%1$s मते</item>
     </plurals>
     <string name="poll_info_format"> <!-- 15 मतानि • 1 शेषघटिकाः --> %1$s • %2$s</string>
-    <string name="compose_preview_image_description">चित्राणां कृते प्रवृत्तिः %s</string>
+    <string name="compose_preview_image_description">चित्राणां कृते प्रवृत्तिः %1$s</string>
     <string name="notification_clear_text">किं नूनमेव सर्वाः सूचनाः स्थायित्वेन मार्जनीयाः \?</string>
     <string name="compose_shortcut_short_label">लिख्यताम्</string>
     <string name="compose_shortcut_long_label">दौत्यं लिख्यताम्</string>
@@ -432,7 +427,7 @@
     <string name="list">सूचिः</string>
     <string name="select_list_title">सूचिरवचीयताम्</string>
     <string name="hashtags">निश्रेणिचिह्नशीर्षकाः</string>
-    <string name="edit_hashtag_hint"># चिह्नं विना प्रचलितम्</string>
+    <string name="pick_hashtag_hint"># चिह्नं विना प्रचलितम्</string>
     <string name="add_hashtag_title">प्रचलितं युज्यताम्</string>
     <string name="hint_list_name">सूचिनाम</string>
     <string name="description_poll">मतदाने मतानि- %1$s, %2$s, %3$s, %4$s; %5$s</string>
@@ -444,18 +439,15 @@
     <string name="description_post_favourited">प्रीतिर्दत्ता</string>
     <string name="description_post_reblogged">पुनर्लिखितम्</string>
     <string name="description_post_media_no_description_placeholder">विवरणं नास्ति</string>
-    <string name="description_post_cw">विषयपूर्वसतर्कता: %s</string>
-    <string name="description_post_media">सामग्र्यः %s</string>
-    <plurals name="max_tab_number_reached">
-        <item quantity="other">अधिकतमपीठिकासङ्ख्या %1$d भूता</item>
-    </plurals>
+    <string name="description_post_cw">विषयपूर्वसतर्कता: %1$s</string>
+    <string name="description_post_media">सामग्र्यः %1$s</string>
     <string name="conversation_more_recipients">%1$s, %2$s तथा %3$d अन्येऽपि</string>
     <string name="conversation_2_recipients">%1$s तथैव %2$s</string>
     <string name="title_favourited_by">निम्नमित्रस्य प्रीतिः</string>
     <string name="title_reblogged_by">निम्नमित्रेण प्रकाशितम्</string>
     <plurals name="reblogs">
-        <item quantity="one"><b>%s</b> प्रकाशनम्</item>
-        <item quantity="other"><b>%s</b> प्रकाशने</item>
+        <item quantity="one"><b>%1$s</b> प्रकाशनम्</item>
+        <item quantity="other"><b>%1$s</b> प्रकाशने</item>
     </plurals>
     <plurals name="favs">
         <item quantity="one"><b>%1$s</b> प्रियम्</item>
@@ -464,7 +456,7 @@
     <string name="total_usage">समस्त-उपयोगः</string>
     <string name="total_accounts">सकललेखाः</string>
     <string name="a11y_label_loading_thread">दौत्यमाला दृश्यते</string>
-    <string name="instance_rule_title">%s नियमाः</string>
+    <string name="instance_rule_title">%1$s नियमाः</string>
     <string name="pref_title_reading_order">पाठनक्रमः</string>
     <string name="pref_reading_order_oldest_first">पुरातनं प्रथमम्</string>
     <string name="pref_reading_order_newest_first">नूतनं प्रथमम्</string>
@@ -481,7 +473,6 @@
     <string name="duration_365_days">३६५ दिनानि</string>
     <string name="duration_no_change">(परिवर्तनं नास्ति)</string>
     <string name="review_notifications">सूचनाः सम्दृश्यन्ताम्</string>
-    <string name="url_domain_notifier">%s (🔗 %s)</string>
     <string name="pref_show_self_username_never">न कदापि</string>
     <string name="pref_default_post_language">पूर्वनिविष्टा प्रकाशका भाषा</string>
     <string name="notification_report_name">आवेदनानि</string>
@@ -490,7 +481,7 @@
     <string name="title_edits">सम्पादनानि</string>
     <string name="notification_sign_up_description">नूतनोपभोक्तॄन् प्रति सूचनाः</string>
     <string name="post_media_audio">ध्वनिः</string>
-    <string name="filter_expiration_format">%s (%s)</string>
+    <string name="filter_expiration_format">%1$s (%2$s)</string>
     <string name="duration_30_days">३० दिनानि</string>
     <string name="report_category_other">अन्यम्</string>
     <string name="title_login">सम्प्रवेशः</string>
@@ -503,7 +494,7 @@
     <string name="status_created_at_now">अधुना</string>
     <string name="duration_60_days">६० दिनानि</string>
     <string name="action_unsubscribe_account">ग्राहकता-समापनम्</string>
-    <string name="language_display_name_format">%s (%s)</string>
+    <string name="language_display_name_format">%1$s (%2$s)</string>
     <string name="action_post_failed">उपारोपनं विफलं जातम्</string>
     <string name="action_post_failed_do_nothing">उत्सृज्यताम्</string>
     <string name="action_post_failed_show_drafts">लेखविकर्षान् दर्शयतु</string>
@@ -513,20 +504,20 @@
     <string name="action_subscribe_account">ग्राहकता</string>
     <string name="draft_deleted">प्रारूपं निष्कासितम्</string>
     <string name="report_category_violation">नियम-उल्लङ्घनम्</string>
-    <string name="error_muting_hashtag_format">#%s-निश्रेणिचिह्नशीर्षकस्य निशब्दीकरणे दोषः</string>
-    <string name="error_unmuting_hashtag_format">#%s-निश्रेणिचिह्नशीर्षकस्य सशब्दीकरणे दोषः</string>
+    <string name="error_muting_hashtag_format">#%1$s-निश्रेणिचिह्नशीर्षकस्य निशब्दीकरणे दोषः</string>
+    <string name="error_unmuting_hashtag_format">#%1$s-निश्रेणिचिह्नशीर्षकस्य सशब्दीकरणे दोषः</string>
     <string name="action_browser_login">जालसञ्चारकेन सम्प्रविश्यताम्</string>
     <string name="action_add_reaction">प्रतिक्रियां योजयतु</string>
-    <string name="notification_header_report_format">%s-व्यक्तिः %s-व्यक्तिं प्रति आवेदनमकरोत्</string>
+    <string name="notification_header_report_format">%1$s-व्यक्तिः %2$s-व्यक्तिं प्रति आवेदनमकरोत्</string>
     <string name="action_discard">परिवर्तनानि निष्कासयतु</string>
     <string name="action_continue_edit">सम्पादनम् अनुवर्तताम्</string>
-    <string name="post_edited">%s सम्पादितम्</string>
-    <string name="notification_subscription_format">%s सद्यः प्रसारितम्</string>
-    <string name="notification_sign_up_format">%s पञ्जीकरणम् अकरोत्</string>
+    <string name="post_edited">%1$s सम्पादितम्</string>
+    <string name="notification_subscription_format">%1$s सद्यः प्रसारितम्</string>
+    <string name="notification_sign_up_format">%1$s पञ्जीकरणम् अकरोत्</string>
     <string name="action_delete_conversation">सम्भाषणं निष्कास्यताम्</string>
     <string name="duration_90_days">९० दिनानि</string>
     <string name="action_unbookmark">पुटचिह्नं निस्कास्यताम्</string>
-    <string name="notification_update_format">%s स्वस्य दौत्यं समपादयत्</string>
+    <string name="notification_update_format">%1$s स्वस्य दौत्यं समपादयत्</string>
     <string name="tusky_compose_post_quicksetting_label">दौत्यं संस्कुरुताम्</string>
     <string name="saving_draft">लेखविकर्षं रक्षामि…</string>
     <string name="account_date_joined">%1$s सदस्यः अभवत्</string>
@@ -535,8 +526,8 @@
     <string name="report_category_spam">अनिष्टसन्देशाः</string>
     <string name="duration_14_days">१४ दिनानि</string>
     <string name="description_post_language">दौत्यस्य भाषा</string>
-    <string name="error_following_hashtag_format">#%s-अनुसरणे दोषो जातः</string>
-    <string name="error_unfollowing_hashtag_format">#%s-अनुसरण-अपाकरणे दोषो जातः</string>
+    <string name="error_following_hashtag_format">#%1$s-अनुसरणे दोषो जातः</string>
+    <string name="error_unfollowing_hashtag_format">#%1$s-अनुसरण-अपाकरणे दोषो जातः</string>
     <string name="action_details">विवरणानि</string>
     <string name="action_dismiss">उत्सृज्यताम्</string>
     <string name="post_media_attachments">सम्योजितानि</string>
@@ -546,8 +537,6 @@
     <string name="error_image_edit_failed">चित्रं सम्पादयितुं न शक्यते।</string>
     <string name="error_loading_account_details">व्यक्तित्वलेखस्य विवरणानि दर्शनं विफलं जातम्</string>
     <string name="error_could_not_load_login_page">सम्प्रवेशपुटं दर्शयितुं न शक्यते।</string>
-    <string name="title_migration_relogin">पुनःसम्प्रवेशाय विज्ञापन-ज्ञापनसूचनाः</string>
-    <string name="dialog_follow_hashtag_hint">#निश्रेणिचिह्नशीर्षकः</string>
     <string name="dialog_follow_hashtag_title">व्यक्तित्वविवरणलेखा अनुसरतु</string>
     <string name="limit_notifications">कालानुक्रमपङ्क्त्याः सूचनाः परिमिताः कुरुताम्</string>
     <string name="notification_report_description">परिमितावेदनानि प्रति ज्ञापनसूचनाः</string>
@@ -558,13 +547,13 @@
     <string name="drafts_failed_loading_reply">प्रत्युत्तरसमाचारस्य आरोपनं विफलं जातम्</string>
     <string name="post_media_alt">आल्ट्</string>
     <string name="pref_title_animate_custom_emojis">स्वीयानुकूलानि भावचिह्नानि सञ्जीव्यताम्</string>
-    <string name="notification_report_format">%s-विषये नूतनम् आवेदनम्</string>
+    <string name="notification_report_format">%1$s-विषये नूतनम् आवेदनम्</string>
     <string name="action_share_account_username">लेखायाः उपभोक्तृनाम्नः संविभागं कुरुताम्</string>
     <string name="action_share_account_link">लेखायै शृङ्खलायाः संविभागं कुरुताम्</string>
-    <string name="action_unfollow_hashtag_format">#%s-चिह्नस्य अनुसरणम् अपाकरणीयं किम् \?</string>
+    <string name="action_unfollow_hashtag_format">#%1$s-चिह्नस्य अनुसरणम् अपाकरणीयं किम् \?</string>
     <string name="title_followed_hashtags">अनुसृताः निश्रेणिचिह्नशीर्षकाः</string>
     <string name="title_public_trending_hashtags">जनप्रियाः निश्रेणिचिह्नशीर्षकाः</string>
     <string name="send_account_username_to">लेखायाः उपभोक्तृनाम्नः संविभागं कुरुताम् अस्मै…</string>
-    <string name="confirmation_hashtag_unfollowed">#%s अनुसरणम् अपाकृतम्</string>
+    <string name="confirmation_hashtag_unfollowed">#%1$s अनुसरणम् अपाकृतम्</string>
     <string name="send_account_link_to">लेखायाः निरपेक्ष-सार्वत्रिक-वस्तुसङ्केतस्य संविभागं कुरुताम् अस्मै…</string>
 </resources>

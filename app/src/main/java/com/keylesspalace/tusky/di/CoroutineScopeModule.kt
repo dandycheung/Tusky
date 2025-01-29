@@ -19,10 +19,13 @@ package com.keylesspalace.tusky.di
 
 import dagger.Module
 import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Qualifier
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import javax.inject.Qualifier
 
 /**
  * Scope for potentially long-running tasks that should outlive the viewmodel that
@@ -37,8 +40,10 @@ import javax.inject.Qualifier
 annotation class ApplicationScope
 
 @Module
-class CoroutineScopeModule {
+@InstallIn(SingletonComponent::class)
+object CoroutineScopeModule {
     @ApplicationScope
     @Provides
-    fun providesApplicationScope() = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    @Singleton
+    fun providesApplicationScope() = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 }

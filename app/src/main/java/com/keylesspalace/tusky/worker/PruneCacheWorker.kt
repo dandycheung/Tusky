@@ -20,48 +20,51 @@ package com.keylesspalace.tusky.worker
 import android.app.Notification
 import android.content.Context
 import android.util.Log
+import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
-import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
 import com.keylesspalace.tusky.R
-import com.keylesspalace.tusky.components.notifications.NotificationHelper
-import com.keylesspalace.tusky.components.notifications.NotificationHelper.NOTIFICATION_ID_PRUNE_CACHE
+import com.keylesspalace.tusky.components.systemnotifications.NotificationService
 import com.keylesspalace.tusky.db.AccountManager
-import com.keylesspalace.tusky.db.AppDatabase
-import javax.inject.Inject
+import com.keylesspalace.tusky.db.DatabaseCleaner
+import com.keylesspalace.tusky.util.deleteStaleCachedMedia
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 
 /** Prune the database cache of old statuses. */
-class PruneCacheWorker(
-    appContext: Context,
-    workerParams: WorkerParameters,
-    private val appDatabase: AppDatabase,
-    private val accountManager: AccountManager
+@HiltWorker
+class PruneCacheWorker @AssistedInject constructor(
+    @Assisted private val appContext: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val databaseCleaner: DatabaseCleaner,
+    private val accountManager: AccountManager,
+    val notificationService: NotificationService,
 ) : CoroutineWorker(appContext, workerParams) {
-    val notification: Notification = NotificationHelper.createWorkerNotification(applicationContext, R.string.notification_prune_cache)
+    val notification: Notification = notificationService.createWorkerNotification(
+        R.string.notification_prune_cache
+    )
 
     override suspend fun doWork(): Result {
         for (account in accountManager.accounts) {
             Log.d(TAG, "Pruning database using account ID: ${account.id}")
-            appDatabase.timelineDao().cleanup(account.id, MAX_STATUSES_IN_CACHE)
+            databaseCleaner.cleanupOldData(account.id, MAX_HOMETIMELINE_ITEMS_IN_CACHE, MAX_NOTIFICATIONS_IN_CACHE)
         }
+
+        deleteStaleCachedMedia(appContext.getExternalFilesDir("Tusky"))
+
         return Result.success()
     }
 
-    override suspend fun getForegroundInfo() = ForegroundInfo(NOTIFICATION_ID_PRUNE_CACHE, notification)
+    override suspend fun getForegroundInfo() = ForegroundInfo(
+        NotificationService.NOTIFICATION_ID_PRUNE_CACHE,
+        notification
+    )
 
     companion object {
         private const val TAG = "PruneCacheWorker"
-        private const val MAX_STATUSES_IN_CACHE = 1000
+        private const val MAX_HOMETIMELINE_ITEMS_IN_CACHE = 1000
+        private const val MAX_NOTIFICATIONS_IN_CACHE = 1000
         const val PERIODIC_WORK_TAG = "PruneCacheWorker_periodic"
-    }
-
-    class Factory @Inject constructor(
-        private val appDatabase: AppDatabase,
-        private val accountManager: AccountManager
-    ) : ChildWorkerFactory {
-        override fun createWorker(appContext: Context, params: WorkerParameters): ListenableWorker {
-            return PruneCacheWorker(appContext, params, appDatabase, accountManager)
-        }
     }
 }

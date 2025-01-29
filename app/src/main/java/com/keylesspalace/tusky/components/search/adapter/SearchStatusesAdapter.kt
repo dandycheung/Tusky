@@ -38,18 +38,22 @@ class SearchStatusesAdapter(
 
     override fun onBindViewHolder(holder: StatusViewHolder, position: Int) {
         getItem(position)?.let { item ->
-            holder.setupWithStatus(item, statusListener, statusDisplayOptions)
+            holder.setupWithStatus(item, statusListener, statusDisplayOptions, null, true)
         }
     }
 
     companion object {
 
         val STATUS_COMPARATOR = object : DiffUtil.ItemCallback<StatusViewData.Concrete>() {
-            override fun areContentsTheSame(oldItem: StatusViewData.Concrete, newItem: StatusViewData.Concrete): Boolean =
-                oldItem == newItem
+            override fun areContentsTheSame(
+                oldItem: StatusViewData.Concrete,
+                newItem: StatusViewData.Concrete
+            ): Boolean = oldItem == newItem
 
-            override fun areItemsTheSame(oldItem: StatusViewData.Concrete, newItem: StatusViewData.Concrete): Boolean =
-                oldItem.id == newItem.id
+            override fun areItemsTheSame(
+                oldItem: StatusViewData.Concrete,
+                newItem: StatusViewData.Concrete
+            ): Boolean = oldItem.id == newItem.id
         }
     }
 }

@@ -78,12 +78,15 @@ public class ConversationViewHolder extends StatusBaseViewHolder {
         if (payloads == null) {
             TimelineAccount account = status.getAccount();
 
-            setupCollapsedState(statusViewData.isCollapsible(), statusViewData.isCollapsed(), statusViewData.isExpanded(), statusViewData.getSpoilerText(), listener);
+            setupCollapsedState(statusViewData.isCollapsible(), statusViewData.isCollapsed(), statusViewData.isExpanded(), status.getSpoilerText(), listener);
 
-            setDisplayName(account.getDisplayName(), account.getEmojis(), statusDisplayOptions);
+            String displayName = account.getDisplayName();
+            if (displayName == null) {
+                displayName = "";
+            }
+            setDisplayName(displayName, account.getEmojis(), statusDisplayOptions);
             setUsername(account.getUsername());
             setMetaData(statusViewData, statusDisplayOptions, listener);
-            setIsReply(status.getInReplyToId() != null);
             setFavourited(status.getFavourited());
             setBookmarked(status.getBookmarked());
             List<Attachment> attachments = status.getAttachments();
@@ -92,7 +95,7 @@ public class ConversationViewHolder extends StatusBaseViewHolder {
                 setMediaPreviews(attachments, sensitive, listener, statusViewData.isShowingContent(),
                         statusDisplayOptions.useBlurhash());
 
-                if (attachments.size() == 0) {
+                if (attachments.isEmpty()) {
                     hideSensitiveMediaWarning();
                 }
                 // Hide the unused label.
@@ -144,7 +147,7 @@ public class ConversationViewHolder extends StatusBaseViewHolder {
             ImageView avatarView = avatars[i];
             if (i < accounts.size()) {
                 ImageLoadingHelper.loadAvatar(accounts.get(i).getAvatar(), avatarView,
-                        avatarRadius48dp, statusDisplayOptions.animateAvatars());
+                        avatarRadius48dp, statusDisplayOptions.animateAvatars(), null);
                 avatarView.setVisibility(View.VISIBLE);
             } else {
                 avatarView.setVisibility(View.GONE);

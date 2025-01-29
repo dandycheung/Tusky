@@ -20,8 +20,9 @@ package com.keylesspalace.tusky.components.compose.dialog
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.WindowManager
-import android.widget.ArrayAdapter
 import androidx.appcompat.app.AlertDialog
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.textfield.TextInputEditText
 import com.keylesspalace.tusky.R
 import com.keylesspalace.tusky.databinding.DialogAddPollBinding
 import com.keylesspalace.tusky.entity.NewPoll
@@ -37,7 +38,7 @@ fun showAddPollDialog(
 ) {
     val binding = DialogAddPollBinding.inflate(LayoutInflater.from(context))
 
-    val dialog = AlertDialog.Builder(context)
+    val dialog = MaterialAlertDialogBuilder(context)
         .setIcon(R.drawable.ic_poll_24dp)
         .setTitle(R.string.create_poll_title)
         .setView(binding.root)
@@ -60,10 +61,11 @@ fun showAddPollDialog(
     binding.pollChoices.adapter = adapter
 
     var durations = context.resources.getIntArray(R.array.poll_duration_values).toList()
-    val durationLabels = context.resources.getStringArray(R.array.poll_duration_names).filterIndexed { index, _ -> durations[index] in minDuration..maxDuration }
-    binding.pollDurationSpinner.adapter = ArrayAdapter(context, android.R.layout.simple_spinner_item, durationLabels).apply {
-        setDropDownViewResource(androidx.appcompat.R.layout.support_simple_spinner_dropdown_item)
-    }
+    val durationLabels = context.resources.getStringArray(
+        R.array.poll_duration_names
+    ).filterIndexed { index, _ -> durations[index] in minDuration..maxDuration }
+
+    binding.pollDurationDropDown.setSimpleItems(durationLabels.toTypedArray())
     durations = durations.filter { it in minDuration..maxDuration }
 
     binding.addChoiceButton.setOnClickListener {
@@ -75,25 +77,26 @@ fun showAddPollDialog(
         }
     }
 
-    val DAY_SECONDS = 60 * 60 * 24
-    val desiredDuration = poll?.expiresIn ?: DAY_SECONDS
-    val pollDurationId = durations.indexOfLast {
+    val secondsInADay = 60 * 60 * 24
+    val desiredDuration = poll?.expiresIn ?: secondsInADay
+    var selectedDurationIndex = durations.indexOfLast {
         it <= desiredDuration
     }
 
-    binding.pollDurationSpinner.setSelection(pollDurationId)
+    binding.pollDurationDropDown.setText(durationLabels[selectedDurationIndex], false)
+    binding.pollDurationDropDown.setOnItemClickListener { _, _, position, _ ->
+        selectedDurationIndex = position
+    }
 
     binding.multipleChoicesCheckBox.isChecked = poll?.multiple ?: false
 
     dialog.setOnShowListener {
         val button = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
         button.setOnClickListener {
-            val selectedPollDurationId = binding.pollDurationSpinner.selectedItemPosition
-
             onUpdatePoll(
                 NewPoll(
                     options = adapter.pollOptions,
-                    expiresIn = durations[selectedPollDurationId],
+                    expiresIn = durations[selectedDurationIndex],
                     multiple = binding.multipleChoicesCheckBox.isChecked
                 )
             )
@@ -104,6 +107,16 @@ fun showAddPollDialog(
 
     dialog.show()
 
+    dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
+    binding.pollChoices.post {
+        val firstItemView = binding.pollChoices.layoutManager?.findViewByPosition(0)
+        val editText = firstItemView?.findViewById<TextInputEditText>(R.id.optionEditText)
+        editText?.requestFocus()
+        editText?.setSelection(editText.length())
+    }
+
     // make the dialog focusable so the keyboard does not stay behind it
-    dialog.window?.clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)
+    dialog.window?.clearFlags(
+        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM
+    )
 }
