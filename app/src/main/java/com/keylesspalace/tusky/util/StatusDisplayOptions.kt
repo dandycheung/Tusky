@@ -18,7 +18,7 @@
 package com.keylesspalace.tusky.util
 
 import android.content.SharedPreferences
-import com.keylesspalace.tusky.db.AccountEntity
+import com.keylesspalace.tusky.db.entity.AccountEntity
 import com.keylesspalace.tusky.settings.PrefKeys
 
 data class StatusDisplayOptions(
@@ -53,11 +53,7 @@ data class StatusDisplayOptions(
     /**
      * @return a new StatusDisplayOptions adapted to whichever preference changed.
      */
-    fun make(
-        preferences: SharedPreferences,
-        key: String,
-        account: AccountEntity
-    ) = when (key) {
+    fun make(preferences: SharedPreferences, key: String, account: AccountEntity) = when (key) {
         PrefKeys.ANIMATE_GIF_AVATARS -> copy(
             animateAvatars = preferences.getBoolean(key, false)
         )
@@ -91,7 +87,9 @@ data class StatusDisplayOptions(
         PrefKeys.ALWAYS_OPEN_SPOILER -> copy(
             openSpoiler = account.alwaysOpenSpoiler
         )
-        else -> { this }
+        else -> {
+            this
+        }
     }
 
     companion object {

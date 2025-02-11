@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.res.TypedArray
 import android.graphics.drawable.Drawable
 import android.util.AttributeSet
-import android.view.View.VISIBLE
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.preference.Preference
 import androidx.preference.PreferenceViewHolder
@@ -12,6 +11,8 @@ import com.google.android.material.slider.LabelFormatter.LABEL_GONE
 import com.google.android.material.slider.Slider
 import com.keylesspalace.tusky.R
 import com.keylesspalace.tusky.databinding.PrefSliderBinding
+import com.keylesspalace.tusky.util.hide
+import com.keylesspalace.tusky.util.show
 import java.lang.Float.max
 import java.lang.Float.min
 
@@ -44,7 +45,7 @@ class SliderPreference @JvmOverloads constructor(
      * @see Slider.getValue
      * @see Slider.setValue
      */
-    var value: Float = defaultValue
+    var value: Float = DEFAULT_VALUE
         get() = _value
         set(v) {
             val clamped = max(max(v, valueFrom), min(v, valueTo))
@@ -67,7 +68,7 @@ class SliderPreference @JvmOverloads constructor(
      * Format string to be applied to values before setting the summary. For more control set
      * [SliderPreference.formatter]
      */
-    var format: String = defaultFormat
+    var format: String = DEFAULT_FORMAT
 
     /**
      * Function that will be used to format the summary. The default formatter formats using the
@@ -95,13 +96,18 @@ class SliderPreference @JvmOverloads constructor(
         // preference layout to the right of the title and summary.
         layoutResource = R.layout.pref_slider
 
-        val a = context.obtainStyledAttributes(attrs, R.styleable.SliderPreference, defStyleAttr, defStyleRes)
+        val a = context.obtainStyledAttributes(
+            attrs,
+            R.styleable.SliderPreference,
+            defStyleAttr,
+            defStyleRes
+        )
 
-        value = a.getFloat(R.styleable.SliderPreference_android_value, defaultValue)
-        valueFrom = a.getFloat(R.styleable.SliderPreference_android_valueFrom, defaultValueFrom)
-        valueTo = a.getFloat(R.styleable.SliderPreference_android_valueTo, defaultValueTo)
-        stepSize = a.getFloat(R.styleable.SliderPreference_android_stepSize, defaultStepSize)
-        format = a.getString(R.styleable.SliderPreference_format) ?: defaultFormat
+        value = a.getFloat(R.styleable.SliderPreference_android_value, DEFAULT_VALUE)
+        valueFrom = a.getFloat(R.styleable.SliderPreference_android_valueFrom, DEFAULT_VALUE_FROM)
+        valueTo = a.getFloat(R.styleable.SliderPreference_android_valueTo, DEFAULT_VALUE_TO)
+        stepSize = a.getFloat(R.styleable.SliderPreference_android_stepSize, DEFAULT_STEP_SIZE)
+        format = a.getString(R.styleable.SliderPreference_format) ?: DEFAULT_FORMAT
 
         val decrementIconResource = a.getResourceId(R.styleable.SliderPreference_iconStart, -1)
         if (decrementIconResource != -1) {
@@ -117,11 +123,11 @@ class SliderPreference @JvmOverloads constructor(
     }
 
     override fun onGetDefaultValue(a: TypedArray, i: Int): Any {
-        return a.getFloat(i, defaultValue)
+        return a.getFloat(i, DEFAULT_VALUE)
     }
 
     override fun onSetInitialValue(defaultValue: Any?) {
-        value = getPersistedFloat((defaultValue ?: Companion.defaultValue) as Float)
+        value = getPersistedFloat((defaultValue ?: DEFAULT_VALUE) as Float)
     }
 
     override fun onBindViewHolder(holder: PreferenceViewHolder) {
@@ -130,6 +136,8 @@ class SliderPreference @JvmOverloads constructor(
 
         binding.root.isClickable = false
 
+        binding.slider.clearOnChangeListeners()
+        binding.slider.clearOnSliderTouchListeners()
         binding.slider.addOnChangeListener(this)
         binding.slider.addOnSliderTouchListener(this)
         binding.slider.value = value // sliderValue
@@ -141,24 +149,24 @@ class SliderPreference @JvmOverloads constructor(
         binding.slider.labelBehavior = LABEL_GONE
         binding.slider.isEnabled = isEnabled
 
-        binding.summary.visibility = VISIBLE
+        binding.summary.show()
         binding.summary.text = formatter(value)
 
         decrementIcon?.let { icon ->
             binding.decrement.icon = icon
-            binding.decrement.visibility = VISIBLE
+            binding.decrement.show()
             binding.decrement.setOnClickListener {
                 value -= stepSize
             }
-        }
+        } ?: binding.decrement.hide()
 
         incrementIcon?.let { icon ->
             binding.increment.icon = icon
-            binding.increment.visibility = VISIBLE
+            binding.increment.show()
             binding.increment.setOnClickListener {
                 value += stepSize
             }
-        }
+        } ?: binding.increment.hide()
     }
 
     override fun onValueChange(slider: Slider, value: Float, fromUser: Boolean) {
@@ -176,10 +184,10 @@ class SliderPreference @JvmOverloads constructor(
 
     companion object {
         private const val TAG = "SliderPreference"
-        private const val defaultValueFrom = 0F
-        private const val defaultValueTo = 1F
-        private const val defaultValue = 0.5F
-        private const val defaultStepSize = 0.1F
-        private const val defaultFormat = "%3.1f"
+        private const val DEFAULT_VALUE_FROM = 0F
+        private const val DEFAULT_VALUE_TO = 1F
+        private const val DEFAULT_VALUE = 0.5F
+        private const val DEFAULT_STEP_SIZE = 0.1F
+        private const val DEFAULT_FORMAT = "%3.1f"
     }
 }

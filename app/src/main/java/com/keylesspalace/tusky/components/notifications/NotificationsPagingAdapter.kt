@@ -1,5 +1,4 @@
-/*
- * Copyright 2023 Tusky Contributors
+/* Copyright 2024 Tusky Contributors
  *
  * This file is a part of Tusky.
  *
@@ -12,8 +11,7 @@
  * Public License for more details.
  *
  * You should have received a copy of the GNU General Public License along with Tusky; if not,
- * see <http://www.gnu.org/licenses>.
- */
+ * see <http://www.gnu.org/licenses>. */
 
 package com.keylesspalace.tusky.components.notifications
 
@@ -22,186 +20,181 @@ import android.view.ViewGroup
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
+import com.keylesspalace.tusky.R
+import com.keylesspalace.tusky.adapter.FilteredStatusViewHolder
 import com.keylesspalace.tusky.adapter.FollowRequestViewHolder
-import com.keylesspalace.tusky.adapter.ReportNotificationViewHolder
+import com.keylesspalace.tusky.adapter.PlaceholderViewHolder
+import com.keylesspalace.tusky.adapter.StatusBaseViewHolder
 import com.keylesspalace.tusky.databinding.ItemFollowBinding
 import com.keylesspalace.tusky.databinding.ItemFollowRequestBinding
 import com.keylesspalace.tusky.databinding.ItemReportNotificationBinding
-import com.keylesspalace.tusky.databinding.ItemStatusBinding
+import com.keylesspalace.tusky.databinding.ItemStatusFilteredBinding
 import com.keylesspalace.tusky.databinding.ItemStatusNotificationBinding
-import com.keylesspalace.tusky.databinding.SimpleListItem1Binding
+import com.keylesspalace.tusky.databinding.ItemStatusPlaceholderBinding
+import com.keylesspalace.tusky.databinding.ItemUnknownNotificationBinding
+import com.keylesspalace.tusky.entity.Filter
 import com.keylesspalace.tusky.entity.Notification
-import com.keylesspalace.tusky.entity.Status
 import com.keylesspalace.tusky.interfaces.AccountActionListener
 import com.keylesspalace.tusky.interfaces.StatusActionListener
 import com.keylesspalace.tusky.util.AbsoluteTimeFormatter
 import com.keylesspalace.tusky.util.StatusDisplayOptions
 import com.keylesspalace.tusky.viewdata.NotificationViewData
 
-/** How to present the notification in the UI */
-enum class NotificationViewKind {
-    /** View as the original status */
-    STATUS,
-
-    /** View as the original status, with the interaction type above */
-    NOTIFICATION,
-    FOLLOW,
-    FOLLOW_REQUEST,
-    REPORT,
-    UNKNOWN;
-
-    companion object {
-        fun from(kind: Notification.Type?): NotificationViewKind {
-            return when (kind) {
-                Notification.Type.MENTION,
-                Notification.Type.POLL,
-                Notification.Type.UNKNOWN -> STATUS
-                Notification.Type.FAVOURITE,
-                Notification.Type.REBLOG,
-                Notification.Type.STATUS,
-                Notification.Type.UPDATE -> NOTIFICATION
-                Notification.Type.FOLLOW,
-                Notification.Type.SIGN_UP -> FOLLOW
-                Notification.Type.FOLLOW_REQUEST -> FOLLOW_REQUEST
-                Notification.Type.REPORT -> REPORT
-                null -> UNKNOWN
-            }
-        }
-    }
+interface NotificationActionListener {
+    fun onViewReport(reportId: String)
 }
 
-interface NotificationActionListener {
-    fun onViewAccount(id: String)
-    fun onViewThreadForStatus(status: Status)
-    fun onViewReport(reportId: String)
-
-    /**
-     * Called when the status has a content warning and the visibility of the content behind
-     * the warning is being changed.
-     *
-     * @param expanded the desired state of the content behind the content warning
-     * @param position the adapter position of the view
-     *
-     */
-    fun onExpandedChange(expanded: Boolean, position: Int)
-
-    /**
-     * Called when the status [android.widget.ToggleButton] responsible for collapsing long
-     * status content is interacted with.
-     *
-     * @param isCollapsed Whether the status content is shown in a collapsed state or fully.
-     * @param position    The position of the status in the list.
-     */
-    fun onNotificationContentCollapsedChange(isCollapsed: Boolean, position: Int)
+interface NotificationsViewHolder {
+    fun bind(
+        viewData: NotificationViewData.Concrete,
+        payloads: List<*>,
+        statusDisplayOptions: StatusDisplayOptions
+    )
 }
 
 class NotificationsPagingAdapter(
-    diffCallback: DiffUtil.ItemCallback<NotificationViewData>,
-    /** ID of the the account that notifications are being displayed for */
     private val accountId: String,
-    private val statusActionListener: StatusActionListener,
+    private var statusDisplayOptions: StatusDisplayOptions,
+    private val statusListener: StatusActionListener,
     private val notificationActionListener: NotificationActionListener,
-    private val accountActionListener: AccountActionListener,
-    var statusDisplayOptions: StatusDisplayOptions
-) : PagingDataAdapter<NotificationViewData, RecyclerView.ViewHolder>(diffCallback) {
+    private val accountActionListener: AccountActionListener
+) : PagingDataAdapter<NotificationViewData, RecyclerView.ViewHolder>(NotificationsDifferCallback) {
+
+    var mediaPreviewEnabled: Boolean
+        get() = statusDisplayOptions.mediaPreviewEnabled
+        set(mediaPreviewEnabled) {
+            statusDisplayOptions = statusDisplayOptions.copy(
+                mediaPreviewEnabled = mediaPreviewEnabled
+            )
+            notifyItemRangeChanged(0, itemCount)
+        }
 
     private val absoluteTimeFormatter = AbsoluteTimeFormatter()
 
-    /** View holders in this adapter must implement this interface */
-    interface ViewHolder {
-        /** Bind the data from the notification and payloads to the view */
-        fun bind(
-            viewData: NotificationViewData,
-            payloads: List<*>?,
-            statusDisplayOptions: StatusDisplayOptions
-        )
+    init {
+        stateRestorationPolicy = StateRestorationPolicy.PREVENT_WHEN_EMPTY
     }
 
     override fun getItemViewType(position: Int): Int {
-        return NotificationViewKind.from(getItem(position)?.type).ordinal
+        return when (val notification = getItem(position)) {
+            is NotificationViewData.Concrete -> {
+                when (notification.type) {
+                    Notification.Type.MENTION,
+                    Notification.Type.POLL -> if (notification.statusViewData?.filterAction == Filter.Action.WARN) {
+                        VIEW_TYPE_STATUS_FILTERED
+                    } else {
+                        VIEW_TYPE_STATUS
+                    }
+                    Notification.Type.STATUS,
+                    Notification.Type.FAVOURITE,
+                    Notification.Type.REBLOG,
+                    Notification.Type.UPDATE -> VIEW_TYPE_STATUS_NOTIFICATION
+                    Notification.Type.FOLLOW,
+                    Notification.Type.SIGN_UP -> VIEW_TYPE_FOLLOW
+                    Notification.Type.FOLLOW_REQUEST -> VIEW_TYPE_FOLLOW_REQUEST
+                    Notification.Type.REPORT -> VIEW_TYPE_REPORT
+                    else -> VIEW_TYPE_UNKNOWN
+                }
+            }
+            else -> VIEW_TYPE_PLACEHOLDER
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
+        return when (viewType) {
+            VIEW_TYPE_STATUS -> StatusViewHolder(
+                inflater.inflate(R.layout.item_status, parent, false),
+                statusListener,
+                accountId
+            )
+            VIEW_TYPE_STATUS_FILTERED -> FilteredStatusViewHolder(
+                ItemStatusFilteredBinding.inflate(inflater, parent, false),
+                statusListener
+            )
+            VIEW_TYPE_STATUS_NOTIFICATION -> StatusNotificationViewHolder(
+                ItemStatusNotificationBinding.inflate(inflater, parent, false),
+                statusListener,
+                absoluteTimeFormatter
+            )
+            VIEW_TYPE_FOLLOW -> FollowViewHolder(
+                ItemFollowBinding.inflate(inflater, parent, false),
+                accountActionListener
+            )
+            VIEW_TYPE_FOLLOW_REQUEST -> FollowRequestViewHolder(
+                ItemFollowRequestBinding.inflate(inflater, parent, false),
+                accountActionListener,
+                statusListener,
+                true
+            )
+            VIEW_TYPE_PLACEHOLDER -> PlaceholderViewHolder(
+                ItemStatusPlaceholderBinding.inflate(inflater, parent, false),
+                statusListener
+            )
+            VIEW_TYPE_REPORT -> ReportNotificationViewHolder(
+                ItemReportNotificationBinding.inflate(inflater, parent, false),
+                notificationActionListener,
+                accountActionListener
+            )
+            else -> UnknownNotificationViewHolder(
+                ItemUnknownNotificationBinding.inflate(inflater, parent, false)
+            )
+        }
+    }
 
-        return when (NotificationViewKind.values()[viewType]) {
-            NotificationViewKind.STATUS -> {
-                StatusViewHolder(
-                    ItemStatusBinding.inflate(inflater, parent, false),
-                    statusActionListener,
-                    accountId
-                )
-            }
-            NotificationViewKind.NOTIFICATION -> {
-                StatusNotificationViewHolder(
-                    ItemStatusNotificationBinding.inflate(inflater, parent, false),
-                    statusActionListener,
-                    notificationActionListener,
-                    absoluteTimeFormatter
-                )
-            }
-            NotificationViewKind.FOLLOW -> {
-                FollowViewHolder(
-                    ItemFollowBinding.inflate(inflater, parent, false),
-                    notificationActionListener,
-                    statusActionListener
-                )
-            }
-            NotificationViewKind.FOLLOW_REQUEST -> {
-                FollowRequestViewHolder(
-                    ItemFollowRequestBinding.inflate(inflater, parent, false),
-                    accountActionListener,
-                    statusActionListener,
-                    showHeader = true
-                )
-            }
-            NotificationViewKind.REPORT -> {
-                ReportNotificationViewHolder(
-                    ItemReportNotificationBinding.inflate(inflater, parent, false),
-                    notificationActionListener
-                )
-            }
-            else -> {
-                FallbackNotificationViewHolder(
-                    SimpleListItem1Binding.inflate(inflater, parent, false)
-                )
+    override fun onBindViewHolder(viewHolder: RecyclerView.ViewHolder, position: Int) {
+        onBindViewHolder(viewHolder, position, emptyList())
+    }
+
+    override fun onBindViewHolder(viewHolder: RecyclerView.ViewHolder, position: Int, payloads: List<Any>) {
+        getItem(position)?.let { notification ->
+            when (notification) {
+                is NotificationViewData.Concrete ->
+                    (viewHolder as NotificationsViewHolder).bind(notification, payloads, statusDisplayOptions)
+                is NotificationViewData.Placeholder -> {
+                    (viewHolder as PlaceholderViewHolder).setup(notification.isLoading)
+                }
             }
         }
     }
 
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        bindViewHolder(holder, position, null)
-    }
+    companion object {
+        private const val VIEW_TYPE_STATUS = 0
+        private const val VIEW_TYPE_STATUS_FILTERED = 1
+        private const val VIEW_TYPE_STATUS_NOTIFICATION = 2
+        private const val VIEW_TYPE_FOLLOW = 3
+        private const val VIEW_TYPE_FOLLOW_REQUEST = 4
+        private const val VIEW_TYPE_PLACEHOLDER = 5
+        private const val VIEW_TYPE_REPORT = 6
+        private const val VIEW_TYPE_UNKNOWN = 7
 
-    override fun onBindViewHolder(
-        holder: RecyclerView.ViewHolder,
-        position: Int,
-        payloads: MutableList<Any>
-    ) {
-        bindViewHolder(holder, position, payloads)
-    }
+        val NotificationsDifferCallback = object : DiffUtil.ItemCallback<NotificationViewData>() {
+            override fun areItemsTheSame(
+                oldItem: NotificationViewData,
+                newItem: NotificationViewData
+            ): Boolean {
+                return oldItem.id == newItem.id
+            }
 
-    private fun bindViewHolder(
-        holder: RecyclerView.ViewHolder,
-        position: Int,
-        payloads: List<*>?
-    ) {
-        getItem(position)?.let { (holder as ViewHolder).bind(it, payloads, statusDisplayOptions) }
-    }
+            override fun areContentsTheSame(
+                oldItem: NotificationViewData,
+                newItem: NotificationViewData
+            ): Boolean {
+                return false // Items are different always. It allows to refresh timestamp on every view holder update
+            }
 
-    /**
-     * Notification view holder to use if no other type is appropriate. Should never normally
-     * be used, but is useful when migrating code.
-     */
-    private class FallbackNotificationViewHolder(
-        val binding: SimpleListItem1Binding
-    ) : ViewHolder, RecyclerView.ViewHolder(binding.root) {
-        override fun bind(
-            viewData: NotificationViewData,
-            payloads: List<*>?,
-            statusDisplayOptions: StatusDisplayOptions
-        ) {
-            binding.text1.text = viewData.statusViewData?.content
+            override fun getChangePayload(
+                oldItem: NotificationViewData,
+                newItem: NotificationViewData
+            ): Any? {
+                return if (oldItem == newItem) {
+                    // If items are equal - update timestamp only
+                    StatusBaseViewHolder.Key.KEY_CREATED
+                } else {
+                    // If items are different - update the whole view holder
+                    null
+                }
+            }
         }
     }
 }

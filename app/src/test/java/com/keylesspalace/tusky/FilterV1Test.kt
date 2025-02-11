@@ -18,7 +18,8 @@
 package com.keylesspalace.tusky
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.keylesspalace.tusky.components.filters.EditFilterActivity
+import at.connyduck.calladapter.networkresult.NetworkResult
+import com.keylesspalace.tusky.components.instanceinfo.InstanceInfoRepository
 import com.keylesspalace.tusky.entity.Attachment
 import com.keylesspalace.tusky.entity.Filter
 import com.keylesspalace.tusky.entity.FilterV1
@@ -26,16 +27,22 @@ import com.keylesspalace.tusky.entity.Poll
 import com.keylesspalace.tusky.entity.PollOption
 import com.keylesspalace.tusky.entity.Status
 import com.keylesspalace.tusky.network.FilterModel
+import com.keylesspalace.tusky.network.MastodonApi
+import java.time.Instant
+import java.util.Date
+import kotlinx.coroutines.runBlocking
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.robolectric.annotation.Config
-import java.time.Instant
-import java.util.Date
+import retrofit2.HttpException
+import retrofit2.Response
 
-@Config(sdk = [28])
+@Config(sdk = [34])
 @RunWith(AndroidJUnit4::class)
 class FilterV1Test {
 
@@ -43,12 +50,11 @@ class FilterV1Test {
 
     @Before
     fun setup() {
-        filterModel = FilterModel()
         val filters = listOf(
             FilterV1(
                 id = "123",
                 phrase = "badWord",
-                context = listOf(FilterV1.HOME),
+                context = listOf(Filter.Kind.HOME.kind),
                 expiresAt = null,
                 irreversible = false,
                 wholeWord = false
@@ -56,7 +62,7 @@ class FilterV1Test {
             FilterV1(
                 id = "123",
                 phrase = "badWholeWord",
-                context = listOf(FilterV1.HOME, FilterV1.PUBLIC),
+                context = listOf(Filter.Kind.HOME.kind, Filter.Kind.PUBLIC.kind),
                 expiresAt = null,
                 irreversible = false,
                 wholeWord = true
@@ -64,7 +70,7 @@ class FilterV1Test {
             FilterV1(
                 id = "123",
                 phrase = "@twitter.com",
-                context = listOf(FilterV1.HOME),
+                context = listOf(Filter.Kind.HOME.kind),
                 expiresAt = null,
                 irreversible = false,
                 wholeWord = true
@@ -72,7 +78,7 @@ class FilterV1Test {
             FilterV1(
                 id = "123",
                 phrase = "#hashtag",
-                context = listOf(FilterV1.HOME),
+                context = listOf(Filter.Kind.HOME.kind),
                 expiresAt = null,
                 irreversible = false,
                 wholeWord = true
@@ -80,7 +86,7 @@ class FilterV1Test {
             FilterV1(
                 id = "123",
                 phrase = "expired",
-                context = listOf(FilterV1.HOME),
+                context = listOf(Filter.Kind.HOME.kind),
                 expiresAt = Date.from(Instant.now().minusSeconds(10)),
                 irreversible = false,
                 wholeWord = true
@@ -88,7 +94,7 @@ class FilterV1Test {
             FilterV1(
                 id = "123",
                 phrase = "unexpired",
-                context = listOf(FilterV1.HOME),
+                context = listOf(Filter.Kind.HOME.kind),
                 expiresAt = Date.from(Instant.now().plusSeconds(3600)),
                 irreversible = false,
                 wholeWord = true
@@ -96,14 +102,27 @@ class FilterV1Test {
             FilterV1(
                 id = "123",
                 phrase = "href",
-                context = listOf(FilterV1.HOME),
+                context = listOf(Filter.Kind.HOME.kind),
                 expiresAt = null,
                 irreversible = false,
                 wholeWord = false
             )
         )
 
-        filterModel.initWithFilters(filters)
+        val api: MastodonApi = mock {
+            onBlocking { getFiltersV1() } doReturn NetworkResult.success(filters)
+            onBlocking { getFilters() } doReturn NetworkResult.failure(
+                HttpException(Response.error<Any>(404, "".toResponseBody()))
+            )
+        }
+        val instanceInfoRepo: InstanceInfoRepository = mock {
+            onBlocking { isFilterV2Supported() } doReturn false
+        }
+
+        filterModel = FilterModel(instanceInfoRepo, api)
+        runBlocking {
+            filterModel.init(Filter.Kind.HOME)
+        }
     }
 
     @Test
@@ -257,22 +276,6 @@ class FilterV1Test {
         )
     }
 
-    @Test
-    fun unchangedExpiration_shouldBeNegative_whenFilterIsExpired() {
-        val expiredBySeconds = 3600
-        val expiredDate = Date.from(Instant.now().minusSeconds(expiredBySeconds.toLong()))
-        val updatedDuration = EditFilterActivity.getSecondsForDurationIndex(-1, null, expiredDate)
-        assert(updatedDuration != null && updatedDuration <= -expiredBySeconds)
-    }
-
-    @Test
-    fun unchangedExpiration_shouldBePositive_whenFilterIsUnexpired() {
-        val expiresInSeconds = 3600
-        val expiredDate = Date.from(Instant.now().plusSeconds(expiresInSeconds.toLong()))
-        val updatedDuration = EditFilterActivity.getSecondsForDurationIndex(-1, null, expiredDate)
-        assert(updatedDuration != null && updatedDuration > (expiresInSeconds - 60))
-    }
-
     companion object {
         fun mockStatus(
             content: String = "",
@@ -334,14 +337,14 @@ class FilterV1Test {
                             PollOption(it, 0)
                         },
                         voted = false,
-                        ownVotes = null
+                        ownVotes = emptyList()
                     )
                 } else {
                     null
                 },
                 card = null,
                 language = null,
-                filtered = null
+                filtered = emptyList()
             )
         }
     }

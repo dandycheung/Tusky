@@ -38,9 +38,9 @@ class TootButton
     init {
         if (smallStyle) {
             setIconResource(R.drawable.ic_send_24dp)
+            iconPadding = 0
         } else {
             setText(R.string.action_send)
-            iconGravity = ICON_GRAVITY_TEXT_START
         }
         val padding = resources.getDimensionPixelSize(R.dimen.toot_button_horizontal_padding)
         setPadding(padding, 0, padding, 0)
@@ -60,7 +60,10 @@ class TootButton
                 Status.Visibility.PRIVATE,
                 Status.Visibility.DIRECT -> {
                     setText(R.string.action_send)
-                    IconicsDrawable(context, GoogleMaterial.Icon.gmd_lock).apply { sizeDp = 18; colorInt = Color.WHITE }
+                    IconicsDrawable(context, GoogleMaterial.Icon.gmd_lock).apply {
+                        sizeDp = 18
+                        colorInt = Color.WHITE
+                    }
                 }
                 else -> {
                     null

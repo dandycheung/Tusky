@@ -18,19 +18,17 @@
 package com.keylesspalace.tusky.components.notifications
 
 import android.content.Context
-import android.graphics.PorterDuff
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.text.InputFilter
-import android.text.SpannableStringBuilder
 import android.text.Spanned
-import android.text.TextUtils
 import android.text.format.DateUtils
 import android.text.style.StyleSpan
 import android.view.View
 import androidx.annotation.ColorRes
 import androidx.annotation.DrawableRes
-import androidx.core.content.ContextCompat
+import androidx.appcompat.content.res.AppCompatResources
+import androidx.core.text.toSpannable
 import androidx.recyclerview.widget.RecyclerView
 import at.connyduck.sparkbutton.helpers.Utils
 import com.bumptech.glide.Glide
@@ -49,26 +47,16 @@ import com.keylesspalace.tusky.util.getRelativeTimeSpanString
 import com.keylesspalace.tusky.util.loadAvatar
 import com.keylesspalace.tusky.util.setClickableText
 import com.keylesspalace.tusky.util.unicodeWrap
+import com.keylesspalace.tusky.util.visible
 import com.keylesspalace.tusky.viewdata.NotificationViewData
 import com.keylesspalace.tusky.viewdata.StatusViewData
 import java.util.Date
 
-/**
- * View holder for a status with an activity to be notified about (posted, boosted,
- * favourited, or edited, per [NotificationViewKind.from]).
- *
- * Shows a line with the activity, and who initiated the activity. Clicking this should
- * go to the profile page for the initiator.
- *
- * Displays the original status below that. Clicking this should go to the original
- * status in context.
- */
 internal class StatusNotificationViewHolder(
     private val binding: ItemStatusNotificationBinding,
     private val statusActionListener: StatusActionListener,
-    private val notificationActionListener: NotificationActionListener,
     private val absoluteTimeFormatter: AbsoluteTimeFormatter
-) : NotificationsPagingAdapter.ViewHolder, RecyclerView.ViewHolder(binding.root) {
+) : NotificationsViewHolder, RecyclerView.ViewHolder(binding.root) {
     private val avatarRadius48dp = itemView.context.resources.getDimensionPixelSize(
         R.dimen.avatar_radius_48dp
     )
@@ -80,19 +68,19 @@ internal class StatusNotificationViewHolder(
     )
 
     override fun bind(
-        viewData: NotificationViewData,
-        payloads: List<*>?,
+        viewData: NotificationViewData.Concrete,
+        payloads: List<*>,
         statusDisplayOptions: StatusDisplayOptions
     ) {
         val statusViewData = viewData.statusViewData
-        if (payloads.isNullOrEmpty()) {
-            // Hide null statuses. Shouldn't happen according to the spec, but some servers
-            // have been seen to do this (https://github.com/tuskyapp/Tusky/issues/2252)
+        if (payloads.isEmpty()) {
+            /* in some very rare cases servers sends null status even though they should not */
             if (statusViewData == null) {
                 showNotificationContent(false)
             } else {
                 showNotificationContent(true)
-                val (_, _, account, _, _, _, _, createdAt) = statusViewData.actionable
+                val account = statusViewData.actionable.account
+                val createdAt = statusViewData.actionable.createdAt
                 setDisplayName(account.name, account.emojis, statusDisplayOptions.animateEmojis)
                 setUsername(account.username)
                 setCreatedAt(createdAt, statusDisplayOptions.useAbsoluteTime)
@@ -113,14 +101,17 @@ internal class StatusNotificationViewHolder(
                     )
                 }
 
-                binding.notificationContainer.setOnClickListener {
-                    notificationActionListener.onViewThreadForStatus(statusViewData.status)
+                val viewThreadListener = View.OnClickListener {
+                    val position = bindingAdapterPosition
+                    if (position != RecyclerView.NO_POSITION) {
+                        statusActionListener.onViewThread(position)
+                    }
                 }
-                binding.notificationContent.setOnClickListener {
-                    notificationActionListener.onViewThreadForStatus(statusViewData.status)
-                }
+
+                binding.notificationContainer.setOnClickListener(viewThreadListener)
+                binding.notificationContent.setOnClickListener(viewThreadListener)
                 binding.notificationTopText.setOnClickListener {
-                    notificationActionListener.onViewAccount(viewData.account.id)
+                    statusActionListener.onViewAccount(viewData.account.id)
                 }
             }
             setMessage(viewData, statusActionListener, statusDisplayOptions.animateEmojis)
@@ -137,19 +128,17 @@ internal class StatusNotificationViewHolder(
     }
 
     private fun showNotificationContent(show: Boolean) {
-        binding.statusDisplayName.visibility = if (show) View.VISIBLE else View.GONE
-        binding.statusUsername.visibility = if (show) View.VISIBLE else View.GONE
-        binding.statusMetaInfo.visibility = if (show) View.VISIBLE else View.GONE
-        binding.notificationContentWarningDescription.visibility =
-            if (show) View.VISIBLE else View.GONE
-        binding.notificationContentWarningButton.visibility =
-            if (show) View.VISIBLE else View.GONE
-        binding.notificationContent.visibility = if (show) View.VISIBLE else View.GONE
-        binding.notificationStatusAvatar.visibility = if (show) View.VISIBLE else View.GONE
-        binding.notificationNotificationAvatar.visibility = if (show) View.VISIBLE else View.GONE
+        binding.statusDisplayName.visible(show)
+        binding.statusUsername.visible(show)
+        binding.statusMetaInfo.visible(show)
+        binding.notificationContentWarningDescription.visible(show)
+        binding.notificationContentWarningButton.visible(show)
+        binding.notificationContent.visible(show)
+        binding.notificationStatusAvatar.visible(show)
+        binding.notificationNotificationAvatar.visible(show)
     }
 
-    private fun setDisplayName(name: String, emojis: List<Emoji>?, animateEmojis: Boolean) {
+    private fun setDisplayName(name: String, emojis: List<Emoji>, animateEmojis: Boolean) {
         val emojifiedName = name.emojify(emojis, binding.statusDisplayName, animateEmojis)
         binding.statusDisplayName.text = emojifiedName
     }
@@ -161,30 +150,23 @@ internal class StatusNotificationViewHolder(
         binding.statusUsername.text = usernameText
     }
 
-    private fun setCreatedAt(createdAt: Date?, useAbsoluteTime: Boolean) {
+    private fun setCreatedAt(createdAt: Date, useAbsoluteTime: Boolean) {
         if (useAbsoluteTime) {
             binding.statusMetaInfo.text = absoluteTimeFormatter.format(createdAt, true)
         } else {
-            // This is the visible timestampInfo.
-            val readout: String
-            /* This one is for screen-readers. Frequently, they would mispronounce timestamps like "17m"
-             * as 17 meters instead of minutes. */
-            val readoutAloud: CharSequence
-            if (createdAt != null) {
-                val then = createdAt.time
-                val now = Date().time
-                readout = getRelativeTimeSpanString(binding.statusMetaInfo.context, then, now)
-                readoutAloud = DateUtils.getRelativeTimeSpanString(
-                    then,
-                    now,
-                    DateUtils.SECOND_IN_MILLIS,
-                    DateUtils.FORMAT_ABBREV_RELATIVE
-                )
-            } else {
-                // unknown minutes~
-                readout = "?m"
-                readoutAloud = "? minutes"
-            }
+            val readout: String // visible timestamp
+            val readoutAloud: CharSequence // for screenreaders so they don't mispronounce timestamps like "17m" as 17 meters
+
+            val then = createdAt.time
+            val now = System.currentTimeMillis()
+            readout = getRelativeTimeSpanString(binding.statusMetaInfo.context, then, now)
+            readoutAloud = DateUtils.getRelativeTimeSpanString(
+                then,
+                now,
+                DateUtils.SECOND_IN_MILLIS,
+                DateUtils.FORMAT_ABBREV_RELATIVE
+            )
+
             binding.statusMetaInfo.text = readout
             binding.statusMetaInfo.contentDescription = readoutAloud
         }
@@ -195,8 +177,8 @@ internal class StatusNotificationViewHolder(
         @DrawableRes drawable: Int,
         @ColorRes color: Int
     ): Drawable? {
-        val icon = ContextCompat.getDrawable(context, drawable)
-        icon?.setColorFilter(context.getColor(color), PorterDuff.Mode.SRC_ATOP)
+        val icon = AppCompatResources.getDrawable(context, drawable)
+        icon?.setTint(context.getColor(color))
         return icon
     }
 
@@ -237,7 +219,7 @@ internal class StatusNotificationViewHolder(
     }
 
     fun setMessage(
-        notificationViewData: NotificationViewData,
+        notificationViewData: NotificationViewData.Concrete,
         listener: LinkListener,
         animateEmojis: Boolean
     ) {
@@ -269,29 +251,28 @@ internal class StatusNotificationViewHolder(
                 format = context.getString(R.string.notification_favourite_format)
             }
         }
-        binding.notificationTopText.setCompoundDrawablesWithIntrinsicBounds(
+        binding.notificationTopText.setCompoundDrawablesRelativeWithIntrinsicBounds(
             icon,
             null,
             null,
             null
         )
-        val wholeMessage = String.format(format, displayName)
-        val str = SpannableStringBuilder(wholeMessage)
-        val displayNameIndex = format.indexOf("%s")
-        str.setSpan(
+        val wholeMessage = String.format(format, displayName).toSpannable()
+        val displayNameIndex = format.indexOf("%1\$s")
+        wholeMessage.setSpan(
             StyleSpan(Typeface.BOLD),
             displayNameIndex,
             displayNameIndex + displayName.length,
             Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
         )
-        val emojifiedText = str.emojify(
+        val emojifiedText = wholeMessage.emojify(
             notificationViewData.account.emojis,
             binding.notificationTopText,
             animateEmojis
         )
         binding.notificationTopText.text = emojifiedText
         if (statusViewData != null) {
-            val hasSpoiler = !TextUtils.isEmpty(statusViewData.status.spoilerText)
+            val hasSpoiler = statusViewData.status.spoilerText.isNotEmpty()
             binding.notificationContentWarningDescription.visibility =
                 if (hasSpoiler) View.VISIBLE else View.GONE
             binding.notificationContentWarningButton.visibility =
@@ -307,7 +288,7 @@ internal class StatusNotificationViewHolder(
             }
             binding.notificationContentWarningButton.setOnClickListener {
                 if (bindingAdapterPosition != RecyclerView.NO_POSITION) {
-                    notificationActionListener.onExpandedChange(
+                    statusActionListener.onExpandedChange(
                         !statusViewData.isExpanded,
                         bindingAdapterPosition
                     )
@@ -325,7 +306,7 @@ internal class StatusNotificationViewHolder(
         animateEmojis: Boolean
     ) {
         val shouldShowContentIfSpoiler = statusViewData.isExpanded
-        val hasSpoiler = !TextUtils.isEmpty(statusViewData.status.spoilerText)
+        val hasSpoiler = statusViewData.status.spoilerText.isNotEmpty()
         if (!shouldShowContentIfSpoiler && hasSpoiler) {
             binding.notificationContent.visibility = View.GONE
         } else {
@@ -337,7 +318,7 @@ internal class StatusNotificationViewHolder(
             binding.buttonToggleNotificationContent.setOnClickListener {
                 val position = bindingAdapterPosition
                 if (position != RecyclerView.NO_POSITION) {
-                    notificationActionListener.onNotificationContentCollapsedChange(
+                    statusActionListener.onContentCollapsedChange(
                         !statusViewData.isCollapsed,
                         position
                     )
@@ -359,20 +340,19 @@ internal class StatusNotificationViewHolder(
             binding.buttonToggleNotificationContent.visibility = View.GONE
             binding.notificationContent.filters = NO_INPUT_FILTER
         }
-        val emojifiedText =
-            content.emojify(
-                emojis,
-                binding.notificationContent,
-                animateEmojis
-            )
+        val emojifiedText = content.emojify(
+            emojis = emojis,
+            view = binding.notificationContent,
+            animate = animateEmojis
+        )
         setClickableText(
             binding.notificationContent,
             emojifiedText,
             statusViewData.actionable.mentions,
             statusViewData.actionable.tags,
-            listener
+            listener,
         )
-        val emojifiedContentWarning: CharSequence = statusViewData.spoilerText.emojify(
+        val emojifiedContentWarning: CharSequence = statusViewData.status.spoilerText.emojify(
             statusViewData.actionable.emojis,
             binding.notificationContentWarningDescription,
             animateEmojis
@@ -381,7 +361,7 @@ internal class StatusNotificationViewHolder(
     }
 
     companion object {
-        private val COLLAPSE_INPUT_FILTER = arrayOf<InputFilter>(SmartLengthInputFilter)
-        private val NO_INPUT_FILTER = arrayOfNulls<InputFilter>(0)
+        private val COLLAPSE_INPUT_FILTER: Array<InputFilter> = arrayOf(SmartLengthInputFilter)
+        private val NO_INPUT_FILTER: Array<InputFilter> = arrayOf()
     }
 }

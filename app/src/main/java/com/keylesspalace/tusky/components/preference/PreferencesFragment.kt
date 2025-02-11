@@ -16,11 +16,10 @@
 package com.keylesspalace.tusky.components.preference
 
 import android.os.Bundle
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.Preference
-import androidx.preference.PreferenceFragmentCompat
 import com.keylesspalace.tusky.R
 import com.keylesspalace.tusky.db.AccountManager
-import com.keylesspalace.tusky.di.Injectable
 import com.keylesspalace.tusky.entity.Notification
 import com.keylesspalace.tusky.settings.AppTheme
 import com.keylesspalace.tusky.settings.PrefKeys
@@ -32,24 +31,21 @@ import com.keylesspalace.tusky.settings.preferenceCategory
 import com.keylesspalace.tusky.settings.sliderPreference
 import com.keylesspalace.tusky.settings.switchPreference
 import com.keylesspalace.tusky.util.LocaleManager
-import com.keylesspalace.tusky.util.deserialize
-import com.keylesspalace.tusky.util.makeIcon
-import com.keylesspalace.tusky.util.serialize
-import com.keylesspalace.tusky.util.unsafeLazy
-import com.mikepenz.iconics.IconicsDrawable
+import com.keylesspalace.tusky.util.icon
 import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
+import dagger.hilt.android.AndroidEntryPoint
 import de.c1710.filemojicompat_ui.views.picker.preference.EmojiPickerPreference
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 
-class PreferencesFragment : PreferenceFragmentCompat(), Injectable {
+@AndroidEntryPoint
+class PreferencesFragment : BasePreferencesFragment() {
 
     @Inject
     lateinit var accountManager: AccountManager
 
     @Inject
     lateinit var localeManager: LocaleManager
-
-    private val iconSize by unsafeLazy { resources.getDimensionPixelSize(R.dimen.preference_icon_size) }
 
     enum class ReadingOrder {
         /** User scrolls up, reading statuses oldest to newest */
@@ -75,18 +71,18 @@ class PreferencesFragment : PreferenceFragmentCompat(), Injectable {
         makePreferenceScreen {
             preferenceCategory(R.string.pref_title_appearance_settings) {
                 listPreference {
-                    setDefaultValue(AppTheme.NIGHT.value)
+                    setDefaultValue(AppTheme.DEFAULT.value)
                     setEntries(R.array.app_theme_names)
                     entryValues = AppTheme.stringValues()
                     key = PrefKeys.APP_THEME
                     setSummaryProvider { entry }
                     setTitle(R.string.pref_title_app_theme)
-                    icon = makeIcon(GoogleMaterial.Icon.gmd_palette)
+                    icon = icon(GoogleMaterial.Icon.gmd_palette)
                 }
 
                 emojiPreference(requireActivity()) {
                     setTitle(R.string.emoji_style)
-                    icon = makeIcon(GoogleMaterial.Icon.gmd_sentiment_satisfied)
+                    icon = icon(GoogleMaterial.Icon.gmd_sentiment_satisfied)
                 }
 
                 listPreference {
@@ -96,7 +92,7 @@ class PreferencesFragment : PreferenceFragmentCompat(), Injectable {
                     key = PrefKeys.LANGUAGE + "_" // deliberately not the actual key, the real handling happens in LocaleManager
                     setSummaryProvider { entry }
                     setTitle(R.string.pref_title_language)
-                    icon = makeIcon(GoogleMaterial.Icon.gmd_translate)
+                    icon = icon(GoogleMaterial.Icon.gmd_translate)
                     preferenceDataStore = localeManager
                 }
 
@@ -108,9 +104,9 @@ class PreferencesFragment : PreferenceFragmentCompat(), Injectable {
                     stepSize = 5F
                     setTitle(R.string.pref_ui_text_size)
                     format = "%.0f%%"
-                    decrementIcon = makeIcon(GoogleMaterial.Icon.gmd_zoom_out)
-                    incrementIcon = makeIcon(GoogleMaterial.Icon.gmd_zoom_in)
-                    icon = makeIcon(GoogleMaterial.Icon.gmd_format_size)
+                    decrementIcon = icon(GoogleMaterial.Icon.gmd_zoom_out)
+                    incrementIcon = icon(GoogleMaterial.Icon.gmd_zoom_in)
+                    icon = icon(GoogleMaterial.Icon.gmd_format_size)
                 }
 
                 listPreference {
@@ -120,7 +116,7 @@ class PreferencesFragment : PreferenceFragmentCompat(), Injectable {
                     key = PrefKeys.STATUS_TEXT_SIZE
                     setSummaryProvider { entry }
                     setTitle(R.string.pref_post_text_size)
-                    icon = makeIcon(GoogleMaterial.Icon.gmd_format_size)
+                    icon = icon(GoogleMaterial.Icon.gmd_format_size)
                 }
 
                 listPreference {
@@ -130,7 +126,7 @@ class PreferencesFragment : PreferenceFragmentCompat(), Injectable {
                     key = PrefKeys.READING_ORDER
                     setSummaryProvider { entry }
                     setTitle(R.string.pref_title_reading_order)
-                    icon = makeIcon(GoogleMaterial.Icon.gmd_sort)
+                    icon = icon(GoogleMaterial.Icon.gmd_sort)
                 }
 
                 listPreference {
@@ -149,7 +145,6 @@ class PreferencesFragment : PreferenceFragmentCompat(), Injectable {
                     key = PrefKeys.SHOW_SELF_USERNAME
                     setSummaryProvider { entry }
                     setTitle(R.string.pref_title_show_self_username)
-                    isSingleLineTitle = false
                 }
 
                 switchPreference {
@@ -159,88 +154,76 @@ class PreferencesFragment : PreferenceFragmentCompat(), Injectable {
                 }
 
                 switchPreference {
-                    setDefaultValue(false)
-                    key = PrefKeys.FAB_HIDE
-                    setTitle(R.string.pref_title_hide_follow_button)
-                    isSingleLineTitle = false
+                    setDefaultValue(true)
+                    key = PrefKeys.SHOW_NOTIFICATIONS_FILTER
+                    setTitle(R.string.pref_title_show_notifications_filter)
                 }
 
                 switchPreference {
                     setDefaultValue(false)
                     key = PrefKeys.ABSOLUTE_TIME_VIEW
                     setTitle(R.string.pref_title_absolute_time)
-                    isSingleLineTitle = false
                 }
 
                 switchPreference {
                     setDefaultValue(true)
                     key = PrefKeys.SHOW_BOT_OVERLAY
                     setTitle(R.string.pref_title_bot_overlay)
-                    isSingleLineTitle = false
-                    setIcon(R.drawable.ic_bot_24dp)
+                    icon = icon(R.drawable.ic_bot_24dp)
                 }
 
                 switchPreference {
                     setDefaultValue(false)
                     key = PrefKeys.ANIMATE_GIF_AVATARS
                     setTitle(R.string.pref_title_animate_gif_avatars)
-                    isSingleLineTitle = false
                 }
 
                 switchPreference {
                     setDefaultValue(false)
                     key = PrefKeys.ANIMATE_CUSTOM_EMOJIS
                     setTitle(R.string.pref_title_animate_custom_emojis)
-                    isSingleLineTitle = false
                 }
 
                 switchPreference {
                     setDefaultValue(true)
                     key = PrefKeys.USE_BLURHASH
                     setTitle(R.string.pref_title_gradient_for_media)
-                    isSingleLineTitle = false
                 }
 
                 switchPreference {
                     setDefaultValue(false)
                     key = PrefKeys.SHOW_CARDS_IN_TIMELINES
                     setTitle(R.string.pref_title_show_cards_in_timelines)
-                    isSingleLineTitle = false
-                }
-
-                switchPreference {
-                    setDefaultValue(true)
-                    key = PrefKeys.SHOW_NOTIFICATIONS_FILTER
-                    setTitle(R.string.pref_title_show_notifications_filter)
-                    isSingleLineTitle = false
                 }
 
                 switchPreference {
                     setDefaultValue(true)
                     key = PrefKeys.CONFIRM_REBLOGS
                     setTitle(R.string.pref_title_confirm_reblogs)
-                    isSingleLineTitle = false
                 }
 
                 switchPreference {
                     setDefaultValue(false)
                     key = PrefKeys.CONFIRM_FAVOURITES
                     setTitle(R.string.pref_title_confirm_favourites)
-                    isSingleLineTitle = false
+                }
+
+                switchPreference {
+                    setDefaultValue(false)
+                    key = PrefKeys.CONFIRM_FOLLOWS
+                    setTitle(R.string.pref_title_confirm_follows)
                 }
 
                 switchPreference {
                     setDefaultValue(true)
                     key = PrefKeys.ENABLE_SWIPE_FOR_TABS
                     setTitle(R.string.pref_title_enable_swipe_for_tabs)
-                    isSingleLineTitle = false
                 }
 
                 switchPreference {
                     setDefaultValue(false)
                     key = PrefKeys.SHOW_STATS_INLINE
                     setTitle(R.string.pref_title_show_stat_inline)
-                    isSingleLineTitle = false
                 }
             }
 
@@ -249,14 +232,6 @@ class PreferencesFragment : PreferenceFragmentCompat(), Injectable {
                     setDefaultValue(false)
                     key = PrefKeys.CUSTOM_TABS
                     setTitle(R.string.pref_title_custom_tabs)
-                    isSingleLineTitle = false
-                }
-            }
-
-            preferenceCategory(R.string.pref_title_timeline_filters) {
-                preference {
-                    setTitle(R.string.pref_title_post_tabs)
-                    fragment = TabFilterPreferencesFragment::class.qualifiedName
                 }
             }
 
@@ -267,7 +242,7 @@ class PreferencesFragment : PreferenceFragmentCompat(), Injectable {
                     key = PrefKeys.WELLBEING_LIMITED_NOTIFICATIONS
                     setOnPreferenceChangeListener { _, value ->
                         for (account in accountManager.accounts) {
-                            val notificationFilter = deserialize(account.notificationsFilter).toMutableSet()
+                            val notificationFilter = account.notificationsFilter.toMutableSet()
 
                             if (value == true) {
                                 notificationFilter.add(Notification.Type.FAVOURITE)
@@ -279,8 +254,9 @@ class PreferencesFragment : PreferenceFragmentCompat(), Injectable {
                                 notificationFilter.remove(Notification.Type.REBLOG)
                             }
 
-                            account.notificationsFilter = serialize(notificationFilter)
-                            accountManager.saveAccount(account)
+                            lifecycleScope.launch {
+                                accountManager.updateAccount(account) { copy(notificationsFilter = notificationFilter) }
+                            }
                         }
                         true
                     }
@@ -307,10 +283,6 @@ class PreferencesFragment : PreferenceFragmentCompat(), Injectable {
                 }
             }
         }
-    }
-
-    private fun makeIcon(icon: GoogleMaterial.Icon): IconicsDrawable {
-        return makeIcon(requireContext(), icon, iconSize)
     }
 
     override fun onResume() {

@@ -32,25 +32,24 @@ import com.keylesspalace.tusky.BaseActivity
 import com.keylesspalace.tusky.R
 import com.keylesspalace.tusky.components.compose.ComposeActivity
 import com.keylesspalace.tusky.databinding.ActivityDraftsBinding
-import com.keylesspalace.tusky.db.DraftEntity
 import com.keylesspalace.tusky.db.DraftsAlert
-import com.keylesspalace.tusky.di.ViewModelFactory
+import com.keylesspalace.tusky.db.entity.DraftEntity
+import com.keylesspalace.tusky.util.ensureBottomPadding
+import com.keylesspalace.tusky.util.isHttpNotFound
 import com.keylesspalace.tusky.util.parseAsMastodonHtml
 import com.keylesspalace.tusky.util.visible
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import retrofit2.HttpException
-import javax.inject.Inject
 
+@AndroidEntryPoint
 class DraftsActivity : BaseActivity(), DraftActionListener {
-
-    @Inject
-    lateinit var viewModelFactory: ViewModelFactory
 
     @Inject
     lateinit var draftsAlert: DraftsAlert
 
-    private val viewModel: DraftsViewModel by viewModels { viewModelFactory }
+    private val viewModel: DraftsViewModel by viewModels()
 
     private lateinit var binding: ActivityDraftsBinding
     private lateinit var bottomSheet: BottomSheetBehavior<LinearLayout>
@@ -68,13 +67,17 @@ class DraftsActivity : BaseActivity(), DraftActionListener {
             setDisplayShowHomeEnabled(true)
         }
 
+        binding.draftsRecyclerView.ensureBottomPadding()
+
         binding.draftsErrorMessageView.setup(R.drawable.elephant_friend_empty, R.string.no_drafts)
 
         val adapter = DraftsAdapter(this)
 
         binding.draftsRecyclerView.adapter = adapter
         binding.draftsRecyclerView.layoutManager = LinearLayoutManager(this)
-        binding.draftsRecyclerView.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
+        binding.draftsRecyclerView.addItemDecoration(
+            DividerItemDecoration(this, DividerItemDecoration.VERTICAL)
+        )
 
         bottomSheet = BottomSheetBehavior.from(binding.bottomSheet.root)
 
@@ -131,13 +134,21 @@ class DraftsActivity : BaseActivity(), DraftActionListener {
 
                         Log.w(TAG, "failed loading reply information", throwable)
 
-                        if (throwable is HttpException && throwable.code() == 404) {
+                        if (throwable.isHttpNotFound()) {
                             // the original status to which a reply was drafted has been deleted
                             // let's open the ComposeActivity without reply information
-                            Toast.makeText(context, getString(R.string.drafts_post_reply_removed), Toast.LENGTH_LONG).show()
+                            Toast.makeText(
+                                context,
+                                getString(R.string.drafts_post_reply_removed),
+                                Toast.LENGTH_LONG
+                            ).show()
                             openDraftWithoutReply(draft)
                         } else {
-                            Snackbar.make(binding.root, getString(R.string.drafts_failed_loading_reply), Snackbar.LENGTH_SHORT)
+                            Snackbar.make(
+                                binding.root,
+                                getString(R.string.drafts_failed_loading_reply),
+                                Snackbar.LENGTH_SHORT
+                            )
                                 .show()
                         }
                     }

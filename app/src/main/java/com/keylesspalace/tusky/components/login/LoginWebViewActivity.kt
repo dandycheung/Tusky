@@ -32,22 +32,24 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.viewModels
-import androidx.appcompat.app.AlertDialog
-import androidx.core.content.IntentCompat
 import androidx.core.net.toUri
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsCompat.Type.ime
+import androidx.core.view.WindowInsetsCompat.Type.systemBars
+import androidx.core.view.updatePadding
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.keylesspalace.tusky.BaseActivity
 import com.keylesspalace.tusky.BuildConfig
 import com.keylesspalace.tusky.R
 import com.keylesspalace.tusky.databinding.ActivityLoginWebviewBinding
-import com.keylesspalace.tusky.di.Injectable
-import com.keylesspalace.tusky.di.ViewModelFactory
-import com.keylesspalace.tusky.util.hide
+import com.keylesspalace.tusky.util.getParcelableExtraCompat
 import com.keylesspalace.tusky.util.viewBinding
 import com.keylesspalace.tusky.util.visible
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
-import javax.inject.Inject
 
 /** Contract for starting [LoginWebViewActivity]. */
 class OauthLogin : ActivityResultContract<LoginData, LoginResult>() {
@@ -62,9 +64,8 @@ class OauthLogin : ActivityResultContract<LoginData, LoginResult>() {
         return if (resultCode == Activity.RESULT_CANCELED) {
             LoginResult.Cancel
         } else {
-            intent?.let {
-                IntentCompat.getParcelableExtra(it, RESULT_EXTRA, LoginResult::class.java)
-            } ?: LoginResult.Err("failed parsing LoginWebViewActivity result")
+            intent?.getParcelableExtraCompat(RESULT_EXTRA)
+                ?: LoginResult.Err("failed parsing LoginWebViewActivity result")
         }
     }
 
@@ -73,7 +74,7 @@ class OauthLogin : ActivityResultContract<LoginData, LoginResult>() {
         private const val DATA_EXTRA = "data"
 
         fun parseData(intent: Intent): LoginData {
-            return IntentCompat.getParcelableExtra(intent, DATA_EXTRA, LoginData::class.java)!!
+            return intent.getParcelableExtraCompat(DATA_EXTRA)!!
         }
 
         fun makeResultIntent(result: LoginResult): Intent {
@@ -91,25 +92,23 @@ data class LoginData(
     val oauthRedirectUrl: Uri
 ) : Parcelable
 
-sealed class LoginResult : Parcelable {
+sealed interface LoginResult : Parcelable {
     @Parcelize
-    data class Ok(val code: String) : LoginResult()
+    data class Ok(val code: String) : LoginResult
 
     @Parcelize
-    data class Err(val errorMessage: String) : LoginResult()
+    data class Err(val errorMessage: String) : LoginResult
 
     @Parcelize
-    object Cancel : LoginResult()
+    data object Cancel : LoginResult
 }
 
 /** Activity to do Oauth process using WebView. */
-class LoginWebViewActivity : BaseActivity(), Injectable {
+@AndroidEntryPoint
+class LoginWebViewActivity : BaseActivity() {
     private val binding by viewBinding(ActivityLoginWebviewBinding::inflate)
 
-    @Inject
-    lateinit var viewModelFactory: ViewModelFactory
-
-    private val viewModel: LoginWebViewViewModel by viewModels { viewModelFactory }
+    private val viewModel: LoginWebViewViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -128,10 +127,15 @@ class LoginWebViewActivity : BaseActivity(), Injectable {
 
         setTitle(R.string.title_login)
 
+        ViewCompat.setOnApplyWindowInsetsListener(binding.loginWebView) { _, insets ->
+            val bottomInsets = insets.getInsets(systemBars() or ime()).bottom
+            binding.root.updatePadding(bottom = bottomInsets)
+            WindowInsetsCompat.CONSUMED
+        }
+
         val webView = binding.loginWebView
         webView.settings.allowContentAccess = false
         webView.settings.allowFileAccess = false
-        webView.settings.databaseEnabled = false
         webView.settings.displayZoomControls = false
         webView.settings.javaScriptCanOpenWindowsAutomatically = false
         // JavaScript needs to be enabled because otherwise 2FA does not work in some instances
@@ -201,7 +205,7 @@ class LoginWebViewActivity : BaseActivity(), Injectable {
             viewModel.instanceRules.collect { instanceRules ->
                 binding.loginRules.visible(instanceRules.isNotEmpty())
                 binding.loginRules.setOnClickListener {
-                    AlertDialog.Builder(this@LoginWebViewActivity)
+                    MaterialAlertDialogBuilder(this@LoginWebViewActivity)
                         .setTitle(getString(R.string.instance_rule_title, data.domain))
                         .setMessage(
                             instanceRules.joinToString(separator = "\n\n") { "• $it" }
@@ -227,14 +231,10 @@ class LoginWebViewActivity : BaseActivity(), Injectable {
         super.onDestroy()
     }
 
-    override fun finish() {
-        super.finishWithoutSlideOutAnimation()
-    }
-
     override fun requiresLogin() = false
 
     private fun sendResult(result: LoginResult) {
         setResult(Activity.RESULT_OK, OauthLogin.makeResultIntent(result))
-        finishWithoutSlideOutAnimation()
+        finish()
     }
 }
