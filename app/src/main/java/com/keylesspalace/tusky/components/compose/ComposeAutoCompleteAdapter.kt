@@ -37,7 +37,9 @@ class ComposeAutoCompleteAdapter(
     private val autocompletionProvider: AutocompletionProvider,
     private val animateAvatar: Boolean,
     private val animateEmojis: Boolean,
-    private val showBotBadge: Boolean
+    private val showBotBadge: Boolean,
+    // if true, @ # : are returned in the result, otherwise only the raw value
+    private val withDecoration: Boolean = true,
 ) : BaseAdapter(), Filterable {
 
     private var resultList: List<AutocompleteResult> = emptyList()
@@ -52,36 +54,35 @@ class ComposeAutoCompleteAdapter(
         return position.toLong()
     }
 
-    override fun getFilter(): Filter {
-        return object : Filter() {
+    override fun getFilter() = object : Filter() {
 
-            override fun convertResultToString(resultValue: Any): CharSequence {
-                return when (resultValue) {
-                    is AutocompleteResult.AccountResult -> formatUsername(resultValue)
-                    is AutocompleteResult.HashtagResult -> formatHashtag(resultValue)
-                    is AutocompleteResult.EmojiResult -> formatEmoji(resultValue)
-                    else -> ""
-                }
+        override fun convertResultToString(resultValue: Any): CharSequence {
+            return when (resultValue) {
+                is AutocompleteResult.AccountResult -> if (withDecoration) "@${resultValue.account.username}" else resultValue.account.username
+                is AutocompleteResult.HashtagResult -> if (withDecoration) "#${resultValue.hashtag}" else resultValue.hashtag
+                is AutocompleteResult.EmojiResult -> if (withDecoration) ":${resultValue.emoji.shortcode}:" else resultValue.emoji.shortcode
+                else -> ""
             }
+        }
 
-            @WorkerThread
-            override fun performFiltering(constraint: CharSequence?): FilterResults {
-                val filterResults = FilterResults()
-                if (constraint != null) {
-                    val results = autocompletionProvider.search(constraint.toString())
-                    filterResults.values = results
-                    filterResults.count = results.size
-                }
-                return filterResults
+        @WorkerThread
+        override fun performFiltering(constraint: CharSequence?): FilterResults {
+            val filterResults = FilterResults()
+            if (constraint != null) {
+                val results = autocompletionProvider.search(constraint.toString())
+                filterResults.values = results
+                filterResults.count = results.size
             }
+            return filterResults
+        }
 
-            override fun publishResults(constraint: CharSequence?, results: FilterResults) {
-                if (results.count > 0) {
-                    resultList = results.values as List<AutocompleteResult>
-                    notifyDataSetChanged()
-                } else {
-                    notifyDataSetInvalidated()
-                }
+        @Suppress("UNCHECKED_CAST")
+        override fun publishResults(constraint: CharSequence?, results: FilterResults) {
+            if (results.count > 0) {
+                resultList = results.values as List<AutocompleteResult>
+                notifyDataSetChanged()
+            } else {
+                notifyDataSetInvalidated()
             }
         }
     }
@@ -108,7 +109,9 @@ class ComposeAutoCompleteAdapter(
                 val account = accountResult.account
                 binding.username.text = context.getString(R.string.post_username_format, account.username)
                 binding.displayName.text = account.name.emojify(account.emojis, binding.displayName, animateEmojis)
-                val avatarRadius = context.resources.getDimensionPixelSize(R.dimen.avatar_radius_42dp)
+                val avatarRadius = context.resources.getDimensionPixelSize(
+                    R.dimen.avatar_radius_42dp
+                )
                 loadAvatar(
                     account.avatar,
                     binding.avatar,
@@ -119,7 +122,7 @@ class ComposeAutoCompleteAdapter(
             }
             is ItemAutocompleteHashtagBinding -> {
                 val result = getItem(position) as AutocompleteResult.HashtagResult
-                binding.root.text = formatHashtag(result)
+                binding.root.text = context.getString(R.string.hashtag_format, result.hashtag)
             }
             is ItemAutocompleteEmojiBinding -> {
                 val emojiResult = getItem(position) as AutocompleteResult.EmojiResult
@@ -143,12 +146,12 @@ class ComposeAutoCompleteAdapter(
         }
     }
 
-    sealed class AutocompleteResult {
-        class AccountResult(val account: TimelineAccount) : AutocompleteResult()
+    sealed interface AutocompleteResult {
+        class AccountResult(val account: TimelineAccount) : AutocompleteResult
 
-        class HashtagResult(val hashtag: String) : AutocompleteResult()
+        class HashtagResult(val hashtag: String) : AutocompleteResult
 
-        class EmojiResult(val emoji: Emoji) : AutocompleteResult()
+        class EmojiResult(val emoji: Emoji) : AutocompleteResult
     }
 
     interface AutocompletionProvider {
@@ -159,17 +162,5 @@ class ComposeAutoCompleteAdapter(
         private const val ACCOUNT_VIEW_TYPE = 0
         private const val HASHTAG_VIEW_TYPE = 1
         private const val EMOJI_VIEW_TYPE = 2
-
-        private fun formatUsername(result: AutocompleteResult.AccountResult): String {
-            return String.format("@%s", result.account.username)
-        }
-
-        private fun formatHashtag(result: AutocompleteResult.HashtagResult): String {
-            return String.format("#%s", result.hashtag)
-        }
-
-        private fun formatEmoji(result: AutocompleteResult.EmojiResult): String {
-            return String.format(":%s:", result.emoji.shortcode)
-        }
     }
 }

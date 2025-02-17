@@ -38,7 +38,9 @@ class ConversationAdapter(
         }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ConversationViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_conversation, parent, false)
+        val view = LayoutInflater.from(
+            parent.context
+        ).inflate(R.layout.item_conversation, parent, false)
         return ConversationViewHolder(view, statusDisplayOptions, listener)
     }
 
@@ -46,30 +48,35 @@ class ConversationAdapter(
         onBindViewHolder(holder, position, emptyList())
     }
 
-    override fun onBindViewHolder(
-        holder: ConversationViewHolder,
-        position: Int,
-        payloads: List<Any>
-    ) {
+    override fun onBindViewHolder(holder: ConversationViewHolder, position: Int, payloads: List<Any>) {
         getItem(position)?.let { conversationViewData ->
-            holder.setupWithConversation(conversationViewData, payloads.firstOrNull())
+            holder.setupWithConversation(conversationViewData, payloads)
         }
     }
 
     companion object {
         val CONVERSATION_COMPARATOR = object : DiffUtil.ItemCallback<ConversationViewData>() {
-            override fun areItemsTheSame(oldItem: ConversationViewData, newItem: ConversationViewData): Boolean {
+            override fun areItemsTheSame(
+                oldItem: ConversationViewData,
+                newItem: ConversationViewData
+            ): Boolean {
                 return oldItem.id == newItem.id
             }
 
-            override fun areContentsTheSame(oldItem: ConversationViewData, newItem: ConversationViewData): Boolean {
+            override fun areContentsTheSame(
+                oldItem: ConversationViewData,
+                newItem: ConversationViewData
+            ): Boolean {
                 return false // Items are different always. It allows to refresh timestamp on every view holder update
             }
 
-            override fun getChangePayload(oldItem: ConversationViewData, newItem: ConversationViewData): Any? {
+            override fun getChangePayload(
+                oldItem: ConversationViewData,
+                newItem: ConversationViewData
+            ): Any? {
                 return if (oldItem == newItem) {
                     // If items are equal - update timestamp only
-                    listOf(StatusBaseViewHolder.Key.KEY_CREATED)
+                    StatusBaseViewHolder.Key.KEY_CREATED
                 } else {
                     // If items are different - update the whole view holder
                     null

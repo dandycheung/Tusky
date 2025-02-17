@@ -1,4 +1,4 @@
-/* Copyright 2018 Jeremiasz Nelz <remi6397(a)gmail.com>
+/* Copyright 2018 Tusky contributors
  *
  * This file is a part of Tusky.
  *
@@ -15,6 +15,7 @@
 
 package com.keylesspalace.tusky.receiver
 
+import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -23,34 +24,38 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.RemoteInput
 import com.keylesspalace.tusky.R
-import com.keylesspalace.tusky.components.notifications.NotificationHelper
+import com.keylesspalace.tusky.components.systemnotifications.NotificationService
 import com.keylesspalace.tusky.db.AccountManager
 import com.keylesspalace.tusky.entity.Status
 import com.keylesspalace.tusky.service.SendStatusService
 import com.keylesspalace.tusky.service.StatusToSend
+import com.keylesspalace.tusky.util.getSerializableExtraCompat
 import com.keylesspalace.tusky.util.randomAlphanumericString
-import dagger.android.AndroidInjection
+import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
-private const val TAG = "SendStatusBR"
-
+@AndroidEntryPoint
 class SendStatusBroadcastReceiver : BroadcastReceiver() {
 
     @Inject
     lateinit var accountManager: AccountManager
 
+    @SuppressLint("MissingPermission")
     override fun onReceive(context: Context, intent: Intent) {
-        AndroidInjection.inject(this, context)
-
-        if (intent.action == NotificationHelper.REPLY_ACTION) {
-            val notificationId = intent.getIntExtra(NotificationHelper.KEY_NOTIFICATION_ID, -1)
-            val senderId = intent.getLongExtra(NotificationHelper.KEY_SENDER_ACCOUNT_ID, -1)
-            val senderIdentifier = intent.getStringExtra(NotificationHelper.KEY_SENDER_ACCOUNT_IDENTIFIER)
-            val senderFullName = intent.getStringExtra(NotificationHelper.KEY_SENDER_ACCOUNT_FULL_NAME)
-            val citedStatusId = intent.getStringExtra(NotificationHelper.KEY_CITED_STATUS_ID)
-            val visibility = intent.getSerializableExtra(NotificationHelper.KEY_VISIBILITY) as Status.Visibility
-            val spoiler = intent.getStringExtra(NotificationHelper.KEY_SPOILER).orEmpty()
-            val mentions = intent.getStringArrayExtra(NotificationHelper.KEY_MENTIONS).orEmpty()
+        if (intent.action == NotificationService.REPLY_ACTION) {
+            val serverNotificationId = intent.getStringExtra(NotificationService.KEY_SERVER_NOTIFICATION_ID)
+            val senderId = intent.getLongExtra(NotificationService.KEY_SENDER_ACCOUNT_ID, -1)
+            val senderIdentifier = intent.getStringExtra(
+                NotificationService.KEY_SENDER_ACCOUNT_IDENTIFIER
+            )
+            val senderFullName = intent.getStringExtra(
+                NotificationService.KEY_SENDER_ACCOUNT_FULL_NAME
+            )
+            val citedStatusId = intent.getStringExtra(NotificationService.KEY_CITED_STATUS_ID)
+            val visibility =
+                intent.getSerializableExtraCompat<Status.Visibility>(NotificationService.KEY_VISIBILITY)!!
+            val spoiler = intent.getStringExtra(NotificationService.KEY_SPOILER).orEmpty()
+            val mentions = intent.getStringArrayExtra(NotificationService.KEY_MENTIONS).orEmpty()
 
             val account = accountManager.getAccountById(senderId)
 
@@ -61,21 +66,23 @@ class SendStatusBroadcastReceiver : BroadcastReceiver() {
             if (account == null) {
                 Log.w(TAG, "Account \"$senderId\" not found in database. Aborting quick reply!")
 
-                val builder = NotificationCompat.Builder(context, NotificationHelper.CHANNEL_MENTION + senderIdentifier)
+                val notification = NotificationCompat.Builder(
+                    context,
+                    NotificationService.CHANNEL_MENTION + senderIdentifier
+                )
                     .setSmallIcon(R.drawable.ic_notify)
                     .setColor(context.getColor(R.color.tusky_blue))
                     .setGroup(senderFullName)
-                    .setDefaults(0) // So it doesn't ring twice, notify only in Target callback
+                    .setDefaults(0) // We don't want this to make any sound or vibration
+                    .setOnlyAlertOnce(true)
+                    .setContentTitle(context.getString(R.string.error_generic))
+                    .setContentText(context.getString(R.string.error_sender_account_gone))
+                    .setSubText(senderFullName)
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                    .setCategory(NotificationCompat.CATEGORY_SOCIAL)
+                    .build()
 
-                builder.setContentTitle(context.getString(R.string.error_generic))
-                builder.setContentText(context.getString(R.string.error_sender_account_gone))
-
-                builder.setSubText(senderFullName)
-                builder.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                builder.setCategory(NotificationCompat.CATEGORY_SOCIAL)
-                builder.setOnlyAlertOnce(true)
-
-                notificationManager.notify(notificationId, builder.build())
+                notificationManager.notify(serverNotificationId, senderId.toInt(), notification)
             } else {
                 val text = mentions.joinToString(" ", postfix = " ") { "@$it" } + message.toString()
 
@@ -84,7 +91,7 @@ class SendStatusBroadcastReceiver : BroadcastReceiver() {
                     StatusToSend(
                         text = text,
                         warningText = spoiler,
-                        visibility = visibility.serverString(),
+                        visibility = visibility.stringValue,
                         sensitive = false,
                         media = emptyList(),
                         scheduledAt = null,
@@ -103,22 +110,25 @@ class SendStatusBroadcastReceiver : BroadcastReceiver() {
 
                 context.startService(sendIntent)
 
-                val builder = NotificationCompat.Builder(context, NotificationHelper.CHANNEL_MENTION + senderIdentifier)
+                // Notifications with remote input active can't be cancelled, so let's replace it with another one that will dismiss automatically
+                val notification = NotificationCompat.Builder(
+                    context,
+                    NotificationService.CHANNEL_MENTION + senderIdentifier
+                )
                     .setSmallIcon(R.drawable.ic_notify)
                     .setColor(context.getColor(R.color.notification_color))
                     .setGroup(senderFullName)
-                    .setDefaults(0) // So it doesn't ring twice, notify only in Target callback
+                    .setDefaults(0) // We don't want this to make any sound or vibration
+                    .setOnlyAlertOnce(true)
+                    .setContentTitle(context.getString(R.string.reply_sending))
+                    .setContentText(context.getString(R.string.reply_sending_long))
+                    .setSubText(senderFullName)
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                    .setCategory(NotificationCompat.CATEGORY_SOCIAL)
+                    .setTimeoutAfter(5000)
+                    .build()
 
-                builder.setContentTitle(context.getString(R.string.post_sent))
-                builder.setContentText(context.getString(R.string.post_sent_long))
-
-                builder.setSubText(senderFullName)
-                builder.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                builder.setCategory(NotificationCompat.CATEGORY_SOCIAL)
-                builder.setOnlyAlertOnce(true)
-
-                // There is a separate "I am sending" notification, so simply remove the handled one.
-                notificationManager.cancel(notificationId)
+                notificationManager.notify(serverNotificationId, senderId.toInt(), notification)
             }
         }
     }
@@ -126,6 +136,10 @@ class SendStatusBroadcastReceiver : BroadcastReceiver() {
     private fun getReplyMessage(intent: Intent): CharSequence {
         val remoteInput = RemoteInput.getResultsFromIntent(intent)
 
-        return remoteInput?.getCharSequence(NotificationHelper.KEY_REPLY, "") ?: ""
+        return remoteInput?.getCharSequence(NotificationService.KEY_REPLY, "") ?: ""
+    }
+
+    companion object {
+        const val TAG = "SendStatusBroadcastReceiver"
     }
 }

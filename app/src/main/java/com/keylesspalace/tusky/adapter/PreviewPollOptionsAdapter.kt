@@ -19,7 +19,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.core.widget.TextViewCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.keylesspalace.tusky.R
 
@@ -40,7 +39,11 @@ class PreviewPollOptionsAdapter : RecyclerView.Adapter<PreviewViewHolder>() {
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PreviewViewHolder {
-        return PreviewViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_poll_preview_option, parent, false))
+        return PreviewViewHolder(
+            LayoutInflater.from(
+                parent.context
+            ).inflate(R.layout.item_poll_preview_option, parent, false)
+        )
     }
 
     override fun getItemCount() = options.size
@@ -54,7 +57,7 @@ class PreviewPollOptionsAdapter : RecyclerView.Adapter<PreviewViewHolder>() {
             R.drawable.ic_radio_button_unchecked_18dp
         }
 
-        TextViewCompat.setCompoundDrawablesRelativeWithIntrinsicBounds(textView, iconId, 0, 0, 0)
+        textView.setCompoundDrawablesRelativeWithIntrinsicBounds(iconId, 0, 0, 0)
 
         textView.text = options[position]
 

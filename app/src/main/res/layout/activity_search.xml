@@ -9,17 +9,18 @@
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:elevation="@dimen/actionbar_elevation"
-        app:layout_collapseMode="pin">
+        android:fitsSystemWindows="true"
+        app:layout_collapseMode="pin"
+        app:liftOnScroll="false"
+        app:statusBarForeground="?attr/colorSurface">
 
-        <androidx.appcompat.widget.Toolbar
+        <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:elevation="@dimen/actionbar_elevation"
+            android:layout_height="wrap_content"
+            android:minHeight="?attr/actionBarSize"
             app:contentInsetStartWithNavigation="0dp"
-            app:layout_scrollFlags="scroll|snap|enterAlways"
-            app:navigationIcon="?attr/homeAsUpIndicator" />
+            app:layout_scrollFlags="scroll|snap|enterAlways" />
 
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/tabs"
@@ -27,6 +28,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:tabGravity="fill"
+            app:tabIndicator="@drawable/tab_indicator_top"
+            app:tabIndicatorFullWidth="true"
             app:tabMaxWidth="0dp"
             app:tabMode="fixed" />
 
@@ -37,6 +40,12 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+    <View
+        android:id="@+id/overlayPagesClickView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/transparent" />
 
     <include layout="@layout/item_status_bottom_sheet" />
 

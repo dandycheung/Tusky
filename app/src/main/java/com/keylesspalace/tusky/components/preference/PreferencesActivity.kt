@@ -18,41 +18,40 @@ package com.keylesspalace.tusky.components.preference
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.OnBackPressedCallback
+import androidx.core.view.WindowCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
-import androidx.preference.PreferenceManager
 import com.keylesspalace.tusky.BaseActivity
 import com.keylesspalace.tusky.MainActivity
 import com.keylesspalace.tusky.R
 import com.keylesspalace.tusky.appstore.EventHub
 import com.keylesspalace.tusky.appstore.PreferenceChangedEvent
 import com.keylesspalace.tusky.databinding.ActivityPreferencesBinding
+import com.keylesspalace.tusky.settings.AppTheme
 import com.keylesspalace.tusky.settings.PrefKeys
-import com.keylesspalace.tusky.util.APP_THEME_DEFAULT
+import com.keylesspalace.tusky.settings.PrefKeys.APP_THEME
 import com.keylesspalace.tusky.util.getNonNullString
 import com.keylesspalace.tusky.util.setAppNightMode
-import dagger.android.DispatchingAndroidInjector
-import dagger.android.HasAndroidInjector
-import kotlinx.coroutines.launch
+import com.keylesspalace.tusky.util.startActivityWithSlideInAnimation
+import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class PreferencesActivity :
     BaseActivity(),
     SharedPreferences.OnSharedPreferenceChangeListener,
-    PreferenceFragmentCompat.OnPreferenceStartFragmentCallback,
-    HasAndroidInjector {
+    PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
 
     @Inject
     lateinit var eventHub: EventHub
-
-    @Inject
-    lateinit var androidInjector: DispatchingAndroidInjector<Any>
 
     private val restartActivitiesOnBackPressedCallback = object : OnBackPressedCallback(false) {
         override fun handleOnBackPressed() {
@@ -68,6 +67,12 @@ class PreferencesActivity :
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Workaround for edge-to-edge mode not working when an activity is recreated
+        // https://stackoverflow.com/questions/79319740/edge-to-edge-doesnt-work-when-activity-recreated-or-appcompatdelegate-setdefaul
+        if (savedInstanceState != null && Build.VERSION.SDK_INT >= 35) {
+            WindowCompat.setDecorFitsSystemWindows(window, false)
+        }
 
         val binding = ActivityPreferencesBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -95,9 +100,7 @@ class PreferencesActivity :
         }
 
         onBackPressedDispatcher.addCallback(this, restartActivitiesOnBackPressedCallback)
-        restartActivitiesOnBackPressedCallback.isEnabled = intent.extras?.getBoolean(
-            EXTRA_RESTART_ON_BACK
-        ) ?: savedInstanceState?.getBoolean(EXTRA_RESTART_ON_BACK, false) ?: false
+        restartActivitiesOnBackPressedCallback.isEnabled = savedInstanceState?.getBoolean(EXTRA_RESTART_ON_BACK, false) == true
     }
 
     override fun onPreferenceStartFragment(
@@ -110,13 +113,12 @@ class PreferencesActivity :
             pref.fragment!!
         )
         fragment.arguments = args
-        fragment.setTargetFragment(caller, 0)
         supportFragmentManager.commit {
             setCustomAnimations(
-                R.anim.slide_from_right,
-                R.anim.slide_to_left,
-                R.anim.slide_from_left,
-                R.anim.slide_to_right
+                R.anim.activity_open_enter,
+                R.anim.activity_open_exit,
+                R.anim.activity_close_enter,
+                R.anim.activity_close_exit
             )
             replace(R.id.fragment_container, fragment)
             addToBackStack(null)
@@ -126,16 +128,12 @@ class PreferencesActivity :
 
     override fun onResume() {
         super.onResume()
-        PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this)
+        preferences.registerOnSharedPreferenceChangeListener(this)
     }
 
     override fun onPause() {
         super.onPause()
-        PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(this)
-    }
-
-    private fun saveInstanceState(outState: Bundle) {
-        outState.putBoolean(EXTRA_RESTART_ON_BACK, restartActivitiesOnBackPressedCallback.isEnabled)
+        preferences.unregisterOnSharedPreferenceChangeListener(this)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -143,23 +141,25 @@ class PreferencesActivity :
         super.onSaveInstanceState(outState)
     }
 
-    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
+        sharedPreferences ?: return
+        key ?: return
         when (key) {
-            "appTheme" -> {
-                val theme = sharedPreferences.getNonNullString("appTheme", APP_THEME_DEFAULT)
+            APP_THEME -> {
+                val theme = sharedPreferences.getNonNullString(APP_THEME, AppTheme.DEFAULT.value)
                 Log.d("activeTheme", theme)
                 setAppNightMode(theme)
 
                 restartActivitiesOnBackPressedCallback.isEnabled = true
-                this.restartCurrentActivity()
+                this.recreate()
             }
             PrefKeys.UI_TEXT_SCALE_RATIO -> {
                 restartActivitiesOnBackPressedCallback.isEnabled = true
-                this.restartCurrentActivity()
+                this.recreate()
             }
-            "statusTextSize", "absoluteTimeView", "showBotOverlay", "animateGifAvatars", "useBlurhash",
-            "showSelfUsername", "showCardsInTimelines", "confirmReblogs", "confirmFavourites",
-            "enableSwipeForTabs", "mainNavPosition", PrefKeys.HIDE_TOP_TOOLBAR, PrefKeys.SHOW_STATS_INLINE -> {
+            PrefKeys.STATUS_TEXT_SIZE, PrefKeys.ABSOLUTE_TIME_VIEW, PrefKeys.SHOW_BOT_OVERLAY, PrefKeys.ANIMATE_GIF_AVATARS, PrefKeys.USE_BLURHASH,
+            PrefKeys.SHOW_SELF_USERNAME, PrefKeys.SHOW_CARDS_IN_TIMELINES, PrefKeys.CONFIRM_REBLOGS, PrefKeys.CONFIRM_FAVOURITES,
+            PrefKeys.ENABLE_SWIPE_FOR_TABS, PrefKeys.MAIN_NAV_POSITION, PrefKeys.HIDE_TOP_TOOLBAR, PrefKeys.SHOW_STATS_INLINE -> {
                 restartActivitiesOnBackPressedCallback.isEnabled = true
             }
         }
@@ -167,18 +167,6 @@ class PreferencesActivity :
             eventHub.dispatch(PreferenceChangedEvent(key))
         }
     }
-
-    private fun restartCurrentActivity() {
-        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
-        val savedInstanceState = Bundle()
-        saveInstanceState(savedInstanceState)
-        intent.putExtras(savedInstanceState)
-        startActivityWithSlideInAnimation(intent)
-        finish()
-        overridePendingTransition(R.anim.fade_in, R.anim.fade_out)
-    }
-
-    override fun androidInjector() = androidInjector
 
     companion object {
         @Suppress("unused")

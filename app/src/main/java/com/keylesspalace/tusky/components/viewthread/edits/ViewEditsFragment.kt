@@ -15,6 +15,7 @@
 
 package com.keylesspalace.tusky.components.viewthread.edits
 
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
@@ -27,7 +28,6 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.SimpleItemAnimator
@@ -38,34 +38,34 @@ import com.keylesspalace.tusky.R
 import com.keylesspalace.tusky.StatusListActivity
 import com.keylesspalace.tusky.components.account.AccountActivity
 import com.keylesspalace.tusky.databinding.FragmentViewEditsBinding
-import com.keylesspalace.tusky.di.Injectable
-import com.keylesspalace.tusky.di.ViewModelFactory
 import com.keylesspalace.tusky.interfaces.LinkListener
 import com.keylesspalace.tusky.settings.PrefKeys
 import com.keylesspalace.tusky.util.emojify
 import com.keylesspalace.tusky.util.hide
 import com.keylesspalace.tusky.util.loadAvatar
 import com.keylesspalace.tusky.util.show
+import com.keylesspalace.tusky.util.startActivityWithSlideInAnimation
 import com.keylesspalace.tusky.util.unicodeWrap
 import com.keylesspalace.tusky.util.viewBinding
 import com.mikepenz.iconics.IconicsDrawable
 import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
 import com.mikepenz.iconics.utils.colorInt
 import com.mikepenz.iconics.utils.sizeDp
-import kotlinx.coroutines.launch
+import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class ViewEditsFragment :
     Fragment(R.layout.fragment_view_edits),
     LinkListener,
     OnRefreshListener,
-    MenuProvider,
-    Injectable {
+    MenuProvider {
 
     @Inject
-    lateinit var viewModelFactory: ViewModelFactory
+    lateinit var preferences: SharedPreferences
 
-    private val viewModel: ViewEditsViewModel by viewModels { viewModelFactory }
+    private val viewModel: ViewEditsViewModel by viewModels()
 
     private val binding by viewBinding(FragmentViewEditsBinding::bind)
 
@@ -75,7 +75,6 @@ class ViewEditsFragment :
         requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
 
         binding.swipeRefreshLayout.setOnRefreshListener(this)
-        binding.swipeRefreshLayout.setColorSchemeResources(R.color.tusky_blue)
 
         binding.recyclerView.setHasFixedSize(true)
         binding.recyclerView.layoutManager = LinearLayoutManager(context)
@@ -85,12 +84,13 @@ class ViewEditsFragment :
         (binding.recyclerView.itemAnimator as SimpleItemAnimator).supportsChangeAnimations = false
 
         statusId = requireArguments().getString(STATUS_ID_EXTRA)!!
-        val preferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
 
         val animateAvatars = preferences.getBoolean(PrefKeys.ANIMATE_GIF_AVATARS, false)
         val animateEmojis = preferences.getBoolean(PrefKeys.ANIMATE_CUSTOM_EMOJIS, false)
         val useBlurhash = preferences.getBoolean(PrefKeys.USE_BLURHASH, true)
-        val avatarRadius: Int = requireContext().resources.getDimensionPixelSize(R.dimen.avatar_radius_48dp)
+        val avatarRadius: Int = requireContext().resources.getDimensionPixelSize(
+            R.dimen.avatar_radius_48dp
+        )
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.uiState.collect { uiState ->
@@ -132,17 +132,23 @@ class ViewEditsFragment :
 
                         binding.recyclerView.adapter = ViewEditsAdapter(
                             edits = uiState.edits,
-                            animateAvatars = animateAvatars,
                             animateEmojis = animateEmojis,
                             useBlurhash = useBlurhash,
                             listener = this@ViewEditsFragment
                         )
 
                         // Focus on the most recent version
-                        (binding.recyclerView.layoutManager as LinearLayoutManager).scrollToPosition(0)
+                        (binding.recyclerView.layoutManager as LinearLayoutManager).scrollToPosition(
+                            0
+                        )
 
                         val account = uiState.edits.first().account
-                        loadAvatar(account.avatar, binding.statusAvatar, avatarRadius, animateAvatars)
+                        loadAvatar(
+                            account.avatar,
+                            binding.statusAvatar,
+                            avatarRadius,
+                            animateAvatars
+                        )
 
                         binding.statusDisplayName.text = account.name.unicodeWrap().emojify(account.emojis, binding.statusDisplayName, animateEmojis)
                         binding.statusUsername.text = account.username
@@ -185,11 +191,15 @@ class ViewEditsFragment :
     }
 
     override fun onViewAccount(id: String) {
-        bottomSheetActivity?.startActivityWithSlideInAnimation(AccountActivity.getIntent(requireContext(), id))
+        bottomSheetActivity?.startActivityWithSlideInAnimation(
+            AccountActivity.getIntent(requireContext(), id)
+        )
     }
 
     override fun onViewTag(tag: String) {
-        bottomSheetActivity?.startActivityWithSlideInAnimation(StatusListActivity.newHashtagIntent(requireContext(), tag))
+        bottomSheetActivity?.startActivityWithSlideInAnimation(
+            StatusListActivity.newHashtagIntent(requireContext(), tag)
+        )
     }
 
     override fun onViewUrl(url: String) {

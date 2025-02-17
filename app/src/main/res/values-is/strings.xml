@@ -13,7 +13,7 @@
     <string name="action_lists">Listar</string>
     <string name="title_lists">Listar</string>
     <string name="error_generic">Villa kom upp.</string>
-    <string name="error_network">Villa í netkerfi: Athugaðu nettenginguna þína og prófaðu svo aftur!</string>
+    <string name="error_network">Villa kom upp í netkerfi. Athugaðu nettenginguna þína og prófaðu svo aftur.</string>
     <string name="error_empty">Þetta má ekki vera tómt.</string>
     <string name="error_invalid_domain">Ógilt lén sett inn</string>
     <string name="error_failed_app_registration">Mistókst að auðkenna gagnvart þessu tilviki. Ef þetta er viðvarandi skaltu prófa \'Skrá inn í vafra\' úr valmyndinni.</string>
@@ -49,8 +49,8 @@
     <string name="title_edit_profile">Breyta notandasniðinu þínu</string>
     <string name="title_scheduled_posts">Áætlaðar færslur</string>
     <string name="title_licenses">Notkunarleyfi</string>
-    <string name="post_username_format">\@%s</string>
-    <string name="post_boosted_format">%s endurbirti</string>
+    <string name="post_username_format">\@%1$s</string>
+    <string name="post_boosted_format">%1$s endurbirti</string>
     <string name="post_sensitive_media_title">Viðkvæmt efni</string>
     <string name="post_media_hidden_title">Myndefni er falið</string>
     <string name="post_sensitive_media_directions">Ýttu til að skoða</string>
@@ -60,10 +60,10 @@
     <string name="post_content_show_less">Fella saman</string>
     <string name="message_empty">Ekkert hér.</string>
     <string name="footer_empty">Ekkert hér. Togaðu niður til að endurhlaða!</string>
-    <string name="notification_reblog_format">%s endurbirti færsluna þína</string>
-    <string name="notification_favourite_format">%s setti færslu frá þér í eftirlæti</string>
-    <string name="notification_follow_format">%s fylgist núna með þér</string>
-    <string name="report_username_format">Kæra @%s</string>
+    <string name="notification_reblog_format">%1$s endurbirti færsluna þína</string>
+    <string name="notification_favourite_format">%1$s setti færslu frá þér í eftirlæti</string>
+    <string name="notification_follow_format">%1$s fylgist núna með þér</string>
+    <string name="report_username_format">Kæra @%1$s</string>
     <string name="report_comment_hint">Aðrar athugasemdir\?</string>
     <string name="action_quick_reply">Snöggt svar</string>
     <string name="action_reply">Svara</string>
@@ -74,7 +74,7 @@
     <string name="action_unfavourite">Fjarlægja eftirlæti</string>
     <string name="action_more">Meira</string>
     <string name="action_compose">Semja skilaboð</string>
-    <string name="action_logout_confirm">Ertu viss um að þú viljir skrá þig út af notandaaðgangnum %1$s\?</string>
+    <string name="action_logout_confirm">Ertu viss um að þú viljir skrá þig út af notandaaðgangnum %1$s\? Þetta mun eyða öllum staðværum gögnum af aðgangnum, þar með talið drögum og kjörstillingum.</string>
     <string name="action_follow">Fylgja</string>
     <string name="action_unfollow">Hætta að fylgjast með</string>
     <string name="action_block">Útiloka</string>
@@ -104,7 +104,7 @@
     <string name="action_share">Deila</string>
     <string name="action_mute">Þagga niður</string>
     <string name="action_unmute">Ekki þagga</string>
-    <string name="action_mute_domain">Þagga niður í %s</string>
+    <string name="action_mute_domain">Þagga niður í %1$s</string>
     <string name="action_mention">Tilvísun</string>
     <string name="action_hide_media">Fela myndefni</string>
     <string name="action_open_drawer">Opna sleða</string>
@@ -130,10 +130,10 @@
     <string name="title_hashtags_dialog">Myllumerki</string>
     <string name="title_mentions_dialog">Tilvísanir</string>
     <string name="title_links_dialog">Tenglar</string>
-    <string name="action_open_media_n">Opna myndefni #%d</string>
+    <string name="action_open_media_n">Opna myndefni #%1$d</string>
     <string name="download_image">Sæki %1$s</string>
     <string name="action_copy_link">Afrita tengilinn</string>
-    <string name="action_open_as">Opna sem %s</string>
+    <string name="action_open_as">Opna sem %1$s</string>
     <string name="action_share_as">Deila sem …</string>
     <string name="download_media">Sækja myndefni</string>
     <string name="downloading_media">Næ í myndefni</string>
@@ -143,9 +143,7 @@
     <string name="confirmation_reported">Sent!</string>
     <string name="confirmation_unblocked">Hætt að útiloka notanda</string>
     <string name="confirmation_unmuted">Hætt að þagga niður í notanda</string>
-    <string name="confirmation_domain_unmuted">Hætt að fela %s</string>
-    <string name="post_sent">Sent!</string>
-    <string name="post_sent_long">Það tókst að senda svarið.</string>
+    <string name="confirmation_domain_unmuted">Hætt að fela %1$s</string>
     <string name="hint_domain">Hvaða tilvik\?</string>
     <string name="hint_compose">Hvað er í gangi hérna\?</string>
     <string name="hint_content_warning">Aðvörun vegna efnis</string>
@@ -163,7 +161,7 @@
 \n
 \nTilvik er ákveðinn einn vefþjónn þar sem notandaaðgangurinn þinn er hýstur, en eftir sem áður er auðvelt fyrir þig að eiga í samskiptum við fólk og fylgjast með einstaklingum á öðrum tilvikum, rétt eins og þið væruð á sama vefsvæðinu.
 \n
-\nNánari upplýsingar má finna á <a href="https://joinmastodon.org">joinmastodon.org</a>. </string>
+\nNánari upplýsingar má finna á <a href="https://joinmastodon.org">joinmastodon.org</a>.</string>
     <string name="dialog_title_finishing_media_upload">Klára innsendingu myndefnis</string>
     <string name="dialog_message_uploading_media">Sendi inn…</string>
     <string name="dialog_download_image">Sækja</string>
@@ -171,7 +169,7 @@
     <string name="dialog_unfollow_warning">Hætta að fylgjast með þessum aðgangi\?</string>
     <string name="dialog_delete_post_warning">Eyða þessari færslu\?</string>
     <string name="dialog_redraft_post_warning">Eyða og endurvinna þessa færslu\?</string>
-    <string name="mute_domain_warning">Ertu alveg algjörlega viss um að þú viljir loka á allt %s\? Þú munt ekki sjá efni frá þessu léni í neinum opinberum tímalínum eða í tilkynningunum þínum. Fylgjendur þínir frá þessu léni verða fjarlægðir.</string>
+    <string name="mute_domain_warning">Ertu alveg algjörlega viss um að þú viljir loka á allt %1$s\? Þú munt ekki sjá efni frá þessu léni í neinum opinberum tímalínum eða í tilkynningunum þínum. Fylgjendur þínir frá þessu léni verða fjarlægðir.</string>
     <string name="mute_domain_warning_dialog_ok">Fela allt lénið</string>
     <string name="visibility_public">Opinbert: Senda á opinberar tímalínur</string>
     <string name="visibility_unlisted">Óskráð: Ekki birt á opinberum tímalínum</string>
@@ -200,12 +198,11 @@
     <string name="app_theme_system">Nota kerfishönnun</string>
     <string name="pref_title_browser_settings">Vafri</string>
     <string name="pref_title_custom_tabs">Nota sérsniðna flipa Chrome</string>
-    <string name="pref_title_hide_follow_button">Fela \'Semja skilaboð\" hnapp sjálfvirkt við skrun</string>
     <string name="pref_title_language">Tungumál</string>
     <string name="pref_title_bot_overlay">Birta merki á róbótum</string>
     <string name="pref_title_animate_gif_avatars">Sýna hreyfingar GIF-auðkennismynda</string>
     <string name="pref_title_post_filter">Síun tímalínu</string>
-    <string name="pref_title_post_tabs">Flipar</string>
+    <string name="pref_title_post_tabs">Heimatímalína</string>
     <string name="pref_title_show_boosts">Sýna endurbirtingar</string>
     <string name="pref_title_show_replies">Sýna svör</string>
     <string name="pref_title_show_media_preview">Sækja forskoðanir á myndefni</string>
@@ -214,10 +211,10 @@
     <string name="pref_title_http_proxy_enable">Virkja HTTP-milliþjón</string>
     <string name="pref_title_http_proxy_server">HTTP-milliþjónn (proxy)</string>
     <string name="pref_title_http_proxy_port">Gátt HTTP milliþjóns (vefsels)</string>
-    <string name="pref_default_post_privacy">Sjálfgefin gagnaleynd færslna</string>
-    <string name="pref_default_media_sensitivity">Alltaf merkja myndefni sem viðkvæmt</string>
-    <string name="pref_publishing">Gefið út (samstillt við vefþjón)</string>
-    <string name="pref_failed_to_sync">Mistókst að samstilla stillingar</string>
+    <string name="pref_default_post_privacy">Gagnaleynd færslna (samstillt við netþjón)</string>
+    <string name="pref_default_media_sensitivity">Alltaf merkja myndefni sem viðkvæmt (samstillt við netþjón)</string>
+    <string name="pref_publishing">Sjálfgefnar stillingar færslna</string>
+    <string name="pref_failed_to_sync">Mistókst að samstilla kjörstillingar</string>
     <string name="post_privacy_public">Opinbert</string>
     <string name="post_privacy_unlisted">Óskráð</string>
     <string name="post_privacy_followers_only">Einungis fylgjendur</string>
@@ -237,44 +234,43 @@
     <string name="notification_favourite_description">Tilkynningar þegar færslurnar þínar eru settar í eftirlæti</string>
     <string name="notification_poll_name">Kannanir</string>
     <string name="notification_poll_description">Tilkynningar um kannanir sem er lokið</string>
-    <string name="notification_mention_format">%s minntist á þig</string>
+    <string name="notification_mention_format">%1$s minntist á þig</string>
     <string name="notification_summary_large">%1$s, %2$s, %3$s og %4$d til viðbótar</string>
     <string name="notification_summary_medium">%1$s, %2$s og %3$s</string>
     <string name="notification_summary_small">%1$s og %2$s</string>
     <plurals name="notification_title_summary">
-        <item quantity="one">%d ný aðgerð</item>
-        <item quantity="other">%d nýjar aðgerðir</item>
+        <item quantity="one">%1$d ný aðgerð</item>
+        <item quantity="other">%1$d nýjar aðgerðir</item>
     </plurals>
     <string name="description_account_locked">Læstur notandaaðgangur</string>
-    <string name="about_tusky_version">Tusky %s</string>
+    <string name="about_tusky_version">Tusky %1$s</string>
     <string name="about_powered_by_tusky">Keyrir á Tusky</string>
     <string name="about_tusky_license">Tusky er frjáls hugbúnaður með opinn grunnkóða. Hann er gefinn út með GNU General Public notkunarleyfi, útgáfu 3. Þú getur skoðað notkunarleyfið hér: https://www.gnu.org/licenses/gpl-3.0.en.html</string>
-    <string name="about_project_site">Vefsvæði verkefnisins:
-\n https://tusky.app</string>
+    <string name="about_project_site">Vefsvæði verkefnisins: https://tusky.app</string>
     <string name="about_bug_feature_request_site">Villutilkynningar og beiðnir um nýja eiginleika:
-\n https://github.com/tuskyapp/Tusky/issues</string>
+\nhttps://github.com/tuskyapp/Tusky/issues</string>
     <string name="about_tusky_account">Notandasnið Tusky</string>
     <string name="post_share_content">Deila efni úr færslu</string>
     <string name="post_share_link">Deila tengli á færslu</string>
     <string name="post_media_images">Myndir</string>
     <string name="post_media_video">Myndskeið</string>
     <string name="state_follow_requested">Beðið um að fylgja</string>
-    <string name="abbreviated_in_years">eftir %dár</string>
-    <string name="abbreviated_in_days">eftir %dd</string>
-    <string name="abbreviated_in_hours">eftir %dklst</string>
-    <string name="abbreviated_in_minutes">eftir %dm</string>
-    <string name="abbreviated_in_seconds">eftir %ds</string>
-    <string name="abbreviated_years_ago">%dár</string>
-    <string name="abbreviated_days_ago">%dd</string>
-    <string name="abbreviated_hours_ago">%dklst</string>
-    <string name="abbreviated_minutes_ago">%dm</string>
-    <string name="abbreviated_seconds_ago">%ds</string>
+    <string name="abbreviated_in_years">eftir %1$dár</string>
+    <string name="abbreviated_in_days">eftir %1$dd</string>
+    <string name="abbreviated_in_hours">eftir %1$dklst</string>
+    <string name="abbreviated_in_minutes">eftir %1$dm</string>
+    <string name="abbreviated_in_seconds">eftir %1$ds</string>
+    <string name="abbreviated_years_ago">%1$dár</string>
+    <string name="abbreviated_days_ago">%1$dd</string>
+    <string name="abbreviated_hours_ago">%1$dklst</string>
+    <string name="abbreviated_minutes_ago">%1$dm</string>
+    <string name="abbreviated_seconds_ago">%1$ds</string>
     <string name="follows_you">Fylgir þér</string>
     <string name="pref_title_alway_show_sensitive_media">Alltaf birta myndefni sem merkt er viðkvæmt</string>
     <string name="pref_title_alway_open_spoiler">Alltaf fletta út færslum sem eru með aðvörun vegna efnis</string>
     <string name="title_media">Gagnaskrár</string>
-    <string name="replying_to">Svar til @%s</string>
-    <string name="load_more_placeholder_text">hlaða inn fleiru</string>
+    <string name="replying_to">Svar til @%1$s</string>
+    <string name="load_more_placeholder_text">Hlaða inn fleiru</string>
     <string name="pref_title_public_filter_keywords">Opinberar tímalínur</string>
     <string name="pref_title_thread_filter_keywords">Samtöl</string>
     <string name="filter_addition_title">Bæta við síu</string>
@@ -287,19 +283,18 @@
     <string name="add_account_name">Bæta við aðgang</string>
     <string name="add_account_description">Bæta við nýjum Mastodon-aðgangi</string>
     <string name="error_create_list">Ekki tókst að búa til lista</string>
-    <string name="error_rename_list">Ekki tókst að endurnefna lista</string>
+    <string name="error_rename_list">Ekki tókst að uppfæra lista</string>
     <string name="error_delete_list">Ekki tókst að eyða lista</string>
     <string name="action_create_list">Búa til lista</string>
-    <string name="action_rename_list">Endurnefna listann</string>
-    <string name="action_delete_list">Eyða listanum</string>
-    <string name="action_edit_list">Sýsla með listann</string>
+    <string name="action_rename_list">Uppfæra lista</string>
+    <string name="action_delete_list">Eyða lista</string>
     <string name="hint_search_people_list">Leita að fólki sem þú fylgist með</string>
     <string name="action_add_to_list">Bæta notandaaðgangi á listann</string>
     <string name="action_remove_from_list">Fjarlægja notandaaðganginn af listanum</string>
     <string name="compose_active_account_description">Sendi sem %1$s</string>
     <plurals name="hint_describe_for_visually_impaired">
-        <item quantity="one">Lýstu þessu fyrir sjónskerta (hámark %d stafur)</item>
-        <item quantity="other">Lýstu þessu fyrir sjónskerta (hámark %d stafir)</item>
+        <item quantity="one">Lýstu þessu fyrir sjónskerta (hámark %1$d stafur)</item>
+        <item quantity="other">Lýstu þessu fyrir sjónskerta (hámark %1$d stafir)</item>
     </plurals>
     <string name="action_set_caption">Setja skýringatexta</string>
     <string name="action_remove">Fjarlægja</string>
@@ -312,7 +307,7 @@
     <string name="send_post_notification_cancel_title">Aflýsti sendingu</string>
     <string name="send_post_notification_saved_content">Afrit af færslunni hefur verið vistað í drögunum þínum</string>
     <string name="action_compose_shortcut">Semja skilaboð</string>
-    <string name="error_no_custom_emojis">Tilvikið þitt %s er ekki með nein sérsniðin tjáningartákn</string>
+    <string name="error_no_custom_emojis">Tilvikið þitt %1$s er ekki með nein sérsniðin tjáningartákn</string>
     <string name="emoji_style">Stíll tjáningartákna</string>
     <string name="system_default">Sjálfgefið í kerfinu</string>
     <string name="download_fonts">Þú þarft fyrst að ná í þessi táknmyndasett</string>
@@ -349,12 +344,8 @@
     <string name="conversation_1_recipients">%1$s</string>
     <string name="conversation_2_recipients">%1$s og %2$s</string>
     <string name="conversation_more_recipients">%1$s, %2$s og %3$d til viðbótar</string>
-    <plurals name="max_tab_number_reached">
-        <item quantity="one">hámarksfjölda %1$d flipa náð</item>
-        <item quantity="other">hámarksfjölda %1$d flipa náð</item>
-    </plurals>
-    <string name="description_post_media">Myndefni: %s</string>
-    <string name="description_post_cw">Aðvörun vegna efnis: %s</string>
+    <string name="description_post_media">Myndefni: %1$s</string>
+    <string name="description_post_cw">Aðvörun vegna efnis: %1$s</string>
     <string name="description_post_media_no_description_placeholder">Engin lýsing</string>
     <string name="description_post_reblogged">Endurbloggað</string>
     <string name="description_post_favourited">Í eftirlætum</string>
@@ -365,22 +356,22 @@
     <string name="description_visibility_direct">Beint</string>
     <string name="description_poll">Könnun með valkostunum: %1$s, %2$s, %3$s, %4$s; %5$s</string>
     <string name="hint_list_name">Heiti á lista</string>
-    <string name="edit_hashtag_hint">Myllumerki án #</string>
+    <string name="pick_hashtag_hint">Myllumerki án #</string>
     <string name="select_list_title">Veldu lista</string>
     <string name="list">Listi</string>
-    <string name="notifications_clear">Hreinsa</string>
+    <string name="notifications_clear">Eyða</string>
     <string name="notifications_apply_filter">Sía</string>
     <string name="filter_apply">Virkja</string>
     <string name="compose_shortcut_long_label">Semja færslu</string>
     <string name="compose_shortcut_short_label">Semja skilaboð</string>
     <string name="notification_clear_text">Ertu viss um að þú viljir endanlega eyða öllum tilkynningunum þínum\?</string>
-    <string name="compose_preview_image_description">Aðgerðir fyrir mynd %s</string>
-    <string name="poll_info_format"> <!-- 15 atkvæði • 1 klukkustund eftir --> %1$s • %2$s</string>
+    <string name="compose_preview_image_description">Aðgerðir fyrir mynd %1$s</string>
+    <string name="poll_info_format"> \u0020<!-- 15 atkvæði • 1 klukkustund eftir --> \u0020%1$s • %2$s</string>
     <plurals name="poll_info_votes">
-        <item quantity="one">%s atkvæði</item>
-        <item quantity="other">%s atkvæði</item>
+        <item quantity="one">%1$s atkvæði</item>
+        <item quantity="other">%1$s atkvæði</item>
     </plurals>
-    <string name="poll_info_time_absolute">lýkur %s</string>
+    <string name="poll_info_time_absolute">lýkur %1$s</string>
     <string name="poll_info_closed">lokað</string>
     <string name="poll_vote">Greiða atkvæði</string>
     <string name="poll_ended_voted">Könnun sem þú tókst þátt í er lokið</string>
@@ -388,16 +379,15 @@
     <string name="button_continue">Halda áfram</string>
     <string name="button_back">Til baka</string>
     <string name="button_done">Lokið</string>
-    <string name="report_sent_success">Tókst að kæra @%s</string>
+    <string name="report_sent_success">Tókst að kæra @%1$s</string>
     <string name="hint_additional_info">Aðrar athugasemdir</string>
-    <string name="report_remote_instance">Áframsenda til %s</string>
+    <string name="report_remote_instance">Áframsenda til %1$s</string>
     <string name="failed_report">Mistókst að kæra</string>
     <string name="failed_fetch_posts">Mistókst að sækja stöðufærslur</string>
     <string name="report_description_1">Kæran verður send á umsjónarmenn vefþjónsins þíns. Þú getur gefið skýringu hér fyrir neðan á því af hverju þú ert að kæra þennan notandaaðgang:</string>
     <string name="report_description_remote_instance">Notandaaðgangurinn er af öðrum vefþjóni. Á einnig að senda nafnlaust afrit af kærunni þangað\?</string>
     <string name="title_accounts">Notandaaðgangar</string>
     <string name="failed_search">Tókst ekki að leita</string>
-    <string name="pref_title_show_notifications_filter">Birta tilkynningasíu</string>
     <string name="create_poll_title">Athuga</string>
     <string name="duration_5_min">5 mínútur</string>
     <string name="duration_30_min">30 mínútur</string>
@@ -408,9 +398,9 @@
     <string name="duration_7_days">7 dagar</string>
     <string name="add_poll_choice">Bæta við valkosti</string>
     <string name="poll_allow_multiple_choices">Margir valkostir</string>
-    <string name="poll_new_choice_hint">Valkostur %d</string>
+    <string name="poll_new_choice_hint">Valkostur %1$d</string>
     <string name="edit_poll">Breyta</string>
-    <string name="post_lookup_error_format">Villa við að fletta upp færslunni %s</string>
+    <string name="post_lookup_error_format">Villa við að fletta upp færslunni %1$s</string>
     <string name="no_drafts">Þú ert ekki með nein drög.</string>
     <string name="no_scheduled_posts">Þú ert ekki með neinar áætlaðar stöðufærslur.</string>
     <string name="warning_scheduling_interval">Mastodon er með 5 mínútna lágmarksbil fyrir áætlaðar aðgerðir.</string>
@@ -421,24 +411,24 @@
         <item quantity="other"><b>%1$s</b> eftirlæti</item>
     </plurals>
     <plurals name="reblogs">
-        <item quantity="one"><b>%s</b> Endurbirting</item>
-        <item quantity="other"><b>%s</b> Endurbirtingar</item>
+        <item quantity="one"><b>%1$s</b> Endurbirting</item>
+        <item quantity="other"><b>%1$s</b> Endurbirtingar</item>
     </plurals>
     <plurals name="poll_timespan_seconds">
-        <item quantity="one">%d sekúnda eftir</item>
-        <item quantity="other">%d sekúndur eftir</item>
+        <item quantity="one">%1$d sekúnda eftir</item>
+        <item quantity="other">%1$d sekúndur eftir</item>
     </plurals>
     <plurals name="poll_timespan_minutes">
-        <item quantity="one">%d mínúta eftir</item>
-        <item quantity="other">%d mínútur eftir</item>
+        <item quantity="one">%1$d mínúta eftir</item>
+        <item quantity="other">%1$d mínútur eftir</item>
     </plurals>
     <plurals name="poll_timespan_hours">
-        <item quantity="one">%d klukkustund eftir</item>
-        <item quantity="other">%d klukkustundir eftir</item>
+        <item quantity="one">%1$d klukkustund eftir</item>
+        <item quantity="other">%1$d klukkustundir eftir</item>
     </plurals>
     <plurals name="poll_timespan_days">
-        <item quantity="one">%d dagur eftir</item>
-        <item quantity="other">%d dagar eftir</item>
+        <item quantity="one">%1$d dagur eftir</item>
+        <item quantity="other">%1$d dagar eftir</item>
     </plurals>
     <string name="account_note_saved">Vistað!</string>
     <string name="account_note_hint">Þín eigin einkaathugasemd um þennan aðgang</string>
@@ -448,8 +438,8 @@
     <string name="no_announcements">Það eru engar tilkynningar.</string>
     <string name="pref_title_enable_swipe_for_tabs">Virkja strokuhreyfingu til að skipta milli flipa</string>
     <plurals name="poll_info_people">
-        <item quantity="one">%s aðili</item>
-        <item quantity="other">%s aðilar</item>
+        <item quantity="one">%1$s aðili</item>
+        <item quantity="other">%1$s aðilar</item>
     </plurals>
     <string name="add_hashtag_title">Bæta við myllumerki</string>
     <string name="notification_follow_request_description">Tilkynningar um fylgjendabeiðnir</string>
@@ -459,13 +449,13 @@
     <string name="pref_title_gradient_for_media">Birta litstigla í stað falins myndefnis</string>
     <string name="pref_title_notification_filter_follow_requests">beiðni um að fylgja</string>
     <string name="dialog_mute_hide_notifications">Fela tilkynningar</string>
-    <string name="dialog_mute_warning">Þagga niður í @%s\?</string>
-    <string name="dialog_block_warning">Loka á @%s\?</string>
+    <string name="dialog_mute_warning">Þagga niður í @%1$s\?</string>
+    <string name="dialog_block_warning">Loka á @%1$s\?</string>
     <string name="action_unmute_conversation">Hætta að þagga niður í samtali</string>
     <string name="action_mute_conversation">Þagga niður í samtali</string>
-    <string name="action_unmute_domain">Afþagga %s</string>
-    <string name="action_unmute_desc">Afþagga %s</string>
-    <string name="notification_follow_request_format">%s bað um að fylgjast með þér</string>
+    <string name="action_unmute_domain">Afþagga %1$s</string>
+    <string name="action_unmute_desc">Afþagga %1$s</string>
+    <string name="notification_follow_request_format">%1$s bað um að fylgjast með þér</string>
     <string name="title_announcements">Tilkynningar</string>
     <string name="wellbeing_mode_notice">Sumar upplýsingar sem gætu haft áhrif á andlega vellíðan þína verða faldar. Þetta hefur áhrif á:
 \n
@@ -483,7 +473,7 @@
     <string name="drafts_post_failed_to_send">Mistókst að senda þessa færslu!</string>
     <string name="post_media_attachments">Viðhengi</string>
     <string name="post_media_audio">Hljóð</string>
-    <string name="dialog_delete_list_warning">Ertu viss um að þú viljir eyða %s listanum\?</string>
+    <string name="dialog_delete_list_warning">Ertu viss um að þú viljir eyða %1$s listanum\?</string>
     <string name="duration_indefinite">Ótiltekið</string>
     <string name="label_duration">Tímalengd</string>
     <plurals name="error_upload_max_media_reached">
@@ -498,7 +488,7 @@
     <string name="notification_subscription_description">Tilkynningar þegar einhver sem þú ert áskrifandi að hefur birt nýja færslu</string>
     <string name="notification_subscription_name">Nýjar færslur</string>
     <string name="pref_title_notification_filter_subscriptions">einhver sem ég er áskrifandi að birti nýja færslu</string>
-    <string name="notification_subscription_format">%s sendi inn rétt í þessu</string>
+    <string name="notification_subscription_format">%1$s sendi inn rétt í þessu</string>
     <string name="follow_requests_info">Jafnvel þótt aðgangurinn þinn sé ekki læstur, fannst starfsfólki %1$s að þú gætir viljað yfirfara handvirkt fylgjendabeiðnir frá þessum aðgöngum.</string>
     <string name="action_unbookmark">Fjarlægja bókamerki</string>
     <string name="pref_title_confirm_favourites">Birta staðfestingu áður en sett er í eftirlæti</string>
@@ -511,37 +501,33 @@
     <string name="duration_365_days">365 dagar</string>
     <string name="duration_14_days">14 dagar</string>
     <string name="tusky_compose_post_quicksetting_label">Semja færslu</string>
-    <string name="notification_sign_up_format">%s skráði sig</string>
+    <string name="notification_sign_up_format">%1$s skráði sig</string>
     <string name="pref_title_notification_filter_sign_ups">einhver skráði sig</string>
-    <string name="notification_update_format">%s breytti færslunni sinni</string>
+    <string name="notification_update_format">%1$s breytti færslunni sinni</string>
     <string name="pref_title_notification_filter_updates">færsla sem ég hef átt við er breytt</string>
     <string name="notification_sign_up_name">Nýskráningar</string>
     <string name="notification_sign_up_description">Tilkynningar um nýja notendur</string>
     <string name="notification_update_name">Breytingar á færslum</string>
     <string name="notification_update_description">Tilkynningar þegar færslum sem þú hefur átt við er breytt</string>
-    <string name="dialog_push_notification_migration_other_accounts">Þú hefur skráð þig aftur inn í fyrirliggjandi aðganginn þinn til þess að veita heimild fyrir áskrift að ýti-tilkynningum í Tusky. Aftur á móti ertu með aðra aðganga sem ekki hafa verið yfirfærðir á þennan hátt. Skiptu yfir í þá og skráðu þig þar inn aftur til að virkja stuðning við tilkynningar í gegnum UnifiedPush.</string>
     <string name="account_date_joined">Skráði sig %1$s</string>
-    <string name="tips_push_notification_migration">Skrá aftur inn alla aðganga til að virkja stuðning við ýti-tilkynningar.</string>
-    <string name="dialog_push_notification_migration">Til þess að geta sent ýti-tilkynningar í gegnum UnifiedPush, þarf Tusky heimild til að gerast áskrifandi að tilkynningum á Mastodon-netþjóninum þínum. Þetta krefst þess að skráð sé inn aftur til að breyta vægi OAuth-heimilda sem Tusky er úthlutað. Notaðu endurinnskráninguna hérna eða í kjörstillingum aðgangsins þíns til að varðveita öll drögin þín og skyndiminni á tækinu.</string>
     <string name="title_login">Skrá inn</string>
     <string name="status_count_one_plus">1+</string>
     <string name="error_could_not_load_login_page">Gat ekki lesið innskráningarsíðuna.</string>
     <string name="action_edit_image">Breyta mynd</string>
     <string name="saving_draft">Vista drög…</string>
-    <string name="title_migration_relogin">Skráðu aftur inn fyrir ýti-tilkynningar</string>
-    <string name="action_dismiss">Hunsa</string>
+    <string name="action_dismiss">Afgreiða</string>
     <string name="action_details">Nánar</string>
-    <string name="filter_expiration_format">%s (%s)</string>
-    <string name="error_multimedia_size_limit">Myndskeiða- og hljóðskrár geta ekki verið stærri en %s MB.</string>
+    <string name="filter_expiration_format">%1$s (%2$s)</string>
+    <string name="error_multimedia_size_limit">Myndskeiða- og hljóðskrár geta ekki verið stærri en %1$s MB.</string>
     <string name="description_post_language">Tungumál færslu</string>
     <string name="duration_no_change">(engin breyting)</string>
-    <string name="error_following_hashtag_format">Villa við að fylgjast með #%s</string>
-    <string name="error_unfollowing_hashtag_format">Villa við að hætta að fylgjast með #%s</string>
+    <string name="error_following_hashtag_format">Villa við að fylgjast með #%1$s</string>
+    <string name="error_unfollowing_hashtag_format">Villa við að hætta að fylgjast með #%1$s</string>
     <string name="error_loading_account_details">Mistókst að hlaða inn nánari upplýsingum notandaaðgangs</string>
     <string name="error_image_edit_failed">Ekki var hægt að breyta myndinni.</string>
     <string name="delete_scheduled_post_warning">Eyða þessari áætluðu færslu\?</string>
-    <string name="instance_rule_title">Reglur %s</string>
-    <string name="instance_rule_info">Með því að skrá þig inn samþykkir þú reglurnar á %s.</string>
+    <string name="instance_rule_title">Reglur %1$s</string>
+    <string name="instance_rule_info">Með því að skrá þig inn samþykkir þú reglurnar á %1$s.</string>
     <string name="action_add_reaction">bæta við viðbrögðum</string>
     <string name="set_focus_description">Ýttu eða dragðu hringinn til að setja virknistað sem verður ævinlega sýnilegur í smámyndum.</string>
     <string name="compose_save_draft_loses_media">Vista drög\? (Viðhengi verða send inn aftur þegar þú endurheimtir drögin.)</string>
@@ -549,7 +535,6 @@
     <string name="failed_to_unpin">Mistókst að losa</string>
     <string name="pref_show_self_username_always">Alltaf</string>
     <string name="pref_show_self_username_disambiguate">Þegar er skráð inn á mörgum aðgöngum</string>
-    <string name="url_domain_notifier">%s (🔗 %s)</string>
     <string name="action_set_focus">Setja virknistað</string>
     <string name="pref_show_self_username_never">Aldrei</string>
     <string name="pref_title_show_self_username">Birta notandanafn á verkfærastikum</string>
@@ -557,17 +542,17 @@
     <string name="failed_to_add_to_list">Mistókst að bæta notandaaðgangnum á listann</string>
     <string name="failed_to_remove_from_list">Mistókst að fjarlægja notandaaðganginn af listanum</string>
     <string name="no_lists">Þú ert ekki með neina lista.</string>
-    <string name="pref_default_post_language">Sjálfgefið tungumál færslna</string>
-    <string name="language_display_name_format">%s (%s)</string>
+    <string name="pref_default_post_language">Tungumál færslna (samstillt við netþjón)</string>
+    <string name="language_display_name_format">%1$s (%2$s)</string>
     <string name="error_following_hashtags_unsupported">Þessi netþjónn styður ekki að fylgst sé með myllumerkjum.</string>
     <string name="title_followed_hashtags">Myllumerki sem fylgst er með</string>
     <string name="status_created_at_now">núna</string>
-    <string name="action_unfollow_hashtag_format">Hætta að fylgjast með #%s\?</string>
-    <string name="notification_report_format">Ný kæra vegna %s</string>
-    <string name="notification_header_report_format">%s kærði %s</string>
-    <string name="notification_summary_report_format">%s · %d færslur viðhengdar</string>
-    <string name="post_edited">Breytti %s</string>
-    <string name="confirmation_hashtag_unfollowed">Hætt að fylgjast með #%s</string>
+    <string name="action_unfollow_hashtag_format">Hætta að fylgjast með #%1$s\?</string>
+    <string name="notification_report_format">Ný kæra vegna %1$s</string>
+    <string name="notification_header_report_format">%1$s kærði %2$s</string>
+    <string name="notification_summary_report_format">%1$s · %2$d færslur viðhengdar</string>
+    <string name="post_edited">Breytti %1$s</string>
+    <string name="confirmation_hashtag_unfollowed">Hætt að fylgjast með #%1$s</string>
     <string name="notification_report_name">Kærur</string>
     <string name="notification_report_description">Tilkynningar um kærur umsjónarmanna</string>
     <string name="pref_title_notification_filter_reports">það er ný kæra</string>
@@ -575,10 +560,10 @@
     <string name="report_category_violation">Brot á reglu</string>
     <string name="report_category_spam">Ruslpóstur</string>
     <string name="report_category_other">Annað</string>
-    <string name="error_muting_hashtag_format">Villa við að þagga niður í #%s</string>
-    <string name="error_unmuting_hashtag_format">Villa við að hætta að þagga niður í #%s</string>
+    <string name="error_muting_hashtag_format">Villa við að þagga niður í #%1$s</string>
+    <string name="error_unmuting_hashtag_format">Villa við að hætta að þagga niður í #%1$s</string>
     <string name="hint_media_description_missing">Myndefni ætti að vera með lýsingu.</string>
-    <string name="pref_title_http_proxy_port_message">Gáttin ætti að vera á milli %d og %d</string>
+    <string name="pref_title_http_proxy_port_message">Gáttin ætti að vera á milli %1$d og %2$d</string>
     <string name="error_status_source_load">Mistókst að hlaða inn uppruna stöðufærslu af netþjóninum.</string>
     <string name="a11y_label_loading_thread">Hleð inn þræði</string>
     <string name="pref_title_reading_order">Lestrarröð</string>
@@ -591,7 +576,7 @@
     <string name="title_edits">Breytingar</string>
     <string name="status_created_info">%1$s bjó til</string>
     <string name="status_edit_info">%1$s breytti</string>
-    <string name="post_media_alt">AUKA</string>
+    <string name="post_media_alt">TEXTI</string>
     <string name="action_discard">Henda breytingum</string>
     <string name="action_continue_edit">Halda breytingum áfram</string>
     <string name="action_share_account_link">Deila tengli á notandaaðgang</string>
@@ -605,56 +590,159 @@
     <string name="action_post_failed">Innsending mistókst</string>
     <string name="action_post_failed_show_drafts">Birta drög</string>
     <string name="action_post_failed_do_nothing">Afgreiða</string>
-    <string name="action_post_failed_detail">Ekki tókst að senda inn færsluna þína og hefur hún verið vistuð í Drög.
+    <plurals name="action_post_failed_detail">
+        <item quantity="one">Ekki tókst að senda inn færsluna þína og hefur hún verið vistuð í Drög.
 \n
-\nAnnað hvort náðist ekki í netþjóninn, eða hann hafnaði færslunni.</string>
-    <string name="action_post_failed_detail_plural">Ekki tókst að senda inn færslurnar þína og hafa þær verið vistaðar í Drög.
+\nAnnað hvort náðist ekki í netþjóninn, eða hann hafnaði færslunni.</item>
+        <item quantity="other">Ekki tókst að senda inn færslurnar þína og hafa þær verið vistaðar í Drög.
 \n
-\nAnnað hvort náðist ekki í netþjóninn, eða hann hafnaði færslunum.</string>
+\nAnnað hvort náðist ekki í netþjóninn, eða hann hafnaði færslunum.</item>
+    </plurals>
     <string name="action_browser_login">Skrá inn í vafra</string>
     <string name="description_login">Virkar í flestum tilvikum. Engum gögnum er lekið til annarra forrita.</string>
     <string name="description_browser_login">Gæti stutt fleiri aðferðir til auðkenningar, en krefst studds vafra.</string>
     <string name="total_usage">Heildarnotkun</string>
     <string name="total_accounts">Aðgangar alls</string>
     <string name="dialog_follow_hashtag_title">Fylgjast með myllumerki</string>
-    <string name="dialog_follow_hashtag_hint">#myllumerki</string>
     <string name="notification_unknown_name">Óþekkt</string>
     <string name="action_refresh">Endurlesa</string>
     <string name="status_filtered_show_anyway">Birta samt</string>
-    <string name="status_filter_placeholder_label_format">Síað: %s</string>
+    <string name="status_filter_placeholder_label_format">Síað: %1$s</string>
     <string name="pref_title_account_filter_keywords">Notendasnið</string>
     <string name="pref_title_show_stat_inline">Sýna tölfræði færslu í tímalínu</string>
-    <string name="ui_error_favourite">Mistókst að setja færslu í eftirlæti: %s</string>
-    <string name="ui_error_reblog">Mistókst að endurbirta færslu: %s</string>
-    <string name="ui_error_vote">Mistókst að greiða atkvæði í könnun: %s</string>
-    <string name="ui_error_accept_follow_request">Mistókst að samþykkja fylgjendabeiðni: %s</string>
+    <string name="ui_error_favourite">Mistókst að setja færslu í eftirlæti: %1$s</string>
+    <string name="ui_error_reblog">Mistókst að endurbirta færslu: %1$s</string>
+    <string name="ui_error_vote">Mistókst að greiða atkvæði í könnun: %1$s</string>
+    <string name="ui_error_accept_follow_request">Mistókst að samþykkja fylgjendabeiðni: %1$s</string>
     <string name="hint_filter_title">Sían mín</string>
     <string name="label_filter_title">Titill</string>
     <string name="filter_action_warn">Aðvörun</string>
     <string name="filter_action_hide">Fela</string>
     <string name="filter_description_warn">Fela með aðvörun</string>
     <string name="filter_description_hide">Fela alveg</string>
-    <string name="ui_error_bookmark">Mistókst að bókamerkja færslu: %s</string>
+    <string name="ui_error_bookmark">Mistókst að bókamerkja færslu: %1$s</string>
     <string name="socket_timeout_exception">Rann út á tíma við að tengjast netþjóninum þínum</string>
     <string name="ui_error_unknown">óþekkt ástæða</string>
-    <string name="ui_error_clear_notifications">Vandamál með hreinsun á tilkynningum: %s</string>
-    <string name="ui_error_reject_follow_request">Mistókst að hafna fylgjendabeiðni: %s</string>
+    <string name="ui_error_clear_notifications">Vandamál með hreinsun á tilkynningum: %1$s</string>
+    <string name="ui_error_reject_follow_request">Mistókst að hafna fylgjendabeiðni: %1$s</string>
     <string name="ui_success_accepted_follow_request">Samþykkt beiðni um að fylgjast með</string>
     <string name="ui_success_rejected_follow_request">Lokað á beiðni um að fylgjast með</string>
     <string name="label_filter_action">Aðgerð síu</string>
     <string name="label_filter_context">Samhengi síu</string>
     <string name="label_filter_keywords">Stikkorð eða setningar sem á að sía</string>
     <string name="action_add">Bæta við</string>
-    <string name="filter_keyword_display_format">%s (heilt orð)</string>
+    <string name="filter_keyword_display_format">%1$s (heilt orð)</string>
     <string name="filter_keyword_addition_title">Bæta við stikkorði</string>
     <string name="filter_edit_keyword_title">Breyta stikkorði</string>
-    <string name="filter_description_format">%s: %s</string>
-    <string name="hint_description">Lýsing</string>
+    <string name="filter_description_format">%1$s: %2$s</string>
     <string name="post_media_image">Mynd</string>
-    <string name="select_list_empty">Þú ert ekki með neina lista</string>
     <string name="select_list_manage">Sýsla með lista</string>
-    <string name="error_list_load">Villa við að hlaða inn listum</string>
     <string name="help_empty_home">Þetta er <b>tímalínan þín</b>. Hún sýnir nýlegar færslur þeirra sem þú fylgist með.
 \n
 \nTil að skoða hvað aðrir eru að gera getur þú til dæmis uppgötvað viðkomandi í einni af hinum tímalínunum. Til dæmis á staðværu tímalínu netþjónsins þíns [iconics gmd_group]. Eða að þú leitar að þeim eftir nafni [iconics gmd_search]; til dæmis geturðu leitað að Tusky til að finna Mastodon-aðganginn okkar.</string>
+    <string name="pref_ui_text_size">Textastærð viðmóts</string>
+    <string name="notification_listenable_worker_name">Bakgrunnsvirkni</string>
+    <string name="notification_listenable_worker_description">Tilkynningar þegar Tusky er að vinna í bakgrunni</string>
+    <string name="notification_notification_worker">Sæki tilkynningar…</string>
+    <string name="notification_prune_cache">Viðhaldsvinna biðminnis…</string>
+    <string name="load_newest_notifications">Hlaða inn nýjustu tilkynningum</string>
+    <string name="compose_delete_draft">Eyða drögum\?</string>
+    <string name="error_missing_edits">Þjónninn þinn veit að þessari færslu hefur verið breytt, en er hins vegar ekki með afrit af breytingunum, þannig að ekki er hægt að sýna þér þær.
+\n
+\nÞetta er <a href="https://github.com/mastodon/mastodon/issues/25398">Mastodon verkbeiðni #25398</a>.</string>
+    <string name="about_device_info_title">Tækið þitt</string>
+    <string name="about_device_info">%1$s %2$s
+\nAndroid-útgáfa: %3$s
+\nSDK-útgáfa: %4$d</string>
+    <string name="about_account_info_title">Notandaaðgangurinn þinn</string>
+    <string name="about_account_info">\@%1$s@%2$s
+\nÚtgáfa: %3$s</string>
+    <string name="about_copy">Afrita upplýsingar um útgáfu og tæki</string>
+    <string name="about_copied">Afritaði upplýsingar um útgáfu og tæki</string>
+    <string name="list_exclusive_label">Fela frá tímalínu</string>
+    <string name="error_media_playback">Afspilun mistókst: %1$s</string>
+    <string name="dialog_delete_filter_text">Eyða síunni \'%1$s\'\?</string>
+    <string name="dialog_delete_filter_positive_action">Eyða</string>
+    <string name="muting_hashtag_success_format">Þagga niður í myllumerkinu #%1$s sem aðvörun</string>
+    <string name="unmuting_hashtag_success_format">Hætti að þagga niður í myllumerkinu #%1$s</string>
+    <string name="action_view_filter">Skoða síu</string>
+    <string name="following_hashtag_success_format">Fylgist núna með myllumerkinu #%1$s</string>
+    <string name="unfollowing_hashtag_success_format">Fylgist ekki lengur með myllumerkinu #%1$s</string>
+    <string name="dialog_save_profile_changes_message">Viltu vista breytingarnar á notandasniðinu þínu\?</string>
+    <string name="error_blocking_domain">Mistókst að þagga niður í %1$s: %2$s</string>
+    <string name="error_unblocking_domain">Mistókst að hætta að þagga niður í %1$s: %2$s</string>
+    <string name="error_media_upload_sending_fmt">Innsendingin mistókst: %1$s</string>
+    <string name="help_empty_conversations">Hér eru <b>einkaskilaboðin</b> þín; stundum kölluð samtöl eða bein skilaboð (DM).
+\n
+\nEinkaskilaboð eru gerð með því að stilla sýnileika [iconics gmd_public] færslu [iconics gmd_mail] á <i>Beint</i> og að minnast á einn eða fleiri notendur í textanum.
+\n
+\nÞú getur til dæmis farið á notandaaðgang einhvers og ýtt á \'Minnast á\'-hnappinn [iconics gmd_edit] og breytt sýnileikanum.</string>
+    <string name="help_empty_lists">Þetta er <b>listasýnin</b> þín. Þú getur skilgreint fjölmarga einkalista og bætt notendaaðgöngum á þá.
+\n
+\nATHUGAÐU: þú getur bara bætt notendaaðgöngum sem þú fylgist með á listana þína.
+\n
+\nÞessa lista má nota sem flipa í flipum [iconics gmd_account_circle] [iconics gmd_navigate_next] Kjörstillingar aðgangs.</string>
+    <string name="label_image">Mynd</string>
+    <string name="app_theme_system_black">Nota hönnun kerfis (svart)</string>
+    <string name="title_public_trending_statuses">Færslur í umræðunni</string>
+    <string name="list_reply_policy_label">Birta svör til</string>
+    <string name="list_reply_policy_none">Engra</string>
+    <string name="list_reply_policy_list">Meðlima listans</string>
+    <string name="list_reply_policy_followed">Hvers þess sem fylgst er með</string>
+    <string name="pref_title_show_self_boosts">Sýna sjálfs-endurbirtingar</string>
+    <string name="pref_title_show_self_boosts_description">Einhver endurbirtir sína eigin færslu</string>
+    <string name="pref_title_per_timeline_preferences">Kjörstillingar á hverja tímalínu</string>
+    <string name="reply_sending_long">Verið er að senda svarið þitt.</string>
+    <string name="reply_sending">Sendi…</string>
+    <string name="pref_title_show_notifications_filter">Birta tilkynningasíu</string>
+    <string name="action_translate">Þýða</string>
+    <string name="action_show_original">Sýna upprunalegt</string>
+    <string name="label_translating">Þýði…</string>
+    <string name="label_translated">Þýtt úr %1$s með %2$s</string>
+    <string name="ui_error_translate">Tókst ekki að þýða: %1$s</string>
+    <string name="action_follow_hashtag">Fylgjast með nýju myllumerki</string>
+    <string name="confirmation_hashtag_copied">\'#%1$s\' afrituð</string>
+    <string name="dialog_follow_warning">Fylgjast með þessum aðgangi?</string>
+    <string name="error_saving_filter">Villa við að vista síuna \'%1$s\'</string>
+    <string name="error_deleting_filter">Villa við að eyða síunni \'%1$s\'</string>
+    <string name="url_copied">Slóð afrituð</string>
+    <string name="label_expires_after">Rennur út eftir</string>
+    <string name="notification_policy_accept">Samþykkja</string>
+    <string name="post_privacy_direct">Beint</string>
+    <string name="notification_policies_filter_dont_follow_title">Fólk sem þú fylgist ekki með</string>
+    <string name="notification_policies_filter_not_following_title">Fólk sem fylgist ekki með þér</string>
+    <string name="unknown_notification_filter_new_accounts_title">Nýir aðgangar</string>
+    <string name="notification_policy_filter">Sía</string>
+    <string name="notification_policy_ignore">Hunsa</string>
+    <string name="post_replied">Svaraði</string>
+    <string name="post_replied_format">Í svari til %1$s</string>
+    <string name="post_replied_self">Samtal heldur áfram</string>
+    <string name="action_dismiss_notification_request">Afgreiða</string>
+    <string name="report_category_legal">Lögformlegt</string>
+    <string name="pref_title_confirm_follows">Birta staðfestingarglugga áður en fylgst er með</string>
+    <string name="notification_policies_filter_dont_follow_description">Þar til þú samþykkir handvirkt viðkomandi</string>
+    <string name="unknown_notification_type">Óþekkt tegund tilkynningar</string>
+    <string name="unknown_notification_filter_moderated_accounts">Notendaaðgangar í umsjón</string>
+    <string name="unknown_notification_filter_moderated_accounts_description">Takmarkaðir af umsjónaraðilum netþjóns</string>
+    <string name="notification_policies_not_supported">Þessi eiginleiki er aðeins tiltækur á Mastodon-netþjónum af útgáfu v4.3.0 eða nýrri.</string>
+    <string name="filtered_notifications">Síaðar tilkynningar</string>
+    <string name="notifications_from_people_you_may_know">Tilkynningar frá %1$d aðilum sem þú gætir þekkt</string>
+    <string name="filtered_notifications_title">Síaðar tilkynningar</string>
+    <string name="accept_notification_request">Samþykkja beiðni um tilkynningar</string>
+    <string name="dismiss_notification_request">Hafna beiðni um tilkynningar</string>
+    <string name="open_settings">Opna kjörstillingar</string>
+    <string name="notifications_from">Tilkynningar frá %1$s</string>
+    <string name="action_accept_notification_request">Samþykkja</string>
+    <string name="notification_policies_filter_not_following_description">Þar með talið fólk sem hefur fylgst með þér í minna en 3 daga</string>
+    <string name="unknown_notification_filter_new_accounts_description">Útbúið innan síðustu 30 daga</string>
+    <string name="follow_hashtag_success">Fylgdist með myllumerki %1$s</string>
+    <string name="pref_default_reply_privacy">Gagnaleynd svars (ekki samstillt við netþjón)</string>
+    <string name="pref_match_default_post_privacy">Samsvara sjálfgefinni gagnaleynd færslna</string>
+    <string name="pref_default_reply_privacy_explanation">Forvalin gagnaleynd fer eftir færslunni sem þú ert að svara.</string>
+    <string name="preview_card_by_author">Frá %1$s</string>
+    <string name="preview_card_more_by_author">Meira frá %1$s</string>
+    <string name="notification_policies_title">Stefna varðandi tilkynningar</string>
+    <string name="notification_policies_filter_out">Sýsla með tilkynningar frá…</string>
+    <string name="unknown_notification_filter_unsolicited_private_mentions_title">Óumbeðið einkaspjall</string>
+    <string name="unknown_notification_filter_unsolicited_private_mentions_description">Síað nema það sé í svari við þínu eigin spjalli (minnist á e-n) eða ef þú fylgist með sendandanum</string>
 </resources>

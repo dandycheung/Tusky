@@ -18,10 +18,12 @@ package com.keylesspalace.tusky.components.viewthread.edits
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import at.connyduck.calladapter.networkresult.getOrElse
-import com.keylesspalace.tusky.components.viewthread.edits.TuskyTagHandler.Companion.DELETED_TEXT_EL
-import com.keylesspalace.tusky.components.viewthread.edits.TuskyTagHandler.Companion.INSERTED_TEXT_EL
+import com.keylesspalace.tusky.components.viewthread.edits.EditsTagHandler.Companion.DELETED_TEXT_EL
+import com.keylesspalace.tusky.components.viewthread.edits.EditsTagHandler.Companion.INSERTED_TEXT_EL
 import com.keylesspalace.tusky.entity.StatusEdit
 import com.keylesspalace.tusky.network.MastodonApi
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -41,15 +43,15 @@ import org.pageseeder.diffx.token.impl.SpaceToken
 import org.pageseeder.diffx.xml.NamespaceSet
 import org.pageseeder.xmlwriter.XML.NamespaceAware
 import org.pageseeder.xmlwriter.XMLStringWriter
-import javax.inject.Inject
 
+@HiltViewModel
 class ViewEditsViewModel @Inject constructor(private val api: MastodonApi) : ViewModel() {
 
-    private val _uiState: MutableStateFlow<EditsUiState> = MutableStateFlow(EditsUiState.Initial)
+    private val _uiState = MutableStateFlow(EditsUiState.Initial as EditsUiState)
     val uiState: StateFlow<EditsUiState> = _uiState.asStateFlow()
 
     /** The API call to fetch edit history returned less than two items */
-    object MissingEditsException : Exception()
+    class MissingEditsException : Exception()
 
     fun loadEdits(statusId: String, force: Boolean = false, refreshing: Boolean = false) {
         if (!force && _uiState.value !is EditsUiState.Initial) return
@@ -69,7 +71,7 @@ class ViewEditsViewModel @Inject constructor(private val api: MastodonApi) : Vie
             // `edits` might have fewer than the minimum number of entries because of
             // https://github.com/mastodon/mastodon/issues/25398.
             if (edits.size < 2) {
-                _uiState.value = EditsUiState.Error(MissingEditsException)
+                _uiState.value = EditsUiState.Error(MissingEditsException())
                 return@launch
             }
 
@@ -132,12 +134,12 @@ class ViewEditsViewModel @Inject constructor(private val api: MastodonApi) : Vie
 }
 
 sealed interface EditsUiState {
-    object Initial : EditsUiState
-    object Loading : EditsUiState
+    data object Initial : EditsUiState
+    data object Loading : EditsUiState
 
     // "Refreshing" state is necessary, otherwise a refresh state transition is Success -> Success,
     // and state flows don't emit repeated states, so the UI never updates.
-    object Refreshing : EditsUiState
+    data object Refreshing : EditsUiState
     class Error(val throwable: Throwable) : EditsUiState
     data class Success(
         val edits: List<StatusEdit>

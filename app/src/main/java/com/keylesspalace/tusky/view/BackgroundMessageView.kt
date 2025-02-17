@@ -15,6 +15,8 @@ import com.keylesspalace.tusky.databinding.ViewBackgroundMessageBinding
 import com.keylesspalace.tusky.util.addDrawables
 import com.keylesspalace.tusky.util.getDrawableRes
 import com.keylesspalace.tusky.util.getErrorString
+import com.keylesspalace.tusky.util.hide
+import com.keylesspalace.tusky.util.show
 import com.keylesspalace.tusky.util.visible
 
 /**
@@ -33,7 +35,7 @@ class BackgroundMessageView @JvmOverloads constructor(
         orientation = VERTICAL
 
         if (isInEditMode) {
-            setup(R.drawable.elephant_offline, R.string.error_network) {}
+            setup(R.drawable.errorphant_offline, R.string.error_network) {}
         }
     }
 
@@ -61,6 +63,7 @@ class BackgroundMessageView @JvmOverloads constructor(
         binding.imageView.setImageResource(imageRes)
         binding.button.setOnClickListener(clickListener)
         binding.button.visible(clickListener != null)
+        binding.helpTextCard.hide()
     }
 
     fun showHelp(@StringRes helpRes: Int) {
@@ -71,6 +74,6 @@ class BackgroundMessageView @JvmOverloads constructor(
 
         binding.helpText.setText(textWithDrawables, TextView.BufferType.SPANNABLE)
 
-        binding.helpText.visible(true)
+        binding.helpTextCard.show()
     }
 }

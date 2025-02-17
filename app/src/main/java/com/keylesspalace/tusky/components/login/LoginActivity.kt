@@ -17,44 +17,47 @@ package com.keylesspalace.tusky.components.login
 
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
+import android.net.Uri
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
 import android.util.Log
 import android.view.Menu
 import android.view.View
 import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
 import androidx.core.net.toUri
+import androidx.core.view.WindowInsetsCompat.Type.ime
+import androidx.core.view.WindowInsetsCompat.Type.systemBars
+import androidx.core.view.updatePadding
 import androidx.lifecycle.lifecycleScope
 import at.connyduck.calladapter.networkresult.fold
 import com.bumptech.glide.Glide
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.keylesspalace.tusky.BaseActivity
 import com.keylesspalace.tusky.BuildConfig
 import com.keylesspalace.tusky.MainActivity
 import com.keylesspalace.tusky.R
 import com.keylesspalace.tusky.databinding.ActivityLoginBinding
-import com.keylesspalace.tusky.di.Injectable
 import com.keylesspalace.tusky.entity.AccessToken
 import com.keylesspalace.tusky.network.MastodonApi
 import com.keylesspalace.tusky.util.getNonNullString
 import com.keylesspalace.tusky.util.openLinkInCustomTab
 import com.keylesspalace.tusky.util.rickRoll
+import com.keylesspalace.tusky.util.setOnWindowInsetsChangeListener
 import com.keylesspalace.tusky.util.shouldRickRoll
 import com.keylesspalace.tusky.util.viewBinding
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 import okhttp3.HttpUrl
-import javax.inject.Inject
 
 /** Main login page, the first thing that users see. Has prompt for instance and login button. */
-class LoginActivity : BaseActivity(), Injectable {
+@AndroidEntryPoint
+class LoginActivity : BaseActivity() {
 
     @Inject
     lateinit var mastodonApi: MastodonApi
 
     private val binding by viewBinding(ActivityLoginBinding::inflate)
-
-    private lateinit var preferences: SharedPreferences
 
     private val oauthRedirectUri: String
         get() {
@@ -65,9 +68,7 @@ class LoginActivity : BaseActivity(), Injectable {
 
     private val doWebViewAuth = registerForActivityResult(OauthLogin()) { result ->
         when (result) {
-            is LoginResult.Ok -> lifecycleScope.launch {
-                fetchOauthToken(result.code)
-            }
+            is LoginResult.Ok -> fetchOauthToken(result.code)
             is LoginResult.Err -> displayError(result.errorMessage)
             is LoginResult.Cancel -> setLoading(false)
         }
@@ -78,17 +79,17 @@ class LoginActivity : BaseActivity(), Injectable {
 
         setContentView(binding.root)
 
+        binding.loginScrollView.setOnWindowInsetsChangeListener { windowInsets ->
+            val insets = windowInsets.getInsets(systemBars() or ime())
+            binding.loginScrollView.updatePadding(bottom = insets.bottom)
+        }
+
         if (savedInstanceState == null &&
             BuildConfig.CUSTOM_INSTANCE.isNotBlank() &&
-            !isAdditionalLogin() && !isAccountMigration()
+            !isAdditionalLogin()
         ) {
             binding.domainEditText.setText(BuildConfig.CUSTOM_INSTANCE)
             binding.domainEditText.setSelection(BuildConfig.CUSTOM_INSTANCE.length)
-        }
-
-        if (isAccountMigration()) {
-            binding.domainEditText.setText(accountManager.activeAccount!!.domain)
-            binding.domainEditText.isEnabled = false
         }
 
         if (BuildConfig.CUSTOM_LOGO_URL.isNotBlank()) {
@@ -98,15 +99,10 @@ class LoginActivity : BaseActivity(), Injectable {
                 .into(binding.loginLogo)
         }
 
-        preferences = getSharedPreferences(
-            getString(R.string.preferences_file_key),
-            Context.MODE_PRIVATE
-        )
-
         binding.loginButton.setOnClickListener { onLoginClick(true) }
 
         binding.whatsAnInstanceTextView.setOnClickListener {
-            val dialog = AlertDialog.Builder(this)
+            val dialog = MaterialAlertDialogBuilder(this)
                 .setMessage(R.string.dialog_whats_an_instance)
                 .setPositiveButton(R.string.action_close, null)
                 .show()
@@ -115,19 +111,12 @@ class LoginActivity : BaseActivity(), Injectable {
         }
 
         setSupportActionBar(binding.toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(isAdditionalLogin() || isAccountMigration())
+        supportActionBar?.setDisplayHomeAsUpEnabled(isAdditionalLogin())
         supportActionBar?.setDisplayShowTitleEnabled(false)
     }
 
     override fun requiresLogin(): Boolean {
         return false
-    }
-
-    override fun finish() {
-        super.finish()
-        if (isAdditionalLogin() || isAccountMigration()) {
-            overridePendingTransition(R.anim.slide_from_left, R.anim.slide_to_right)
-        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -141,11 +130,6 @@ class LoginActivity : BaseActivity(), Injectable {
         return super.onCreateOptionsMenu(menu)
     }
 
-    /**
-     * Obtain the oauth client credentials for this app. This is only necessary the first time the
-     * app is run on a given server instance. So, after the first authentication, they are
-     * saved in SharedPreferences and every subsequent run they are simply fetched from there.
-     */
     private fun onLoginClick(openInWebView: Boolean) {
         binding.loginButton.isEnabled = false
         binding.domainTextInputLayout.error = null
@@ -176,11 +160,7 @@ class LoginActivity : BaseActivity(), Injectable {
                 getString(R.string.tusky_website)
             ).fold(
                 { credentials ->
-                    // Before we open browser page we save the data.
-                    // Even if we don't open other apps user may go to password manager or somewhere else
-                    // and we will need to pick up the process where we left off.
-                    // Alternatively we could pass it all as part of the intent and receive it back
-                    // but it is a bit of a workaround.
+                    // Save credentials so we can access them after we opened another activity for auth.
                     preferences.edit()
                         .putString(DOMAIN, domain)
                         .putString(CLIENT_ID, credentials.clientId)
@@ -201,20 +181,22 @@ class LoginActivity : BaseActivity(), Injectable {
         }
     }
 
-    private fun redirectUserToAuthorizeAndLogin(domain: String, clientId: String, openInWebView: Boolean) {
+    private fun redirectUserToAuthorizeAndLogin(
+        domain: String,
+        clientId: String,
+        openInWebView: Boolean
+    ) {
         // To authorize this app and log in it's necessary to redirect to the domain given,
         // login there, and the server will redirect back to the app with its response.
-        val uri = HttpUrl.Builder()
+        val uri = Uri.Builder()
             .scheme("https")
-            .host(domain)
-            .addPathSegments(MastodonApi.ENDPOINT_AUTHORIZE)
-            .addQueryParameter("client_id", clientId)
-            .addQueryParameter("redirect_uri", oauthRedirectUri)
-            .addQueryParameter("response_type", "code")
-            .addQueryParameter("scope", OAUTH_SCOPES)
+            .authority(domain)
+            .path(MastodonApi.ENDPOINT_AUTHORIZE)
+            .appendQueryParameter("client_id", clientId)
+            .appendQueryParameter("redirect_uri", oauthRedirectUri)
+            .appendQueryParameter("response_type", "code")
+            .appendQueryParameter("scope", OAUTH_SCOPES)
             .build()
-            .toString()
-            .toUri()
 
         if (openInWebView) {
             doWebViewAuth.launch(LoginData(domain, uri, oauthRedirectUri.toUri()))
@@ -235,15 +217,8 @@ class LoginActivity : BaseActivity(), Injectable {
             val code = uri.getQueryParameter("code")
             val error = uri.getQueryParameter("error")
 
-            /* restore variables from SharedPreferences */
-            val domain = preferences.getNonNullString(DOMAIN, "")
-            val clientId = preferences.getNonNullString(CLIENT_ID, "")
-            val clientSecret = preferences.getNonNullString(CLIENT_SECRET, "")
-
-            if (code != null && domain.isNotEmpty() && clientId.isNotEmpty() && clientSecret.isNotEmpty()) {
-                lifecycleScope.launch {
-                    fetchOauthToken(code)
-                }
+            if (code != null) {
+                fetchOauthToken(code)
             } else {
                 displayError(error)
             }
@@ -263,37 +238,39 @@ class LoginActivity : BaseActivity(), Injectable {
             getString(R.string.error_authorization_unknown)
         } else {
             // Use error returned by the server or fall back to the generic message
-            Log.e(TAG, "%s %s".format(getString(R.string.error_authorization_denied), error))
+            Log.e(TAG, getString(R.string.error_authorization_denied) + " " + error)
             error.ifBlank { getString(R.string.error_authorization_denied) }
         }
     }
 
-    private suspend fun fetchOauthToken(code: String) {
+    private fun fetchOauthToken(code: String) {
+        setLoading(true)
+
         /* restore variables from SharedPreferences */
         val domain = preferences.getNonNullString(DOMAIN, "")
         val clientId = preferences.getNonNullString(CLIENT_ID, "")
         val clientSecret = preferences.getNonNullString(CLIENT_SECRET, "")
 
-        setLoading(true)
-
-        mastodonApi.fetchOAuthToken(
-            domain,
-            clientId,
-            clientSecret,
-            oauthRedirectUri,
-            code,
-            "authorization_code"
-        ).fold(
-            { accessToken ->
-                fetchAccountDetails(accessToken, domain, clientId, clientSecret)
-            },
-            { e ->
-                setLoading(false)
-                binding.domainTextInputLayout.error =
-                    getString(R.string.error_retrieving_oauth_token)
-                Log.e(TAG, getString(R.string.error_retrieving_oauth_token), e)
-            }
-        )
+        lifecycleScope.launch {
+            mastodonApi.fetchOAuthToken(
+                domain,
+                clientId,
+                clientSecret,
+                oauthRedirectUri,
+                code,
+                "authorization_code"
+            ).fold(
+                { accessToken ->
+                    fetchAccountDetails(accessToken, domain, clientId, clientSecret)
+                },
+                { e ->
+                    setLoading(false)
+                    binding.domainTextInputLayout.error =
+                        getString(R.string.error_retrieving_oauth_token)
+                    Log.e(TAG, getString(R.string.error_retrieving_oauth_token), e)
+                }
+            )
+        }
     }
 
     private suspend fun fetchAccountDetails(
@@ -314,12 +291,10 @@ class LoginActivity : BaseActivity(), Injectable {
                 oauthScopes = OAUTH_SCOPES,
                 newAccount = newAccount
             )
-
+            finishAffinity()
             val intent = Intent(this, MainActivity::class.java)
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            intent.putExtra(MainActivity.OPEN_WITH_EXPLODE_ANIMATION, true)
             startActivity(intent)
-            finish()
-            overridePendingTransition(R.anim.explode, R.anim.explode)
         }, { e ->
             setLoading(false)
             binding.domainTextInputLayout.error =
@@ -343,10 +318,6 @@ class LoginActivity : BaseActivity(), Injectable {
         return intent.getIntExtra(LOGIN_MODE, MODE_DEFAULT) == MODE_ADDITIONAL_LOGIN
     }
 
-    private fun isAccountMigration(): Boolean {
-        return intent.getIntExtra(LOGIN_MODE, MODE_DEFAULT) == MODE_MIGRATION
-    }
-
     companion object {
         private const val TAG = "LoginActivity" // logging tag
         private const val OAUTH_SCOPES = "read write follow push"
@@ -357,9 +328,6 @@ class LoginActivity : BaseActivity(), Injectable {
 
         const val MODE_DEFAULT = 0
         const val MODE_ADDITIONAL_LOGIN = 1
-
-        // "Migration" is used to update the OAuth scope granted to the client
-        const val MODE_MIGRATION = 2
 
         @JvmStatic
         fun getIntent(context: Context, mode: Int): Intent {

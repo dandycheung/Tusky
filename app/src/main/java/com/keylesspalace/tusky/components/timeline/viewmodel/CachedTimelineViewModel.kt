@@ -26,12 +26,10 @@ import androidx.paging.cachedIn
 import androidx.paging.filter
 import androidx.paging.map
 import androidx.room.withTransaction
-import com.google.gson.Gson
-import com.keylesspalace.tusky.appstore.BookmarkEvent
+import at.connyduck.calladapter.networkresult.NetworkResult
+import at.connyduck.calladapter.networkresult.map
+import at.connyduck.calladapter.networkresult.onFailure
 import com.keylesspalace.tusky.appstore.EventHub
-import com.keylesspalace.tusky.appstore.FavoriteEvent
-import com.keylesspalace.tusky.appstore.PinEvent
-import com.keylesspalace.tusky.appstore.ReblogEvent
 import com.keylesspalace.tusky.components.preference.PreferencesFragment.ReadingOrder.NEWEST_FIRST
 import com.keylesspalace.tusky.components.preference.PreferencesFragment.ReadingOrder.OLDEST_FIRST
 import com.keylesspalace.tusky.components.timeline.Placeholder
@@ -40,25 +38,27 @@ import com.keylesspalace.tusky.components.timeline.toViewData
 import com.keylesspalace.tusky.components.timeline.util.ifExpected
 import com.keylesspalace.tusky.db.AccountManager
 import com.keylesspalace.tusky.db.AppDatabase
-import com.keylesspalace.tusky.db.TimelineStatusWithAccount
+import com.keylesspalace.tusky.db.entity.HomeTimelineData
+import com.keylesspalace.tusky.db.entity.HomeTimelineEntity
 import com.keylesspalace.tusky.entity.Filter
-import com.keylesspalace.tusky.entity.Poll
 import com.keylesspalace.tusky.network.FilterModel
 import com.keylesspalace.tusky.network.MastodonApi
 import com.keylesspalace.tusky.usecase.TimelineCases
-import com.keylesspalace.tusky.util.EmptyPagingSource
 import com.keylesspalace.tusky.viewdata.StatusViewData
+import com.keylesspalace.tusky.viewdata.TranslationViewData
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.asExecutor
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
-import javax.inject.Inject
 
 /**
  * TimelineViewModel that caches all statuses in a local database
  */
+@HiltViewModel
 class CachedTimelineViewModel @Inject constructor(
     timelineCases: TimelineCases,
     private val api: MastodonApi,
@@ -66,83 +66,74 @@ class CachedTimelineViewModel @Inject constructor(
     accountManager: AccountManager,
     sharedPreferences: SharedPreferences,
     filterModel: FilterModel,
-    private val db: AppDatabase,
-    private val gson: Gson
+    private val db: AppDatabase
 ) : TimelineViewModel(
     timelineCases,
-    api,
     eventHub,
     accountManager,
     sharedPreferences,
     filterModel
 ) {
 
-    private var currentPagingSource: PagingSource<Int, TimelineStatusWithAccount>? = null
+    private var currentPagingSource: PagingSource<Int, HomeTimelineData>? = null
+
+    /** Map from status id to translation. */
+    private val translations = MutableStateFlow(mapOf<String, TranslationViewData>())
 
     @OptIn(ExperimentalPagingApi::class)
     override val statuses = Pager(
-        config = PagingConfig(pageSize = LOAD_AT_ONCE),
-        remoteMediator = CachedTimelineRemoteMediator(accountManager, api, db, gson),
+        config = PagingConfig(
+            pageSize = LOAD_AT_ONCE
+        ),
+        remoteMediator = CachedTimelineRemoteMediator(this, api, db),
         pagingSourceFactory = {
-            val activeAccount = accountManager.activeAccount
-            if (activeAccount == null) {
-                EmptyPagingSource()
-            } else {
-                db.timelineDao().getStatuses(activeAccount.id)
-            }.also { newPagingSource ->
+            db.timelineDao().getHomeTimeline(accountId).also { newPagingSource ->
                 this.currentPagingSource = newPagingSource
             }
         }
     ).flow
-        .map { pagingData ->
-            pagingData.map(Dispatchers.Default.asExecutor()) { timelineStatus ->
-                timelineStatus.toViewData(gson)
-            }.filter(Dispatchers.Default.asExecutor()) { statusViewData ->
+        // Apply cachedIn() early to be able to combine with translation flow.
+        // This will not cache ViewData's but practically we don't need this.
+        // If you notice that this flow is used in more than once place consider
+        // adding another cachedIn() for the overall result.
+        .cachedIn(viewModelScope)
+        .combine(translations) { pagingData, translations ->
+            pagingData.map { timelineData ->
+                val translation = translations[timelineData.status?.serverId]
+                timelineData.toViewData(
+                    isDetailed = false,
+                    translation = translation
+                )
+            }.filter { statusViewData ->
                 shouldFilterStatus(statusViewData) != Filter.Action.HIDE
             }
         }
         .flowOn(Dispatchers.Default)
-        .cachedIn(viewModelScope)
-
-    override fun updatePoll(newPoll: Poll, status: StatusViewData.Concrete) {
-        // handled by CacheUpdater
-    }
 
     override fun changeExpanded(expanded: Boolean, status: StatusViewData.Concrete) {
         viewModelScope.launch {
-            db.timelineDao().setExpanded(accountManager.activeAccount!!.id, status.id, expanded)
+            db.timelineStatusDao()
+                .setExpanded(accountId, status.actionableId, expanded)
         }
     }
 
     override fun changeContentShowing(isShowing: Boolean, status: StatusViewData.Concrete) {
         viewModelScope.launch {
-            db.timelineDao()
-                .setContentShowing(accountManager.activeAccount!!.id, status.id, isShowing)
+            db.timelineStatusDao()
+                .setContentShowing(accountId, status.actionableId, isShowing)
         }
     }
 
     override fun changeContentCollapsed(isCollapsed: Boolean, status: StatusViewData.Concrete) {
         viewModelScope.launch {
-            db.timelineDao()
-                .setContentCollapsed(accountManager.activeAccount!!.id, status.id, isCollapsed)
-        }
-    }
-
-    override fun removeAllByAccountId(accountId: String) {
-        viewModelScope.launch {
-            db.timelineDao().removeAllByUser(accountManager.activeAccount!!.id, accountId)
-        }
-    }
-
-    override fun removeAllByInstance(instance: String) {
-        viewModelScope.launch {
-            db.timelineDao().deleteAllFromInstance(accountManager.activeAccount!!.id, instance)
+            db.timelineStatusDao()
+                .setContentCollapsed(accountId, status.actionableId, isCollapsed)
         }
     }
 
     override fun clearWarning(status: StatusViewData.Concrete) {
         viewModelScope.launch {
-            db.timelineDao().clearWarning(accountManager.activeAccount!!.id, status.actionableId)
+            db.timelineStatusDao().clearWarning(accountId, status.actionableId)
         }
     }
 
@@ -154,34 +145,32 @@ class CachedTimelineViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val timelineDao = db.timelineDao()
+                val statusDao = db.timelineStatusDao()
+                val accountDao = db.timelineAccountDao()
 
-                val activeAccount = accountManager.activeAccount!!
-
-                timelineDao.insertStatus(
-                    Placeholder(placeholderId, loading = true).toEntity(
-                        activeAccount.id
-                    )
+                timelineDao.insertHomeTimelineItem(
+                    Placeholder(placeholderId, loading = true).toEntity(tuskyAccountId = accountId)
                 )
 
-                val response = db.withTransaction {
-                    val idAbovePlaceholder = timelineDao.getIdAbove(activeAccount.id, placeholderId)
-                    val idBelowPlaceholder = timelineDao.getIdBelow(activeAccount.id, placeholderId)
-                    when (readingOrder) {
-                        // Using minId, loads up to LOAD_AT_ONCE statuses with IDs immediately
-                        // after minId and no larger than maxId
-                        OLDEST_FIRST -> api.homeTimeline(
-                            maxId = idAbovePlaceholder,
-                            minId = idBelowPlaceholder,
-                            limit = LOAD_AT_ONCE
-                        )
-                        // Using sinceId, loads up to LOAD_AT_ONCE statuses immediately before
-                        // maxId, and no smaller than minId.
-                        NEWEST_FIRST -> api.homeTimeline(
-                            maxId = idAbovePlaceholder,
-                            sinceId = idBelowPlaceholder,
-                            limit = LOAD_AT_ONCE
-                        )
-                    }
+                val (idAbovePlaceholder, idBelowPlaceholder) = db.withTransaction {
+                    timelineDao.getIdAbove(accountId, placeholderId) to
+                        timelineDao.getIdBelow(accountId, placeholderId)
+                }
+                val response = when (readingOrder) {
+                    // Using minId, loads up to LOAD_AT_ONCE statuses with IDs immediately
+                    // after minId and no larger than maxId
+                    OLDEST_FIRST -> api.homeTimeline(
+                        maxId = idAbovePlaceholder,
+                        minId = idBelowPlaceholder,
+                        limit = LOAD_AT_ONCE
+                    )
+                    // Using sinceId, loads up to LOAD_AT_ONCE statuses immediately before
+                    // maxId, and no smaller than minId.
+                    NEWEST_FIRST -> api.homeTimeline(
+                        maxId = idAbovePlaceholder,
+                        sinceId = idBelowPlaceholder,
+                        limit = LOAD_AT_ONCE
+                    )
                 }
 
                 val statuses = response.body()
@@ -190,12 +179,17 @@ class CachedTimelineViewModel @Inject constructor(
                     return@launch
                 }
 
+                val account = activeAccountFlow.value
+                if (account == null) {
+                    return@launch
+                }
+
                 db.withTransaction {
-                    timelineDao.delete(activeAccount.id, placeholderId)
+                    timelineDao.deleteHomeTimelineItem(accountId, placeholderId)
 
                     val overlappedStatuses = if (statuses.isNotEmpty()) {
                         timelineDao.deleteRange(
-                            activeAccount.id,
+                            accountId,
                             statuses.last().id,
                             statuses.first().id
                         )
@@ -204,18 +198,29 @@ class CachedTimelineViewModel @Inject constructor(
                     }
 
                     for (status in statuses) {
-                        timelineDao.insertAccount(status.account.toEntity(activeAccount.id, gson))
-                        status.reblog?.account?.toEntity(activeAccount.id, gson)
+                        accountDao.insert(status.account.toEntity(accountId))
+                        status.reblog?.account?.toEntity(accountId)
                             ?.let { rebloggedAccount ->
-                                timelineDao.insertAccount(rebloggedAccount)
+                                accountDao.insert(rebloggedAccount)
                             }
-                        timelineDao.insertStatus(
-                            status.toEntity(
-                                timelineUserId = activeAccount.id,
-                                gson = gson,
-                                expanded = activeAccount.alwaysOpenSpoiler,
-                                contentShowing = activeAccount.alwaysShowSensitiveMedia || !status.actionableStatus.sensitive,
+                        statusDao.insert(
+                            status.actionableStatus.toEntity(
+                                tuskyAccountId = accountId,
+                                expanded = account.alwaysOpenSpoiler,
+                                contentShowing = account.alwaysShowSensitiveMedia || !status.actionableStatus.sensitive,
                                 contentCollapsed = true
+                            )
+                        )
+                        timelineDao.insertHomeTimelineItem(
+                            HomeTimelineEntity(
+                                tuskyAccountId = accountId,
+                                id = status.id,
+                                statusId = status.actionableId,
+                                reblogAccountId = if (status.reblog != null) {
+                                    status.account.id
+                                } else {
+                                    null
+                                }
                             )
                         )
                     }
@@ -230,11 +235,11 @@ class CachedTimelineViewModel @Inject constructor(
                             OLDEST_FIRST -> statuses.first().id
                             NEWEST_FIRST -> statuses.last().id
                         }
-                        timelineDao.insertStatus(
+                        timelineDao.insertHomeTimelineItem(
                             Placeholder(
                                 idToConvert,
                                 loading = false
-                            ).toEntity(activeAccount.id)
+                            ).toEntity(accountId)
                         )
                     }
                 }
@@ -247,52 +252,53 @@ class CachedTimelineViewModel @Inject constructor(
     }
 
     private suspend fun loadMoreFailed(placeholderId: String, e: Exception) {
-        Log.w("CachedTimelineVM", "failed loading statuses", e)
+        Log.w(TAG, "failed loading statuses", e)
         val activeAccount = accountManager.activeAccount!!
         db.timelineDao()
-            .insertStatus(Placeholder(placeholderId, loading = false).toEntity(activeAccount.id))
-    }
-
-    override fun handleReblogEvent(reblogEvent: ReblogEvent) {
-        // handled by CacheUpdater
-    }
-
-    override fun handleFavEvent(favEvent: FavoriteEvent) {
-        // handled by CacheUpdater
-    }
-
-    override fun handleBookmarkEvent(bookmarkEvent: BookmarkEvent) {
-        // handled by CacheUpdater
-    }
-
-    override fun handlePinEvent(pinEvent: PinEvent) {
-        // handled by CacheUpdater
+            .insertHomeTimelineItem(Placeholder(placeholderId, loading = false).toEntity(activeAccount.id))
     }
 
     override fun fullReload() {
         viewModelScope.launch {
             val activeAccount = accountManager.activeAccount!!
-            db.timelineDao().removeAll(activeAccount.id)
+            db.timelineDao().removeAllHomeTimelineItems(activeAccount.id)
         }
     }
 
     override fun saveReadingPosition(statusId: String) {
-        accountManager.activeAccount?.let { account ->
-            Log.d(TAG, "Saving position at: $statusId")
-            account.lastVisibleHomeTimelineStatusId = statusId
-            accountManager.saveAccount(account)
+        viewModelScope.launch {
+            accountManager.activeAccount?.let { account ->
+                Log.d(TAG, "Saving position at: $statusId")
+                accountManager.updateAccount(account) {
+                    copy(lastVisibleHomeTimelineStatusId = statusId)
+                }
+            }
         }
     }
 
     override suspend fun invalidate() {
         // invalidating when we don't have statuses yet can cause empty timelines because it cancels the network load
-        if (db.timelineDao().getStatusCount(accountManager.activeAccount!!.id) > 0) {
+        if (db.timelineDao().getHomeTimelineItemCount(accountId) > 0) {
             currentPagingSource?.invalidate()
         }
     }
 
+    override suspend fun translate(status: StatusViewData.Concrete): NetworkResult<Unit> {
+        translations.value += (status.id to TranslationViewData.Loading)
+        return timelineCases.translate(status.actionableId)
+            .map { translation ->
+                translations.value += (status.actionableId to TranslationViewData.Loaded(translation))
+            }
+            .onFailure {
+                translations.value -= status.actionableId
+            }
+    }
+
+    override fun untranslate(status: StatusViewData.Concrete) {
+        translations.value -= status.actionableId
+    }
+
     companion object {
         private const val TAG = "CachedTimelineViewModel"
-        private const val MAX_STATUSES_IN_CACHE = 1000
     }
 }

@@ -7,25 +7,25 @@
     <string name="error_authorization_denied">Аўтарызацыя была адхілена. Калі ўпэўнены што ўвялі сапраўдныя ўліковыя даныя, паспрабуйце ўвайсці з браўзера з меню.</string>
     <string name="error_loading_account_details">Дэталі ўліковага запісу не атрыманы</string>
     <string name="error_generic">Здарылася памылка.</string>
-    <string name="error_network">Здарылася сеткавая памылка! Калі ласка, праверце злучэнне і паспрабуйце зноў!</string>
+    <string name="error_network">Здарылася сеткавая памылка. Калі ласка, праверце злучэнне і паспрабуйце зноў.</string>
     <string name="error_authorization_unknown">Адбылася невядомая памылка праверкі сапраўднасці. Калі праблема застаецца, паспрабуйце ўвайсці з браўзера з меню.</string>
     <string name="error_retrieving_oauth_token">Токен уваходу не атрыманы. Калі праблема застаецца, паспрабуйце ўвайсці з браўзера з меню.</string>
     <string name="error_compose_character_limit">Допіс занадта доўгі!</string>
-    <string name="error_multimedia_size_limit">Памер відэа- ды аўдыяфайлаў не можа перавышаць %s Мб.</string>
+    <string name="error_multimedia_size_limit">Памер відэа- ды аўдыяфайлаў не можа перавышаць %1$s Мб.</string>
     <string name="error_media_upload_type">Немагчыма запампаваць файл гэтага тыпу.</string>
     <string name="error_media_upload_opening">Немагчыма адкрыць гэты файл.</string>
     <string name="error_media_download_permission">Патрабуецца дазвол на захаванне медыя.</string>
     <string name="error_media_upload_image_or_video">Немагчыма адначасова прымацаваць выяву ды відэа да допісу.</string>
     <string name="error_media_upload_sending">Запампоўка не атрымалася.</string>
-    <string name="error_unfollowing_hashtag_format">Памылка адпіскі ад #%s</string>
+    <string name="error_unfollowing_hashtag_format">Памылка адпіскі ад #%1$s</string>
     <string name="error_following_hashtags_unsupported">Гэты сервер не падтрымлівае падпіску на хэштэгі.</string>
-    <string name="error_muting_hashtag_format">Памылка ігнаравання #%s</string>
+    <string name="error_muting_hashtag_format">Памылка ігнаравання #%1$s</string>
     <string name="error_could_not_load_login_page">Немагчыма загрузіць старонку ўваходу.</string>
     <string name="error_image_edit_failed">Немагчыма рэдагаваць выяву.</string>
     <string name="error_media_upload_permission">Патрабуецца дазвол на чытанне медыя.</string>
     <string name="error_sender_account_gone">Памылка дасылання допісу.</string>
-    <string name="error_following_hashtag_format">Памылка падпіскі на #%s</string>
-    <string name="error_unmuting_hashtag_format">Памылка адмены ігнаравання #%s</string>
+    <string name="error_following_hashtag_format">Памылка падпіскі на #%1$s</string>
+    <string name="error_unmuting_hashtag_format">Памылка адмены ігнаравання #%1$s</string>
     <string name="error_status_source_load">Не атрымалася загрузіць крыніцу статусу з сервера.</string>
     <string name="title_login">Уваход</string>
     <string name="title_home">Галоўная</string>
@@ -49,12 +49,11 @@
     <string name="title_posts_pinned">Замацаваныя</string>
     <string name="title_mutes">Ігнаруемыя карыстальнікі</string>
     <string name="title_blocks">Заблакаваныя карыстальнікі</string>
-    <string name="title_migration_relogin">Увайдзіце зноў, каб атрымліваць push-апавяшчэнні</string>
     <string name="title_announcements">Аб\'явы</string>
     <string name="title_licenses">Ліцэнзіі</string>
     <string name="title_followed_hashtags">Падпіскі на хэштэгі</string>
-    <string name="post_username_format">\@%s</string>
-    <string name="post_boosted_format">%s пашырыў(-ла)</string>
+    <string name="post_username_format">\@%1$s</string>
+    <string name="post_boosted_format">%1$s пашырыў(-ла)</string>
     <string name="post_sensitive_media_title">Далікатнае змесціва</string>
     <string name="post_media_hidden_title">Медыя схаванае</string>
     <string name="post_content_show_more">Разгарнуць</string>
@@ -63,20 +62,20 @@
     <string name="post_content_warning_show_more">Паказаць больш</string>
     <string name="post_content_warning_show_less">Паказаць менш</string>
     <string name="post_content_show_less">Згарнуць</string>
-    <string name="post_edited">Рэдагаваны %s</string>
+    <string name="post_edited">Рэдагаваны %1$s</string>
     <string name="message_empty">Тут нічога няма.</string>
     <string name="footer_empty">Тут нічога няма. Пацягніце ўніз, каб абнавіць!</string>
-    <string name="notification_reblog_format">%s пашырыў(-ла) ваш допіс</string>
-    <string name="notification_favourite_format">%s падабаўся ваш допіс</string>
-    <string name="notification_follow_format">%s падпісаўся(-лася) на вас</string>
-    <string name="notification_follow_request_format">%s запытаў(-ла) падпіску на вас</string>
-    <string name="notification_sign_up_format">%s зарэгістраваўся(-лася)</string>
-    <string name="notification_subscription_format">Новы допіс ад %s</string>
-    <string name="notification_update_format">%s адрэдагаваў(-ла) свой допіс</string>
-    <string name="notification_report_format">Новая скарга на %s</string>
-    <string name="notification_header_report_format">%s скардзіцца на %s</string>
-    <string name="notification_summary_report_format">%s · %d допісаў дададзена</string>
-    <string name="report_username_format">Паскардзіцца на @%s</string>
+    <string name="notification_reblog_format">%1$s пашырыў(-ла) ваш допіс</string>
+    <string name="notification_favourite_format">%1$s падабаўся ваш допіс</string>
+    <string name="notification_follow_format">%1$s падпісаўся(-лася) на вас</string>
+    <string name="notification_follow_request_format">%1$s запытаў(-ла) падпіску на вас</string>
+    <string name="notification_sign_up_format">%1$s зарэгістраваўся(-лася)</string>
+    <string name="notification_subscription_format">Новы допіс ад %1$s</string>
+    <string name="notification_update_format">%1$s адрэдагаваў(-ла) свой допіс</string>
+    <string name="notification_report_format">Новая скарга на %1$s</string>
+    <string name="notification_header_report_format">%1$s скардзіцца на %2$s</string>
+    <string name="notification_summary_report_format">%1$s · %2$d допісаў дададзена</string>
+    <string name="report_username_format">Паскардзіцца на @%1$s</string>
     <string name="action_quick_reply">Хуткі адказ</string>
     <string name="action_reply">Адказаць</string>
     <string name="post_media_alt">ALT</string>
@@ -101,7 +100,7 @@
     <string name="action_dismiss">Адхіліць</string>
     <string name="action_details">Дэталі</string>
     <string name="title_links_dialog">Спасылкі</string>
-    <string name="action_open_media_n">Адкрыць медыя #%d</string>
+    <string name="action_open_media_n">Адкрыць медыя #%1$d</string>
     <string name="action_add_reaction">дадаць рэакцыю</string>
     <string name="download_image">Спампоўка %1$s</string>
     <string name="action_share_as">Абагуліць як…</string>
@@ -112,8 +111,6 @@
     <string name="send_post_link_to">Падзяліцца URL допісу з…</string>
     <string name="confirmation_reported">Даслана!</string>
     <string name="confirmation_unblocked">Карыстальнік разблакаваны</string>
-    <string name="post_sent">Дасланы!</string>
-    <string name="post_sent_long">Адказ дасланы паспяхова.</string>
     <string name="hint_domain">Які сервер\?</string>
     <string name="hint_compose">Што адбываецца\?</string>
     <string name="hint_content_warning">Папярэджанне пра змесціва</string>
@@ -136,7 +133,6 @@
     <string name="pref_title_browser_settings">Браўзер</string>
     <string name="pref_title_custom_tabs">Выкарыстоўваць укладкі браўзера Chrome</string>
     <string name="pref_title_animate_gif_avatars">Анімаваць GIF-аватаркі</string>
-    <string name="pref_title_hide_follow_button">Хаваць кнопку стварэння допісу падчас прагортвання</string>
     <string name="pref_title_language">Мова</string>
     <string name="pref_title_bot_overlay">Паказваць індыкатар для ботаў</string>
     <string name="pref_title_gradient_for_media">Паказваць каляровыя градыенты замест скрытых медыя</string>
@@ -176,25 +172,25 @@
     <string name="notification_update_name">Рэдагаванні допісу</string>
     <string name="notification_update_description">Апавяшчаць, калі допісы, з якімі Вы ўзаемадзейнічалі, рэдагаваны</string>
     <plurals name="notification_title_summary">
-        <item quantity="one">%d новае ўзаемадзеянне</item>
-        <item quantity="few">%d новых узаемадзеянняў</item>
-        <item quantity="many">%d новых узаемадзеянняў</item>
-        <item quantity="other">%d новых узаемадзеянняў</item>
+        <item quantity="one">%1$d новае ўзаемадзеянне</item>
+        <item quantity="few">%1$d новых узаемадзеянняў</item>
+        <item quantity="many">%1$d новых узаемадзеянняў</item>
+        <item quantity="other">%1$d новых узаемадзеянняў</item>
     </plurals>
     <string name="description_account_locked">Заблакаваны ўліковы запіс</string>
-    <string name="dialog_whats_an_instance">Сюды можна ўвесці адрас або дамен любога сервера, напрыклад mastodon.social, icosahedron.website, social.tchncs.de ды <a href="https://instances.social">больш!</a>
-\n
-\nКалі ў вас яшчэ няма ўліковага запісу, вы можаце ўвесці назву сервера, да якога вы жадаеце далучыцца, і стварыць там уліковы запіс.
-\n
-\nСервер — гэта месца, дзе размяшчаецца ваш уліковы запіс, але вы можаце лёгка размаўляць з людзьмі і падпісвацца на іх на іншых серверах, нібыта вы знаходзіцеся на тым жа сайце.
-\n
+    <string name="dialog_whats_an_instance">Сюды можна ўвесці адрас або дамен любога сервера, напрыклад mastodon.social, icosahedron.website, social.tchncs.de ды <a href="https://instances.social">больш!</a> 
+\n 
+\nКалі ў вас яшчэ няма ўліковага запісу, вы можаце ўвесці назву сервера, да якога вы жадаеце далучыцца, і стварыць там уліковы запіс. 
+\n 
+\nСервер — гэта месца, дзе размяшчаецца ваш уліковы запіс, але вы можаце лёгка размаўляць з людзьмі і падпісвацца на іх на іншых серверах, нібыта вы знаходзіцеся на тым жа сайце. 
+\n 
 \nПадрабязней на <a href="https://joinmastodon.org">joinmastodon.org</a>. </string>
     <string name="action_unbookmark">Выдаліць з закладак</string>
     <string name="action_more">Разгарнуць</string>
     <string name="action_compose">Напісаць</string>
     <string name="action_login">Увайсці з Tusky</string>
     <string name="action_logout">Выхад</string>
-    <string name="action_logout_confirm">Вы ўпэўнены, што жадаеце выйсці з уліковага запісу %1$s\?</string>
+    <string name="action_logout_confirm">Вы ўпэўнены, што жадаеце выйсці з уліковага запісу %1$s\? У выніку будуць выдалены ўсе лакальныя даныя уліковага запісу разам з чарнавікамі і наладамі.</string>
     <string name="action_follow">Падпісацца</string>
     <string name="action_unfollow">Адпісацца</string>
     <string name="action_block">Заблакаваць</string>
@@ -226,9 +222,9 @@
     <string name="action_share">Абагуліць</string>
     <string name="action_mute">Ігнараваць</string>
     <string name="action_unmute">Скасаваць ігнараванне</string>
-    <string name="action_unmute_desc">Скасаваць ігнараванне %s</string>
-    <string name="action_mute_domain">Ігнараваць %s</string>
-    <string name="action_unmute_domain">Адмяніць ігнараванне %s</string>
+    <string name="action_unmute_desc">Скасаваць ігнараванне %1$s</string>
+    <string name="action_mute_domain">Ігнараваць %1$s</string>
+    <string name="action_unmute_domain">Адмяніць ігнараванне %1$s</string>
     <string name="action_mute_conversation">Ігнараваць размову</string>
     <string name="action_unmute_conversation">Паказаць размову</string>
     <string name="action_mention">Згадаць</string>
@@ -246,10 +242,10 @@
     <string name="action_links">Спасылкі</string>
     <string name="action_mentions">Згадкі</string>
     <string name="action_copy_link">Капіяваць спасылку</string>
-    <string name="action_open_as">Адкрыць як %s</string>
+    <string name="action_open_as">Адкрыць як %1$s</string>
     <string name="confirmation_unmuted">Прыхоўванне карыстальніка скасавана</string>
-    <string name="confirmation_domain_unmuted">%s адкрыты</string>
-    <string name="confirmation_hashtag_unfollowed">адпісаны(-ая) ад #%s</string>
+    <string name="confirmation_domain_unmuted">%1$s адкрыты</string>
+    <string name="confirmation_hashtag_unfollowed">адпісаны(-ая) ад #%1$s</string>
     <string name="hint_note">Пра сябе</string>
     <string name="hint_search">Пошук…</string>
     <string name="hint_media_description_missing">Медыя павінна мець апісанне.</string>
@@ -266,10 +262,10 @@
     <string name="dialog_delete_post_warning">Выдаліць гэты допіс\?</string>
     <string name="dialog_redraft_post_warning">Выдаліць і перапісаць гэты допіс\?</string>
     <string name="dialog_delete_conversation_warning">Выдаліць гэтую размову\?</string>
-    <string name="mute_domain_warning">Вы ўпэўнены, што жадаеце заблакаваць усё з %s\? Вы не пабачыце допісы з гэтага дамена ва ўсіх агульнадаступных стужках або ў сваіх апавяшчэннях. Вашыя падпісчыкі з гэтага дамену будуць выдаленыя.</string>
+    <string name="mute_domain_warning">Вы ўпэўнены, што жадаеце заблакаваць усё з %1$s\? Вы не пабачыце допісы з гэтага дамена ва ўсіх агульнадаступных стужках або ў сваіх апавяшчэннях. Вашыя падпісчыкі з гэтага дамену будуць выдаленыя.</string>
     <string name="mute_domain_warning_dialog_ok">Схаваць дамен цалкам</string>
-    <string name="dialog_block_warning">Заблакаваць @%s\?</string>
-    <string name="dialog_mute_warning">Ігнараваць %s\?</string>
+    <string name="dialog_block_warning">Заблакаваць @%1$s\?</string>
+    <string name="dialog_mute_warning">Ігнараваць %1$s\?</string>
     <string name="dialog_mute_hide_notifications">Схаваць апавяшчэнні</string>
     <string name="visibility_direct">Асабіста: Дасылаць толькі для згаданых карыстальнікаў</string>
     <string name="pref_title_edit_notification_settings">Апавяшчэнні</string>
@@ -289,7 +285,7 @@
     <string name="pref_title_timelines">Стужкі</string>
     <string name="pref_title_show_boosts">Паказаць пашырэнні</string>
     <string name="pref_title_http_proxy_port">HTTP проксі порт</string>
-    <string name="pref_title_http_proxy_port_message">Порт павінен быць паміж %d і %d</string>
+    <string name="pref_title_http_proxy_port_message">Порт павінен быць паміж %1$d і %2$d</string>
     <string name="pref_default_post_privacy">Прыватнасць допісаў па змаўчанні</string>
     <string name="pref_default_post_language">Мова допісаў па змаўчанні</string>
     <string name="pref_default_media_sensitivity">Лічыць усе медыя далікатнымі</string>
@@ -304,12 +300,12 @@
     <string name="notification_poll_description">Апавяшчаць аб заканчэнні апытанняў</string>
     <string name="notification_subscription_name">Новыя допісы</string>
     <string name="notification_subscription_description">Апавяшчаць аб новых допісах карыстальнікаў, на якіх Вы падпісаны</string>
-    <string name="notification_mention_format">%s узгадаў(-ла) Вас</string>
+    <string name="notification_mention_format">%1$s узгадаў(-ла) Вас</string>
     <string name="notification_summary_medium">%1$s, %2$s ды %3$s</string>
     <string name="notification_summary_large">%1$s, %2$s, %3$s ды %4$d іншых</string>
     <string name="notification_summary_small">%1$s ды %2$s</string>
     <string name="about_title_activity">Пра праграму</string>
-    <string name="about_tusky_version">Tusky %s</string>
+    <string name="about_tusky_version">Tusky %1$s</string>
     <string name="about_powered_by_tusky">Зроблена Tusky</string>
     <string name="about_project_site">Вэбсайт праекту:
 \n https://tusky.app</string>
@@ -323,19 +319,19 @@
     <string name="status_count_one_plus">1+</string>
     <string name="status_created_at_now">зараз</string>
     <string name="state_follow_requested">Запыт на падпіску</string>
-    <string name="abbreviated_in_years">праз %dг</string>
-    <string name="abbreviated_in_days">праз %dд</string>
-    <string name="abbreviated_in_hours">праз %dгад</string>
-    <string name="abbreviated_in_minutes">праз %dхв</string>
-    <string name="abbreviated_in_seconds">праз %dс</string>
-    <string name="abbreviated_years_ago">%dг</string>
-    <string name="abbreviated_days_ago">%dд</string>
-    <string name="abbreviated_hours_ago">%dгад</string>
-    <string name="abbreviated_minutes_ago">%dхв</string>
-    <string name="abbreviated_seconds_ago">%dс</string>
+    <string name="abbreviated_in_years">праз %1$dг</string>
+    <string name="abbreviated_in_days">праз %1$dд</string>
+    <string name="abbreviated_in_hours">праз %1$dгад</string>
+    <string name="abbreviated_in_minutes">праз %1$dхв</string>
+    <string name="abbreviated_in_seconds">праз %1$dс</string>
+    <string name="abbreviated_years_ago">%1$dг</string>
+    <string name="abbreviated_days_ago">%1$dд</string>
+    <string name="abbreviated_hours_ago">%1$dгад</string>
+    <string name="abbreviated_minutes_ago">%1$dхв</string>
+    <string name="abbreviated_seconds_ago">%1$dс</string>
     <string name="title_media">Медыя</string>
     <string name="pref_title_alway_open_spoiler">Заўсёды разгортваць допіс з далікатным зместам</string>
-    <string name="replying_to">Адказ для @%s</string>
+    <string name="replying_to">Адказ для @%1$s</string>
     <string name="pref_title_public_filter_keywords">Публічныя стужкі</string>
     <string name="pref_title_thread_filter_keywords">Размовы</string>
     <string name="load_more_placeholder_text">загрузіць больш</string>
@@ -355,13 +351,13 @@
     <string name="action_add_or_remove_from_list">Дадаць ці выдаліць са спіса</string>
     <string name="license_apache_2">Выкарыстоўваецца ліцэнзія Apache License (копія знізу)</string>
     <string name="license_cc_by_sa_4">CC-BY-SA 4.0</string>
-    <string name="filter_expiration_format">%s (%s)</string>
+    <string name="filter_expiration_format">%1$s (%2$s)</string>
     <string name="action_add_to_list">Дадаць уліковы запіс у спіс</string>
     <plurals name="hint_describe_for_visually_impaired">
-        <item quantity="one">Апісанне змесціва для людзей з дэфектам зроку (ліміт у %d сімвал)</item>
-        <item quantity="few">Апісанне змесціва для людзей з дэфектам зроку (ліміт у %d сімвалы)</item>
-        <item quantity="many">Апісанне змесціва для людзей з дэфектам зроку (ліміт у %d сімвалаў)</item>
-        <item quantity="other">Апісанне змесціва для людзей з дэфектам зроку (ліміт у %d сімвалаў)</item>
+        <item quantity="one">Апісанне змесціва для людзей з дэфектам зроку (ліміт у %1$d сімвал)</item>
+        <item quantity="few">Апісанне змесціва для людзей з дэфектам зроку (ліміт у %1$d сімвалы)</item>
+        <item quantity="many">Апісанне змесціва для людзей з дэфектам зроку (ліміт у %1$d сімвалаў)</item>
+        <item quantity="other">Апісанне змесціва для людзей з дэфектам зроку (ліміт у %1$d сімвалаў)</item>
     </plurals>
     <string name="compose_save_draft_loses_media">Захаваць чарнавік\? (Далучэнні будуць запампаваныя зноў, калі Вы аднавіце чарнавік.)</string>
     <string name="performing_lookup_title">Выконваю пошук…</string>
@@ -377,7 +373,6 @@
     <string name="conversation_more_recipients">%1$s, %2$s і яшчэ %3$d</string>
     <string name="action_discard">Скасаваць змены</string>
     <string name="action_continue_edit">Працягнуць рэдагаванне</string>
-    <string name="action_edit_list">Змяніць спіс</string>
     <string name="hint_search_people_list">Пошук сярод вашых падпісак</string>
     <string name="add_account_name">Дадаць уліковы запіс</string>
     <string name="action_remove_from_list">Выдаліць уліковы запіс са спіса</string>
@@ -417,7 +412,7 @@
     <string name="action_compose_shortcut">Напісаць</string>
     <string name="send_post_notification_cancel_title">Дасыланне скасаванае</string>
     <string name="send_post_notification_saved_content">Копія допісу захавана ў Вашых чарнавіках</string>
-    <string name="error_no_custom_emojis">Ваш сервер %s не мае ўласных эмодзі</string>
+    <string name="error_no_custom_emojis">Ваш сервер %1$s не мае ўласных эмодзі</string>
     <string name="emoji_style">Стыль эмодзі</string>
     <string name="system_default">Сістэмнае значэнне па змаўчанні</string>
     <string name="caption_systememoji">Тыповы набор эмодзі прылады</string>
@@ -429,10 +424,10 @@
     <string name="pref_title_absolute_time">Паказваць абсалютны час</string>
     <string name="label_remote_account">Інфармацыя ніжэй можа не паказваць поўны профіль карыстальніка. Націсніце, каб адкрыць поўны профіль у браўзеры.</string>
     <plurals name="reblogs">
-        <item quantity="one"><b>%s</b> пашыраны</item>
-        <item quantity="few"><b>%s</b> пашырана</item>
-        <item quantity="many"><b>%s</b> пашыраных</item>
-        <item quantity="other"><b>%s</b> пашыраных</item>
+        <item quantity="one"><b>%1$s</b> пашыраны</item>
+        <item quantity="few"><b>%1$s</b> пашырана</item>
+        <item quantity="many"><b>%1$s</b> пашыраных</item>
+        <item quantity="other"><b>%1$s</b> пашыраных</item>
     </plurals>
     <string name="compose_unsaved_changes">У Вас засталіся незахаваныя змены.</string>
     <string name="expand_collapse_all_posts">Разгарнуць/згарнуць допісы</string>
@@ -446,8 +441,8 @@
     <string name="license_description">Tusky змяшчае код і рэсурсы з наступных праграм з адкрытым зыходным кодам:</string>
     <string name="conversation_1_recipients">%1$s</string>
     <string name="conversation_2_recipients">%1$s і %2$s</string>
-    <string name="description_post_media">Медыя: %s</string>
-    <string name="description_post_cw">Папярэджанне пра змесціва: %s</string>
+    <string name="description_post_media">Медыя: %1$s</string>
+    <string name="description_post_cw">Папярэджанне пра змесціва: %1$s</string>
     <string name="description_post_media_no_description_placeholder">Няма апісання</string>
     <string name="description_visibility_private">Падпісчыкі</string>
     <string name="description_visibility_direct">Асабіста</string>
@@ -457,7 +452,7 @@
     <string name="add_hashtag_title">Дадаць хэштэг</string>
     <string name="description_post_reblogged">Пашырана</string>
     <string name="description_poll">Апытанне з варыянтамі: %1$s, %2$s, %3$s, %4$s; %5$s</string>
-    <string name="edit_hashtag_hint">Хэштэг без #</string>
+    <string name="pick_hashtag_hint">Хэштэг без #</string>
     <string name="description_post_edited">Зменена</string>
     <string name="description_post_bookmarked">Дададзена ў закладкі</string>
     <string name="description_post_favourited">Упадабана</string>
@@ -469,51 +464,44 @@
     <string name="notifications_apply_filter">Фільтр</string>
     <string name="duration_365_days">365 дзён</string>
     <string name="duration_no_change">(Без змен)</string>
-    <plurals name="max_tab_number_reached">
-        <item quantity="one">абмежаванне ў %1$d ўкладку дасягнута</item>
-        <item quantity="few">абмежаванне ў %1$d ўкладкі дасягнута</item>
-        <item quantity="many">абмежаванне ў %1$d ўкладак дасягнута</item>
-        <item quantity="other">абмежаванне ў %1$d ўкладак дасягнута</item>
-    </plurals>
     <string name="compose_shortcut_long_label">Стварыць допіс</string>
     <string name="compose_shortcut_short_label">Стварыць</string>
     <string name="notification_clear_text">Вы ўпэўнены, што жадаеце выдаліць усе апавяшчэнні\?</string>
-    <string name="compose_preview_image_description">Дзеянні для выявы %s</string>
+    <string name="compose_preview_image_description">Дзеянні для выявы %1$s</string>
     <string name="button_done">Гатова</string>
-    <string name="report_sent_success">Скарга на @%s адпраўлена</string>
+    <string name="report_sent_success">Скарга на @%1$s адпраўлена</string>
     <string name="hint_additional_info">Дадатковыя каментары</string>
     <string name="title_accounts">Уліковыя запісы</string>
     <string name="failed_search">Пошук не атрымаўся</string>
-    <string name="pref_title_show_notifications_filter">Паказаць фільтр апавяшчэнняў</string>
     <string name="create_poll_title">Апытанне</string>
     <string name="duration_1_day">1 дзень</string>
     <string name="duration_3_days">3 дні</string>
     <string name="button_continue">Працягнуць</string>
     <plurals name="poll_timespan_minutes">
-        <item quantity="one">Засталася %d хвіліна</item>
-        <item quantity="few">Засталося %d хвіліны</item>
-        <item quantity="many">Засталося %d хвілін</item>
-        <item quantity="other">Засталося %d хвілін</item>
+        <item quantity="one">Засталася %1$d хвіліна</item>
+        <item quantity="few">Засталося %1$d хвіліны</item>
+        <item quantity="many">Засталося %1$d хвілін</item>
+        <item quantity="other">Засталося %1$d хвілін</item>
     </plurals>
-    <string name="report_remote_instance">Пераслаць да %s</string>
+    <string name="report_remote_instance">Пераслаць да %1$s</string>
     <string name="pref_title_enable_swipe_for_tabs">Уключыць пераключэнне паміж укладкамі жэстам чыркання</string>
     <plurals name="poll_timespan_seconds">
-        <item quantity="one">Засталася %d секунда</item>
-        <item quantity="few">Засталося %d секунды</item>
-        <item quantity="many">Засталося %d секунд</item>
-        <item quantity="other">Засталося %d секунд</item>
+        <item quantity="one">Засталася %1$d секунда</item>
+        <item quantity="few">Засталося %1$d секунды</item>
+        <item quantity="many">Засталося %1$d секунд</item>
+        <item quantity="other">Засталося %1$d секунд</item>
     </plurals>
     <plurals name="poll_info_votes">
-        <item quantity="one">%s голас</item>
-        <item quantity="few">%s галасы</item>
-        <item quantity="many">%s галасоў</item>
-        <item quantity="other">%s галасоў</item>
+        <item quantity="one">%1$s голас</item>
+        <item quantity="few">%1$s галасы</item>
+        <item quantity="many">%1$s галасоў</item>
+        <item quantity="other">%1$s галасоў</item>
     </plurals>
     <plurals name="poll_info_people">
-        <item quantity="one">%s чалавек</item>
-        <item quantity="few">%s чалавекі</item>
-        <item quantity="many">%s людзей</item>
-        <item quantity="other">%s людзей</item>
+        <item quantity="one">%1$s чалавек</item>
+        <item quantity="few">%1$s чалавекі</item>
+        <item quantity="many">%1$s людзей</item>
+        <item quantity="other">%1$s людзей</item>
     </plurals>
     <string name="label_duration">Працягласць</string>
     <string name="button_back">Назад</string>
@@ -531,22 +519,22 @@
     <string name="account_username_copied">Імя карыстальніка скапіявана</string>
     <string name="filter_apply">Прымяніць</string>
     <string name="poll_info_format"> <!-- 15 галасоў • 1 гадзіна засталася --> %1$s • %2$s</string>
-    <string name="poll_info_time_absolute">завяршыцца ў %s</string>
+    <string name="poll_info_time_absolute">завяршыцца ў %1$s</string>
     <plurals name="poll_timespan_hours">
-        <item quantity="one">Засталася %d гадзіна</item>
-        <item quantity="few">Засталося %d гадзіны</item>
-        <item quantity="many">Засталося %d гадзін</item>
-        <item quantity="other">Засталося %d гадзін</item>
+        <item quantity="one">Засталася %1$d гадзіна</item>
+        <item quantity="few">Засталося %1$d гадзіны</item>
+        <item quantity="many">Засталося %1$d гадзін</item>
+        <item quantity="other">Засталося %1$d гадзін</item>
     </plurals>
     <string name="duration_1_hour">1 гадзіну</string>
     <string name="poll_info_closed">скончаны</string>
     <string name="poll_ended_voted">Апытанне, у якім Вы ўдзельнічалі, скончана</string>
     <string name="poll_ended_created">Створанае Вамі апытанне скончана</string>
     <plurals name="poll_timespan_days">
-        <item quantity="one">Застаўся %d дзень</item>
-        <item quantity="few">Засталося %d дні</item>
-        <item quantity="many">Засталося %d дзён</item>
-        <item quantity="other">Засталося %d дзён</item>
+        <item quantity="one">Застаўся %1$d дзень</item>
+        <item quantity="few">Засталося %1$d дні</item>
+        <item quantity="many">Засталося %1$d дзён</item>
+        <item quantity="other">Засталося %1$d дзён</item>
     </plurals>
     <string name="duration_6_hours">6 гадзін</string>
     <string name="duration_7_days">7 дзён</string>
@@ -564,14 +552,12 @@
 \n- Статыстыка ў профілях пра Падпісчыкаў/Допісы
 \n
 \nНа Push-паведамленні гэта не ўплывае, але Вы можаце праглядзець налады апавяшчэнняў уручную.</string>
-    <string name="dialog_push_notification_migration">Каб выкарыстоўваць push-апавяшчэнні праз UnifiedPush, Tusky патрэбен дазвол, каб падпісацца на апавяшчэнні з Вашага сервера Mastodon. Для гэтага патрэбна выйсці і зайсці ва ўліковы запіс зноў, каб аднавіць вобласці дазволу OAuth, дадзеныя Tusky. Выкарыстоўванне магчымасці паўторнага ўваходу тут ці ў наладах уліковага запісу захоўвае ўсе Вашыя лакальныя чарнавікі і кэш.</string>
     <string name="poll_allow_multiple_choices">Некалькі варыянтаў</string>
     <string name="add_poll_choice">Дадаць варыянт</string>
     <string name="edit_poll">Змяніць</string>
-    <string name="post_lookup_error_format">Памылка пошуку допісу %s</string>
+    <string name="post_lookup_error_format">Памылка пошуку допісу %1$s</string>
     <string name="account_date_joined">Далучыўся(-лася) %1$s</string>
     <string name="account_note_saved">Захавана!</string>
-    <string name="dialog_push_notification_migration_other_accounts">Вы паўторна зайшлі ў бягучы ўліковы запіс, каб дазволіць Tusky падпісацца на push-апавяшчэнні. Але ў Вас яшчэ засталіся ўліковыя запісы, якія не мігрыравалі такім чынам. Пераключыцеся на іх і зайдзіце паўторна, каб уключыць падтрымку апавяшчэнняў праз UnifiedPush.</string>
     <string name="status_edit_info">%1$s адрэдагаваў(-ла)</string>
     <string name="status_created_info">%1$s стварыў(-ла)</string>
     <string name="pref_title_hide_top_toolbar">Схаваць загаловак верхняй панэлі інструментаў</string>
@@ -583,7 +569,7 @@
     <string name="draft_deleted">Чарнавік выдалены</string>
     <string name="report_category_spam">Спам</string>
     <string name="report_category_other">Іншае</string>
-    <string name="action_unfollow_hashtag_format">Не сачыць за #%s\?</string>
+    <string name="action_unfollow_hashtag_format">Не сачыць за #%1$s\?</string>
     <string name="action_subscribe_account">Падпісацца</string>
     <string name="action_unsubscribe_account">Адпісацца</string>
     <string name="tusky_compose_post_quicksetting_label">Стварыць допіс</string>
@@ -603,19 +589,17 @@
         <item quantity="many">Вы не можаце запампаваць больш за %1$d медыя далучэнняў.</item>
         <item quantity="other">Вы не можаце запампаваць больш за %1$d медыя далучэнняў.</item>
     </plurals>
-    <string name="dialog_delete_list_warning">Вы ўпэўнены, што жадаеце выдаліць спіс %s\?</string>
+    <string name="dialog_delete_list_warning">Вы ўпэўнены, што жадаеце выдаліць спіс %1$s\?</string>
     <string name="limit_notifications">Абмежаванне апавяшчэнняў у стужцы</string>
     <string name="wellbeing_hide_stats_posts">Схаваць колькасную статыстыку допісаў</string>
     <string name="wellbeing_hide_stats_profile">Схаваць колькасную статыстыку профіляў</string>
     <string name="report_category_violation">Парушэнне правіла</string>
-    <string name="url_domain_notifier">%s (🔗 %s)</string>
-    <string name="instance_rule_title">Правілы %s</string>
-    <string name="language_display_name_format">%s (%s)</string>
+    <string name="instance_rule_title">Правілы %1$s</string>
+    <string name="language_display_name_format">%1$s (%2$s)</string>
     <string name="delete_scheduled_post_warning">Выдаліць гэты запланаваны допіс\?</string>
-    <string name="instance_rule_info">Увайшоўшы, Вы пагаджаецеся з правіламі %s.</string>
-    <string name="poll_new_choice_hint">Варыянт %d</string>
+    <string name="instance_rule_info">Увайшоўшы, Вы пагаджаецеся з правіламі %1$s.</string>
+    <string name="poll_new_choice_hint">Варыянт %1$d</string>
     <string name="drafts_post_failed_to_send">Не атрымалася даслаць гэты допіс!</string>
-    <string name="tips_push_notification_migration">Увайдзіце зноў на ўсіх уліковых запісах, каб push-апавяшчэнні запрацавалі.</string>
     <string name="mute_notifications_switch">Бязгучныя апавяшчэнні</string>
     <string name="warning_scheduling_interval">Найменшы час планавання ў Mastodon складае 5 хвілін.</string>
     <string name="pref_reading_order_oldest_first">Спачатку старэйшыя</string>
@@ -625,42 +609,40 @@
     <string name="pref_summary_http_proxy_missing">&lt;не задана&gt;</string>
     <string name="pref_reading_order_newest_first">Спачатку навейшыя</string>
     <string name="dialog_follow_hashtag_title">Падпісацца на хэштэг</string>
-    <string name="dialog_follow_hashtag_hint">#hashtag</string>
     <string name="action_post_failed">Не атрымалася запампаваць</string>
-    <string name="action_post_failed_detail">Не атрымалася запампаваць ваш допіс і ён быў захаваны ў чарнавік.
+    <plurals name="action_post_failed_detail">
+        <item quantity="one">Не атрымалася запампаваць ваш допіс і ён быў захаваны ў чарнавік.
 \n
-\nАльбо не атрымалася злучыцца з серверам ці ён адхіліў допіс.</string>
-    <string name="action_post_failed_detail_plural">Не атрымалася запампаваць вашы допісы і яны былі захаваны ў чарнавікі.
+\nАльбо не атрымалася злучыцца з серверам ці ён адхіліў допіс.</item>
+        <item quantity="other">Не атрымалася запампаваць вашы допісы і яны былі захаваны ў чарнавікі.
 \n
-\nАльбо не атрымалася злучыцца з серверам ці ён адхіліў допісы.</string>
+\nАльбо не атрымалася злучыцца з серверам ці ён адхіліў допісы.</item>
+    </plurals>
     <string name="action_post_failed_show_drafts">Паказаць чарнавікі</string>
     <string name="action_post_failed_do_nothing">Адмяніць</string>
     <string name="description_login">Працуе амаль заўсёды. Даныя не ўцякаюць у іншыя праграмы.</string>
     <string name="action_browser_login">Увайсці з браўзера</string>
     <string name="notification_unknown_name">Невядома</string>
     <string name="status_filtered_show_anyway">Усё роўна паказаць</string>
-    <string name="status_filter_placeholder_label_format">Адфільтрована: %s</string>
+    <string name="status_filter_placeholder_label_format">Адфільтрована: %1$s</string>
     <string name="pref_title_account_filter_keywords">Профілі</string>
     <string name="title_public_trending_hashtags">Папулярныя хэштэгі</string>
     <string name="description_browser_login">Можа падтрымліваць дадатковыя метады праверкі сапраўднасці, але для гэтага патрэбны адпаведны браузер.</string>
-    <string name="hint_description">Апісанне</string>
     <string name="post_media_image">Відарыс</string>
     <string name="action_refresh">Абнавіць</string>
-    <string name="select_list_empty">Яшчэ няма спісаў</string>
     <string name="select_list_manage">Кіраванне спісамі</string>
-    <string name="error_list_load">Памылка загрузкі спісаў</string>
     <string name="total_usage">Усяго выкарыстана</string>
     <string name="total_accounts">Усяго ўліковых запісаў</string>
     <string name="accessibility_talking_about_tag">%1$d людзей кажуць пра хэштэг %2$s</string>
     <string name="pref_title_show_stat_inline">Паказваць статыстыку допісаў у стужцы</string>
-    <string name="ui_error_reblog">Не атрымалася пашырыць допіс: %s</string>
+    <string name="ui_error_reblog">Не атрымалася пашырыць допіс: %1$s</string>
     <string name="hint_filter_title">Мой фільтр</string>
-    <string name="filter_description_format">%s: %s</string>
-    <string name="ui_error_bookmark">Не атрымалася дадаць допіс да закладак: %s</string>
-    <string name="ui_error_accept_follow_request">Не атрымалася пацвердзіць запыт на падпіску: %s</string>
+    <string name="filter_description_format">%1$s: %2$s</string>
+    <string name="ui_error_bookmark">Не атрымалася дадаць допіс да закладак: %1$s</string>
+    <string name="ui_error_accept_follow_request">Не атрымалася пацвердзіць запыт на падпіску: %1$s</string>
     <string name="ui_success_accepted_follow_request">Запыт на падпіску пацверджаны</string>
     <string name="ui_success_rejected_follow_request">Запыт на падпіску заблакіраваны</string>
-    <string name="ui_error_clear_notifications">Не атрымалася ачысціць апавяшчэнні: %s</string>
+    <string name="ui_error_clear_notifications">Не атрымалася ачысціць апавяшчэнні: %1$s</string>
     <string name="ui_error_unknown">невядомая прычына</string>
     <string name="label_filter_title">Загаловак</string>
     <string name="filter_action_hide">Схаваць</string>
@@ -668,7 +650,18 @@
     <string name="label_filter_context">Фільтраваць кантэкст</string>
     <string name="label_filter_keywords">Ключавыя словы альбо фразы для фільтравання</string>
     <string name="action_add">Дадаць</string>
-    <string name="filter_keyword_display_format">%s (цэлае слова)</string>
+    <string name="filter_keyword_display_format">%1$s (цэлае слова)</string>
     <string name="filter_keyword_addition_title">Дадаць ключавое слова</string>
     <string name="filter_edit_keyword_title">Змяніць ключавое слова</string>
+    <string name="reply_sending_long">Ваш адказ адасланы.</string>
+    <string name="reply_sending">Адсылаю…</string>
+    <string name="label_image">Рысунак</string>
+    <string name="action_translate">Перакласці</string>
+    <string name="action_show_original">Паказаць арыгінал</string>
+    <string name="title_public_trending_statuses">Папулярныя допісы</string>
+    <string name="error_blocking_domain">Не атрымалася заблакіраваць %1$s: %2$s</string>
+    <string name="error_unblocking_domain">Не атрымалася разблакіраваць %1$s: %2$s</string>
+    <string name="pref_title_per_timeline_preferences">Налады па стужкам</string>
+    <string name="pref_title_show_self_boosts">Паказаць самацытаванне</string>
+    <string name="pref_title_show_self_boosts_description">Нехта цытуе ўласныя допісы</string>
 </resources>

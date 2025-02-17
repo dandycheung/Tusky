@@ -27,6 +27,7 @@ import com.keylesspalace.tusky.viewdata.StatusViewData;
 
 import java.text.DateFormat;
 import java.util.Date;
+import java.util.List;
 
 public class StatusDetailedViewHolder extends StatusBaseViewHolder {
     private final TextView reblogs;
@@ -35,7 +36,7 @@ public class StatusDetailedViewHolder extends StatusBaseViewHolder {
 
     private static final DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.SHORT);
 
-    public StatusDetailedViewHolder(View view) {
+    public StatusDetailedViewHolder(@NonNull View view) {
         super(view);
         reblogs = view.findViewById(R.id.status_reblogs);
         favourites = view.findViewById(R.id.status_favourites);
@@ -43,7 +44,7 @@ public class StatusDetailedViewHolder extends StatusBaseViewHolder {
     }
 
     @Override
-    protected void setMetaData(StatusViewData.Concrete statusViewData, StatusDisplayOptions statusDisplayOptions, StatusActionListener listener) {
+    protected void setMetaData(@NonNull StatusViewData.Concrete statusViewData, @NonNull StatusDisplayOptions statusDisplayOptions, @NonNull StatusActionListener listener) {
 
         Status status = statusViewData.getActionable();
 
@@ -57,8 +58,8 @@ public class StatusDetailedViewHolder extends StatusBaseViewHolder {
 
         if (visibilityIcon != null) {
             ImageSpan visibilityIconSpan = new ImageSpan(
-                    visibilityIcon,
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ? DynamicDrawableSpan.ALIGN_CENTER : DynamicDrawableSpan.ALIGN_BASELINE
+                visibilityIcon,
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ? DynamicDrawableSpan.ALIGN_CENTER : DynamicDrawableSpan.ALIGN_BASELINE
             );
             sb.setSpan(visibilityIconSpan, 0, visibilityString.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
@@ -67,7 +68,6 @@ public class StatusDetailedViewHolder extends StatusBaseViewHolder {
 
         Date createdAt = status.getCreatedAt();
         if (createdAt != null) {
-
             sb.append(" ");
             sb.append(dateFormat.format(createdAt));
         }
@@ -95,10 +95,16 @@ public class StatusDetailedViewHolder extends StatusBaseViewHolder {
             }
         }
 
+        String language = status.getLanguage();
+
+        if (language != null) {
+            sb.append(metadataJoiner);
+            sb.append(language.toUpperCase());
+        }
+
         Status.Application app = status.getApplication();
 
         if (app != null) {
-
             sb.append(metadataJoiner);
 
             if (app.getWebsite() != null) {
@@ -114,25 +120,8 @@ public class StatusDetailedViewHolder extends StatusBaseViewHolder {
     }
 
     private void setReblogAndFavCount(int reblogCount, int favCount, StatusActionListener listener) {
-
-        if (reblogCount > 0) {
-            reblogs.setText(getReblogsText(reblogs.getContext(), reblogCount));
-            reblogs.setVisibility(View.VISIBLE);
-        } else {
-            reblogs.setVisibility(View.GONE);
-        }
-        if (favCount > 0) {
-            favourites.setText(getFavsText(favourites.getContext(), favCount));
-            favourites.setVisibility(View.VISIBLE);
-        } else {
-            favourites.setVisibility(View.GONE);
-        }
-
-        if (reblogs.getVisibility() == View.GONE && favourites.getVisibility() == View.GONE) {
-            infoDivider.setVisibility(View.GONE);
-        } else {
-            infoDivider.setVisibility(View.VISIBLE);
-        }
+        reblogs.setText(getReblogsText(reblogs.getContext(), reblogCount));
+        favourites.setText(getFavsText(favourites.getContext(), favCount));
 
         reblogs.setOnClickListener(v -> {
             int position = getBindingAdapterPosition();
@@ -152,20 +141,21 @@ public class StatusDetailedViewHolder extends StatusBaseViewHolder {
     public void setupWithStatus(@NonNull final StatusViewData.Concrete status,
                                 @NonNull final StatusActionListener listener,
                                 @NonNull StatusDisplayOptions statusDisplayOptions,
-                                @Nullable Object payloads) {
+                                @NonNull List<Object> payloads,
+                                final boolean showStatusInfo) {
         // We never collapse statuses in the detail view
         StatusViewData.Concrete uncollapsedStatus = (status.isCollapsible() && status.isCollapsed()) ?
-                status.copyWithCollapsed(false) :
-                status;
+            status.copyWithCollapsed(false) :
+            status;
 
-        super.setupWithStatus(uncollapsedStatus, listener, statusDisplayOptions, payloads);
+        super.setupWithStatus(uncollapsedStatus, listener, statusDisplayOptions, payloads, showStatusInfo);
         setupCard(uncollapsedStatus, status.isExpanded(), CardViewMode.FULL_WIDTH, statusDisplayOptions, listener); // Always show card for detailed status
-        if (payloads == null) {
+        if (payloads.isEmpty()) {
             Status actionable = uncollapsedStatus.getActionable();
 
             if (!statusDisplayOptions.hideStats()) {
                 setReblogAndFavCount(actionable.getReblogsCount(),
-                        actionable.getFavouritesCount(), listener);
+                    actionable.getFavouritesCount(), listener);
             } else {
                 hideQuantitativeStats();
             }
@@ -197,7 +187,7 @@ public class StatusDetailedViewHolder extends StatusBaseViewHolder {
         }
 
         final Drawable visibilityDrawable = AppCompatResources.getDrawable(
-                this.metaInfo.getContext(), visibilityIcon
+            this.metaInfo.getContext(), visibilityIcon
         );
         if (visibilityDrawable == null) {
             return null;
@@ -205,10 +195,10 @@ public class StatusDetailedViewHolder extends StatusBaseViewHolder {
 
         final int size = (int) this.metaInfo.getTextSize();
         visibilityDrawable.setBounds(
-                0,
-                0,
-                size,
-                size
+            0,
+            0,
+            size,
+            size
         );
         visibilityDrawable.setTint(this.metaInfo.getCurrentTextColor());
 

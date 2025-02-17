@@ -16,26 +16,26 @@ package com.keylesspalace.tusky.fragment
 
 import android.Manifest
 import android.app.DownloadManager
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.os.Environment
 import android.util.Log
 import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.LayoutRes
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.app.ActivityOptionsCompat
+import androidx.core.content.getSystemService
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import at.connyduck.calladapter.networkresult.fold
 import at.connyduck.calladapter.networkresult.onFailure
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.keylesspalace.tusky.BaseActivity
 import com.keylesspalace.tusky.BottomSheetActivity
@@ -46,21 +46,25 @@ import com.keylesspalace.tusky.ViewMediaActivity.Companion.newIntent
 import com.keylesspalace.tusky.components.compose.ComposeActivity
 import com.keylesspalace.tusky.components.compose.ComposeActivity.Companion.startIntent
 import com.keylesspalace.tusky.components.compose.ComposeActivity.ComposeOptions
+import com.keylesspalace.tusky.components.instanceinfo.InstanceInfoRepository
 import com.keylesspalace.tusky.components.report.ReportActivity.Companion.getIntent
-import com.keylesspalace.tusky.db.AccountEntity
 import com.keylesspalace.tusky.db.AccountManager
-import com.keylesspalace.tusky.di.Injectable
+import com.keylesspalace.tusky.db.entity.AccountEntity
 import com.keylesspalace.tusky.entity.Attachment
 import com.keylesspalace.tusky.entity.Status
+import com.keylesspalace.tusky.entity.Translation
 import com.keylesspalace.tusky.interfaces.AccountSelectionListener
 import com.keylesspalace.tusky.network.MastodonApi
 import com.keylesspalace.tusky.usecase.TimelineCases
+import com.keylesspalace.tusky.util.copyToClipboard
 import com.keylesspalace.tusky.util.openLink
 import com.keylesspalace.tusky.util.parseAsMastodonHtml
+import com.keylesspalace.tusky.util.startActivityWithSlideInAnimation
 import com.keylesspalace.tusky.view.showMuteAccountDialog
 import com.keylesspalace.tusky.viewdata.AttachmentViewData
-import kotlinx.coroutines.launch
+import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 
 /* Note from Andrew on Jan. 22, 2017: This class is a design problem for me, so I left it with an
  * awkward name. TimelineFragment and NotificationFragment have significant overlap but the nature
@@ -68,10 +72,16 @@ import javax.inject.Inject
  * adapters. I feel like the profile pages and thread viewer, which I haven't made yet, will also
  * overlap functionality. So, I'm momentarily leaving it and hopefully working on those will clear
  * up what needs to be where. */
-abstract class SFragment : Fragment(), Injectable {
+abstract class SFragment(@LayoutRes contentLayoutId: Int) : Fragment(contentLayoutId) {
     protected abstract fun removeItem(position: Int)
     protected abstract fun onReblog(reblog: Boolean, position: Int)
-    private lateinit var bottomSheetActivity: BottomSheetActivity
+
+    /** `null` if translation is not supported on this screen */
+    protected abstract val onMoreTranslate: ((translate: Boolean, position: Int) -> Unit)?
+
+    private val bottomSheetActivity: BottomSheetActivity
+        get() = (requireActivity() as? BottomSheetActivity)
+            ?: throw IllegalStateException("Fragment must be attached to a BottomSheetActivity!")
 
     @Inject
     lateinit var mastodonApi: MastodonApi
@@ -82,18 +92,46 @@ abstract class SFragment : Fragment(), Injectable {
     @Inject
     lateinit var timelineCases: TimelineCases
 
+    @Inject
+    lateinit var instanceInfoRepository: InstanceInfoRepository
+
+    private var pendingMediaDownloads: List<String>? = null
+
+    private val downloadAllMediaPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (isGranted) {
+                pendingMediaDownloads?.let { downloadAllMedia(it) }
+            } else {
+                Toast.makeText(
+                    context,
+                    R.string.error_media_download_permission,
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            pendingMediaDownloads = null
+        }
+
     override fun startActivity(intent: Intent) {
-        super.startActivity(intent)
-        requireActivity().overridePendingTransition(R.anim.slide_from_right, R.anim.slide_to_left)
+        requireActivity().startActivityWithSlideInAnimation(intent)
     }
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        bottomSheetActivity = if (context is BottomSheetActivity) {
-            context
-        } else {
-            throw IllegalStateException("Fragment must be attached to a BottomSheetActivity!")
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        pendingMediaDownloads = savedInstanceState?.getStringArrayList(PENDING_MEDIA_DOWNLOADS_STATE_KEY)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        pendingMediaDownloads?.let {
+            outState.putStringArrayList(PENDING_MEDIA_DOWNLOADS_STATE_KEY, ArrayList(it))
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        // make sure we have instance info for when we'll need it
+        instanceInfoRepository.precache()
     }
 
     protected fun openReblog(status: Status?) {
@@ -140,11 +178,12 @@ abstract class SFragment : Fragment(), Injectable {
         requireActivity().startActivity(intent)
     }
 
-    protected fun more(status: Status, view: View, position: Int) {
+    protected fun more(status: Status, view: View, position: Int, translation: Translation?) {
         val id = status.actionableId
-        val accountId = status.actionableStatus.account.id
-        val accountUsername = status.actionableStatus.account.username
-        val statusUrl = status.actionableStatus.url
+        val actionableStatus = status.actionableStatus
+        val accountId = actionableStatus.account.id
+        val accountUsername = actionableStatus.account.username
+        val statusUrl = actionableStatus.url
         var loggedInAccountId: String? = null
         val activeAccount = accountManager.activeAccount
         if (activeAccount != null) {
@@ -156,20 +195,29 @@ abstract class SFragment : Fragment(), Injectable {
         if (statusIsByCurrentUser) {
             popup.inflate(R.menu.status_more_for_user)
             val menu = popup.menu
-            when (status.visibility) {
+            when (actionableStatus.visibility) {
                 Status.Visibility.PUBLIC, Status.Visibility.UNLISTED -> {
-                    menu.add(0, R.id.pin, 1, getString(if (status.isPinned()) R.string.unpin_action else R.string.pin_action))
+                    menu.add(
+                        0,
+                        R.id.pin,
+                        1,
+                        getString(
+                            if (actionableStatus.pinned) R.string.unpin_action else R.string.pin_action
+                        )
+                    )
                 }
+
                 Status.Visibility.PRIVATE -> {
-                    val reblogged = status.reblog?.reblogged ?: status.reblogged
-                    menu.findItem(R.id.status_reblog_private).isVisible = !reblogged
-                    menu.findItem(R.id.status_unreblog_private).isVisible = reblogged
+                    menu.findItem(R.id.status_reblog_private).isVisible = !actionableStatus.reblogged
+                    menu.findItem(R.id.status_unreblog_private).isVisible = actionableStatus.reblogged
                 }
+
                 else -> {}
             }
         } else {
             popup.inflate(R.menu.status_more)
-            popup.menu.findItem(R.id.status_download_media).isVisible = status.attachments.isNotEmpty()
+            popup.menu.findItem(R.id.status_download_media).isVisible =
+                status.attachments.isNotEmpty()
         }
         val menu = popup.menu
         val openAsItem = menu.findItem(R.id.status_open_as)
@@ -180,17 +228,28 @@ abstract class SFragment : Fragment(), Injectable {
             openAsItem.title = openAsText
         }
         val muteConversationItem = menu.findItem(R.id.status_mute_conversation)
-        val mutable = statusIsByCurrentUser || accountIsInMentions(activeAccount, status.mentions)
+        val mutable =
+            statusIsByCurrentUser || accountIsInMentions(activeAccount, status.mentions)
         muteConversationItem.isVisible = mutable
         if (mutable) {
             muteConversationItem.setTitle(
-                if (status.muted != true) {
+                if (!status.muted) {
                     R.string.action_mute_conversation
                 } else {
                     R.string.action_unmute_conversation
                 }
             )
         }
+
+        // translation not there for posts already in your language or non-public posts
+        menu.findItem(R.id.status_translate)?.let { translateItem ->
+            translateItem.isVisible = onMoreTranslate != null &&
+                !status.language.equals(Locale.getDefault().language, ignoreCase = true) &&
+                instanceInfoRepository.cachedInstanceInfoOrFallback.translationEnabled == true &&
+                (status.visibility == Status.Visibility.PUBLIC || status.visibility == Status.Visibility.UNLISTED)
+            translateItem.setTitle(if (translation != null) R.string.action_show_original else R.string.action_translate)
+        }
+
         popup.setOnMenuItemClickListener { item: MenuItem ->
             when (item.itemId) {
                 R.id.post_share_content -> {
@@ -212,6 +271,7 @@ abstract class SFragment : Fragment(), Injectable {
                     )
                     return@setOnMenuItemClickListener true
                 }
+
                 R.id.post_share_link -> {
                     val sendIntent = Intent().apply {
                         action = Intent.ACTION_SEND
@@ -226,67 +286,84 @@ abstract class SFragment : Fragment(), Injectable {
                     )
                     return@setOnMenuItemClickListener true
                 }
+
                 R.id.status_copy_link -> {
-                    (requireActivity().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).apply {
-                        setPrimaryClip(ClipData.newPlainText(null, statusUrl))
-                    }
+                    statusUrl?.let { requireActivity().copyToClipboard(it, getString(R.string.url_copied)) }
                     return@setOnMenuItemClickListener true
                 }
+
                 R.id.status_open_as -> {
                     showOpenAsDialog(statusUrl, item.title)
                     return@setOnMenuItemClickListener true
                 }
+
                 R.id.status_download_media -> {
-                    requestDownloadAllMedia(status)
+                    requestDownloadAllMedia(actionableStatus)
                     return@setOnMenuItemClickListener true
                 }
+
                 R.id.status_mute -> {
                     onMute(accountId, accountUsername)
                     return@setOnMenuItemClickListener true
                 }
+
                 R.id.status_block -> {
                     onBlock(accountId, accountUsername)
                     return@setOnMenuItemClickListener true
                 }
+
                 R.id.status_report -> {
                     openReportPage(accountId, accountUsername, id)
                     return@setOnMenuItemClickListener true
                 }
+
                 R.id.status_unreblog_private -> {
                     onReblog(false, position)
                     return@setOnMenuItemClickListener true
                 }
+
                 R.id.status_reblog_private -> {
                     onReblog(true, position)
                     return@setOnMenuItemClickListener true
                 }
+
                 R.id.status_delete -> {
                     showConfirmDeleteDialog(id, position)
                     return@setOnMenuItemClickListener true
                 }
+
                 R.id.status_delete_and_redraft -> {
                     showConfirmEditDialog(id, position, status)
                     return@setOnMenuItemClickListener true
                 }
+
                 R.id.status_edit -> {
                     editStatus(id, status)
                     return@setOnMenuItemClickListener true
                 }
+
                 R.id.pin -> {
-                    lifecycleScope.launch {
-                        timelineCases.pin(status.id, !status.isPinned()).onFailure { e: Throwable ->
-                            val message = e.message
-                                ?: getString(if (status.isPinned()) R.string.failed_to_unpin else R.string.failed_to_pin)
-                            Snackbar.make(requireView(), message, Snackbar.LENGTH_LONG).show()
-                        }
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        timelineCases.pin(status.actionableId, !actionableStatus.pinned)
+                            .onFailure { e: Throwable ->
+                                val message = e.message
+                                    ?: getString(if (status.pinned) R.string.failed_to_unpin else R.string.failed_to_pin)
+                                Snackbar.make(requireView(), message, Snackbar.LENGTH_LONG)
+                                    .show()
+                            }
                     }
                     return@setOnMenuItemClickListener true
                 }
+
                 R.id.status_mute_conversation -> {
                     lifecycleScope.launch {
-                        timelineCases.muteConversation(status.id, status.muted != true)
+                        timelineCases.muteConversation(status.id, !status.muted)
                     }
                     return@setOnMenuItemClickListener true
+                }
+
+                R.id.status_translate -> {
+                    onMoreTranslate?.invoke(translation == null, position)
                 }
             }
             false
@@ -295,15 +372,18 @@ abstract class SFragment : Fragment(), Injectable {
     }
 
     private fun onMute(accountId: String, accountUsername: String) {
-        showMuteAccountDialog(this.requireActivity(), accountUsername) { notifications: Boolean?, duration: Int? ->
+        showMuteAccountDialog(
+            this.requireActivity(),
+            accountUsername
+        ) { notifications: Boolean, duration: Int? ->
             lifecycleScope.launch {
-                timelineCases.mute(accountId, notifications == true, duration)
+                timelineCases.mute(accountId, notifications, duration)
             }
         }
     }
 
     private fun onBlock(accountId: String, accountUsername: String) {
-        AlertDialog.Builder(requireContext())
+        MaterialAlertDialogBuilder(requireContext())
             .setMessage(getString(R.string.dialog_block_warning, accountUsername))
             .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
                 lifecycleScope.launch {
@@ -332,6 +412,7 @@ abstract class SFragment : Fragment(), Injectable {
                     startActivity(intent)
                 }
             }
+
             Attachment.Type.UNKNOWN -> {
                 requireContext().openLink(attachment.url)
             }
@@ -347,14 +428,14 @@ abstract class SFragment : Fragment(), Injectable {
     }
 
     private fun showConfirmDeleteDialog(id: String, position: Int) {
-        AlertDialog.Builder(requireActivity())
+        MaterialAlertDialogBuilder(requireActivity())
             .setMessage(R.string.dialog_delete_post_warning)
             .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
-                lifecycleScope.launch {
+                viewLifecycleOwner.lifecycleScope.launch {
                     val result = timelineCases.delete(id).exceptionOrNull()
                     if (result != null) {
                         Log.w("SFragment", "error deleting status", result)
-                        Toast.makeText(context, R.string.error_generic, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), R.string.error_generic, Toast.LENGTH_SHORT).show()
                     }
                     // XXX: Removes the item even if there was an error. This is probably not
                     // correct (see similar code in showConfirmEditDialog() which only
@@ -369,17 +450,16 @@ abstract class SFragment : Fragment(), Injectable {
     }
 
     private fun showConfirmEditDialog(id: String, position: Int, status: Status) {
-        if (activity == null) {
-            return
-        }
-        AlertDialog.Builder(requireActivity())
+        val context = context ?: return
+
+        MaterialAlertDialogBuilder(context)
             .setMessage(R.string.dialog_redraft_post_warning)
             .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
-                lifecycleScope.launch {
+                viewLifecycleOwner.lifecycleScope.launch {
                     timelineCases.delete(id).fold(
                         { deletedStatus ->
                             removeItem(position)
-                            val sourceStatus = if (deletedStatus.isEmpty()) {
+                            val sourceStatus = if (deletedStatus.isEmpty) {
                                 status.toDeletedStatus()
                             } else {
                                 deletedStatus
@@ -396,7 +476,7 @@ abstract class SFragment : Fragment(), Injectable {
                                 poll = sourceStatus.poll?.toNewPoll(sourceStatus.createdAt),
                                 kind = ComposeActivity.ComposeKind.NEW
                             )
-                            startActivity(startIntent(requireContext(), composeOptions))
+                            startActivity(startIntent(context, composeOptions))
                         },
                         { error: Throwable? ->
                             Log.w("SFragment", "error deleting status", error)
@@ -411,7 +491,7 @@ abstract class SFragment : Fragment(), Injectable {
     }
 
     private fun editStatus(id: String, status: Status) {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             mastodonApi.statusSource(id).fold(
                 { source ->
                     val composeOptions = ComposeOptions(
@@ -457,42 +537,44 @@ abstract class SFragment : Fragment(), Injectable {
         }
     }
 
-    private fun downloadAllMedia(status: Status) {
+    private fun downloadAllMedia(mediaUrls: List<String>) {
         Toast.makeText(context, R.string.downloading_media, Toast.LENGTH_SHORT).show()
-        val downloadManager = requireActivity().getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        val downloadManager: DownloadManager = requireContext().getSystemService()!!
 
-        for ((_, url) in status.attachments) {
+        for (url in mediaUrls) {
             val uri = Uri.parse(url)
             downloadManager.enqueue(
                 DownloadManager.Request(uri).apply {
-                    setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, uri.lastPathSegment)
+                    setDestinationInExternalPublicDir(
+                        Environment.DIRECTORY_DOWNLOADS,
+                        uri.lastPathSegment
+                    )
                 }
             )
         }
     }
 
     private fun requestDownloadAllMedia(status: Status) {
+        if (status.attachments.isEmpty()) {
+            return
+        }
+        val mediaUrls = status.attachments.map { it.url }
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            val permissions = arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            (activity as BaseActivity).requestPermissions(permissions) { _: Array<String?>?, grantResults: IntArray ->
-                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    downloadAllMedia(status)
-                } else {
-                    Toast.makeText(
-                        context,
-                        R.string.error_media_download_permission,
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
+            pendingMediaDownloads = mediaUrls
+            downloadAllMediaPermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
         } else {
-            downloadAllMedia(status)
+            downloadAllMedia(mediaUrls)
         }
     }
 
     companion object {
         private const val TAG = "SFragment"
-        private fun accountIsInMentions(account: AccountEntity?, mentions: List<Status.Mention>): Boolean {
+        private const val PENDING_MEDIA_DOWNLOADS_STATE_KEY = "pending_media_downloads"
+
+        private fun accountIsInMentions(
+            account: AccountEntity?,
+            mentions: List<Status.Mention>
+        ): Boolean {
             return mentions.any { mention ->
                 account?.username == mention.username && account.domain == Uri.parse(mention.url)?.host
             }
