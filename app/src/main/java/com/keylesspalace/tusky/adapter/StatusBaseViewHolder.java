@@ -6,9 +6,11 @@ import android.content.Context;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,14 +19,14 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.content.res.AppCompatResources;
 import androidx.appcompat.widget.PopupMenu;
+import androidx.appcompat.widget.TooltipCompat;
 import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.core.content.ContextCompat;
 import androidx.core.text.HtmlCompat;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -33,6 +35,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.RequestBuilder;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.android.material.shape.CornerFamily;
@@ -42,19 +45,21 @@ import com.keylesspalace.tusky.ViewMediaActivity;
 import com.keylesspalace.tusky.entity.Attachment;
 import com.keylesspalace.tusky.entity.Attachment.Focus;
 import com.keylesspalace.tusky.entity.Attachment.MetaData;
-import com.keylesspalace.tusky.entity.Card;
+import com.keylesspalace.tusky.entity.PreviewCard;
 import com.keylesspalace.tusky.entity.Emoji;
-import com.keylesspalace.tusky.entity.Filter;
-import com.keylesspalace.tusky.entity.FilterResult;
 import com.keylesspalace.tusky.entity.HashTag;
 import com.keylesspalace.tusky.entity.Status;
+import com.keylesspalace.tusky.entity.TimelineAccount;
+import com.keylesspalace.tusky.entity.Translation;
 import com.keylesspalace.tusky.interfaces.StatusActionListener;
 import com.keylesspalace.tusky.util.AbsoluteTimeFormatter;
 import com.keylesspalace.tusky.util.AttachmentHelper;
 import com.keylesspalace.tusky.util.CardViewMode;
+import com.keylesspalace.tusky.util.CompositeWithOpaqueBackground;
 import com.keylesspalace.tusky.util.CustomEmojiHelper;
 import com.keylesspalace.tusky.util.ImageLoadingHelper;
 import com.keylesspalace.tusky.util.LinkHelper;
+import com.keylesspalace.tusky.util.LocaleUtilsKt;
 import com.keylesspalace.tusky.util.NumberUtils;
 import com.keylesspalace.tusky.util.StatusDisplayOptions;
 import com.keylesspalace.tusky.util.TimestampUtils;
@@ -65,8 +70,10 @@ import com.keylesspalace.tusky.viewdata.PollOptionViewData;
 import com.keylesspalace.tusky.viewdata.PollViewData;
 import com.keylesspalace.tusky.viewdata.PollViewDataKt;
 import com.keylesspalace.tusky.viewdata.StatusViewData;
+import com.keylesspalace.tusky.viewdata.TranslationViewData;
 
 import java.text.NumberFormat;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -107,17 +114,20 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
     private final TextView pollDescription;
     private final Button pollButton;
 
-    private final LinearLayout cardView;
-    private final LinearLayout cardInfo;
+    private final MaterialCardView cardView;
+    private final LinearLayout cardLayout;
     private final ShapeableImageView cardImage;
     private final TextView cardTitle;
-    private final TextView cardDescription;
-    private final TextView cardUrl;
+    private final TextView cardMetadata;
+    private final TextView cardAuthor;
+    private final TextView cardAuthorButton;
+
     private final PollAdapter pollAdapter;
-    protected LinearLayout filteredPlaceholder;
-    protected TextView filteredPlaceholderLabel;
-    protected Button filteredPlaceholderShowButton;
-    protected ConstraintLayout statusContainer;
+    protected final ConstraintLayout statusContainer;
+    private final TextView translationStatusView;
+    private final Button untranslateButton;
+    private final TextView trailingHashtagView;
+
 
     private final NumberFormat numberFormat = NumberFormat.getNumberInstance();
     private final AbsoluteTimeFormatter absoluteTimeFormatter = new AbsoluteTimeFormatter();
@@ -128,7 +138,7 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
 
     private final Drawable mediaPreviewUnloaded;
 
-    protected StatusBaseViewHolder(View itemView) {
+    protected StatusBaseViewHolder(@NonNull View itemView) {
         super(itemView);
         displayName = itemView.findViewById(R.id.status_display_name);
         username = itemView.findViewById(R.id.status_username);
@@ -149,10 +159,10 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
         sensitiveMediaWarning = itemView.findViewById(R.id.status_sensitive_media_warning);
         sensitiveMediaShow = itemView.findViewById(R.id.status_sensitive_media_button);
         mediaLabels = new TextView[]{
-                itemView.findViewById(R.id.status_media_label_0),
-                itemView.findViewById(R.id.status_media_label_1),
-                itemView.findViewById(R.id.status_media_label_2),
-                itemView.findViewById(R.id.status_media_label_3)
+            itemView.findViewById(R.id.status_media_label_0),
+            itemView.findViewById(R.id.status_media_label_1),
+            itemView.findViewById(R.id.status_media_label_2),
+            itemView.findViewById(R.id.status_media_label_3)
         };
         mediaDescriptions = new CharSequence[mediaLabels.length];
         contentWarningDescription = itemView.findViewById(R.id.status_content_warning_description);
@@ -164,21 +174,23 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
         pollButton = itemView.findViewById(R.id.status_poll_button);
 
         cardView = itemView.findViewById(R.id.status_card_view);
-        cardInfo = itemView.findViewById(R.id.card_info);
+        cardLayout = itemView.findViewById(R.id.status_card_layout);
         cardImage = itemView.findViewById(R.id.card_image);
         cardTitle = itemView.findViewById(R.id.card_title);
-        cardDescription = itemView.findViewById(R.id.card_description);
-        cardUrl = itemView.findViewById(R.id.card_link);
+        cardMetadata = itemView.findViewById(R.id.card_metadata);
+        cardAuthor = itemView.findViewById(R.id.card_author);
+        cardAuthorButton = itemView.findViewById(R.id.card_author_button);
 
-        filteredPlaceholder = itemView.findViewById(R.id.status_filtered_placeholder);
-        filteredPlaceholderLabel = itemView.findViewById(R.id.status_filter_label);
-        filteredPlaceholderShowButton = itemView.findViewById(R.id.status_filter_show_anyway);
         statusContainer = itemView.findViewById(R.id.status_container);
 
         pollAdapter = new PollAdapter();
         pollOptions.setAdapter(pollAdapter);
         pollOptions.setLayoutManager(new LinearLayoutManager(pollOptions.getContext()));
         ((DefaultItemAnimator) pollOptions.getItemAnimator()).setSupportsChangeAnimations(false);
+
+        translationStatusView = itemView.findViewById(R.id.status_translation_status);
+        untranslateButton = itemView.findViewById(R.id.status_button_untranslate);
+        trailingHashtagView = itemView.findViewById(R.id.status_trailing_hashtags_content);
 
         this.avatarRadius48dp = itemView.getContext().getResources().getDimensionPixelSize(R.dimen.avatar_radius_48dp);
         this.avatarRadius36dp = itemView.getContext().getResources().getDimensionPixelSize(R.dimen.avatar_radius_36dp);
@@ -189,14 +201,14 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
         TouchDelegateHelper.expandTouchSizeToFillRow((ViewGroup) itemView, CollectionsKt.listOfNotNull(replyButton, reblogButton, favouriteButton, bookmarkButton, moreButton));
     }
 
-    protected void setDisplayName(String name, List<Emoji> customEmojis, StatusDisplayOptions statusDisplayOptions) {
+    protected void setDisplayName(@NonNull String name, @NonNull List<Emoji> customEmojis, @NonNull StatusDisplayOptions statusDisplayOptions) {
         CharSequence emojifiedName = CustomEmojiHelper.emojify(
-                name, customEmojis, displayName, statusDisplayOptions.animateEmojis()
+            name, customEmojis, displayName, statusDisplayOptions.animateEmojis()
         );
         displayName.setText(emojifiedName);
     }
 
-    protected void setUsername(String name) {
+    protected void setUsername(@Nullable String name) {
         Context context = username.getContext();
         String usernameText = context.getString(R.string.post_username_format, name);
         username.setText(usernameText);
@@ -208,7 +220,7 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
 
     protected void setSpoilerAndContent(@NonNull StatusViewData.Concrete status,
                                         @NonNull StatusDisplayOptions statusDisplayOptions,
-                                        final StatusActionListener listener) {
+                                        final @NonNull StatusActionListener listener) {
 
         Status actionable = status.getActionable();
         String spoilerText = status.getSpoilerText();
@@ -219,13 +231,18 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
 
         if (sensitive) {
             CharSequence emojiSpoiler = CustomEmojiHelper.emojify(
-                    spoilerText, emojis, contentWarningDescription, statusDisplayOptions.animateEmojis()
+                spoilerText, emojis, contentWarningDescription, statusDisplayOptions.animateEmojis()
             );
             contentWarningDescription.setText(emojiSpoiler);
             contentWarningDescription.setVisibility(View.VISIBLE);
-            contentWarningButton.setVisibility(View.VISIBLE);
-            setContentWarningButtonText(expanded);
-            contentWarningButton.setOnClickListener(view -> toggleExpandedState(true, !expanded, status, statusDisplayOptions, listener));
+            boolean hasContent = !TextUtils.isEmpty(status.getContent());
+            if (hasContent) {
+                contentWarningButton.setVisibility(View.VISIBLE);
+                setContentWarningButtonText(expanded);
+                contentWarningButton.setOnClickListener(view -> toggleExpandedState(true, !expanded, status, statusDisplayOptions, listener));
+            } else {
+                contentWarningButton.setVisibility(View.GONE);
+            }
             this.setTextVisible(true, expanded, status, statusDisplayOptions, listener);
         } else {
             contentWarningDescription.setVisibility(View.GONE);
@@ -269,13 +286,16 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
         Status actionable = status.getActionable();
         Spanned content = status.getContent();
         List<Status.Mention> mentions = actionable.getMentions();
-        List<HashTag> tags =actionable.getTags();
+        List<HashTag> tags = actionable.getTags();
         List<Emoji> emojis = actionable.getEmojis();
-        PollViewData poll = PollViewDataKt.toViewData(actionable.getPoll());
+        PollViewData poll = PollViewDataKt.toViewData(status.getPoll());
 
         if (expanded) {
             CharSequence emojifiedText = CustomEmojiHelper.emojify(content, emojis, this.content, statusDisplayOptions.animateEmojis());
-            LinkHelper.setClickableText(this.content, emojifiedText, mentions, tags, listener);
+            LinkHelper.setClickableText(this.content, emojifiedText, mentions, tags, listener, this.trailingHashtagView);
+            if (trailingHashtagView != null && status.isCollapsible() && status.isCollapsed()) {
+                trailingHashtagView.setVisibility(View.GONE);
+            }
             for (int i = 0; i < mediaLabels.length; ++i) {
                 updateMediaLabel(i, sensitive, true);
             }
@@ -286,6 +306,9 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
             }
         } else {
             hidePoll();
+            if (trailingHashtagView != null) {
+                trailingHashtagView.setVisibility(View.GONE);
+            }
             LinkHelper.setClickableMentions(this.content, mentions, listener);
         }
         if (TextUtils.isEmpty(this.content.getText())) {
@@ -302,7 +325,7 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
     }
 
     private void setAvatar(String url,
-                          @Nullable String rebloggedUrl,
+                           @Nullable String rebloggedUrl,
                            boolean isBot,
                            StatusDisplayOptions statusDisplayOptions) {
 
@@ -313,8 +336,8 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
             if (statusDisplayOptions.showBotOverlay() && isBot) {
                 avatarInset.setVisibility(View.VISIBLE);
                 Glide.with(avatarInset)
-                        .load(R.drawable.bot_badge)
-                        .into(avatarInset);
+                    .load(R.drawable.bot_badge)
+                    .into(avatarInset);
             } else {
                 avatarInset.setVisibility(View.GONE);
             }
@@ -328,17 +351,21 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
             avatarInset.setVisibility(View.VISIBLE);
             avatarInset.setBackground(null);
             ImageLoadingHelper.loadAvatar(rebloggedUrl, avatarInset, avatarRadius24dp,
-                    statusDisplayOptions.animateAvatars());
+                statusDisplayOptions.animateAvatars(), null);
 
             avatarRadius = avatarRadius36dp;
         }
 
-        ImageLoadingHelper.loadAvatar(url, avatar, avatarRadius,
-                statusDisplayOptions.animateAvatars());
-
+        ImageLoadingHelper.loadAvatar(
+            url,
+            avatar,
+            avatarRadius,
+            statusDisplayOptions.animateAvatars(),
+            Collections.singletonList(new CompositeWithOpaqueBackground(MaterialColors.getColor(avatar, android.R.attr.colorBackground)))
+        );
     }
 
-    protected void setMetaData(StatusViewData.Concrete statusViewData, StatusDisplayOptions statusDisplayOptions, StatusActionListener listener) {
+    protected void setMetaData(@NonNull StatusViewData.Concrete statusViewData, @NonNull StatusDisplayOptions statusDisplayOptions, @NonNull StatusActionListener listener) {
 
         Status status = statusViewData.getActionable();
         Date createdAt = status.getCreatedAt();
@@ -377,19 +404,18 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
                 long then = createdAt.getTime();
                 long now = System.currentTimeMillis();
                 return DateUtils.getRelativeTimeSpanString(then, now,
-                        DateUtils.SECOND_IN_MILLIS,
-                        DateUtils.FORMAT_ABBREV_RELATIVE);
+                    DateUtils.SECOND_IN_MILLIS,
+                    DateUtils.FORMAT_ABBREV_RELATIVE);
             }
         }
     }
 
-    protected void setIsReply(boolean isReply) {
+    protected void setReplyButtonImage(boolean isReply) {
         if (isReply) {
             replyButton.setImageResource(R.drawable.ic_reply_all_24dp);
         } else {
             replyButton.setImageResource(R.drawable.ic_reply_24dp);
         }
-
     }
 
     protected void setReplyCount(int repliesCount, boolean fullStats) {
@@ -461,9 +487,9 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
             imageView.removeFocalPoint();
 
             Glide.with(imageView)
-                    .load(placeholder)
-                    .centerInside()
-                    .into(imageView);
+                .load(placeholder)
+                .centerInside()
+                .into(imageView);
         } else {
             Focus focus = meta != null ? meta.getFocus() : null;
 
@@ -471,29 +497,29 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
                 imageView.setFocalPoint(focus);
 
                 Glide.with(imageView.getContext())
-                        .load(previewUrl)
-                        .placeholder(placeholder)
-                        .centerInside()
-                        .addListener(imageView)
-                        .into(imageView);
+                    .load(previewUrl)
+                    .placeholder(placeholder)
+                    .centerInside()
+                    .addListener(imageView)
+                    .into(imageView);
             } else {
                 imageView.removeFocalPoint();
 
                 Glide.with(imageView)
-                        .load(previewUrl)
-                        .placeholder(placeholder)
-                        .centerInside()
-                        .into(imageView);
+                    .load(previewUrl)
+                    .placeholder(placeholder)
+                    .centerInside()
+                    .into(imageView);
             }
         }
     }
 
     protected void setMediaPreviews(
-            final List<Attachment> attachments,
-            boolean sensitive,
-            final StatusActionListener listener,
-            boolean showingContent,
-            boolean useBlurhash
+        final @NonNull List<Attachment> attachments,
+        boolean sensitive,
+        final @NonNull StatusActionListener listener,
+        boolean showingContent,
+        boolean useBlurhash
     ) {
 
         mediaPreview.setVisibility(View.VISIBLE);
@@ -512,20 +538,22 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
             }
 
             loadImage(
-                    imageView,
-                    showingContent ? previewUrl : null,
-                    attachment.getMeta(),
-                    useBlurhash ? attachment.getBlurhash() : null
+                imageView,
+                showingContent ? previewUrl : null,
+                attachment.getMeta(),
+                useBlurhash ? attachment.getBlurhash() : null
             );
 
             final Attachment.Type type = attachment.getType();
             if (showingContent && (type == Attachment.Type.VIDEO || type == Attachment.Type.GIFV)) {
-                imageView.setForeground(ContextCompat.getDrawable(itemView.getContext(), R.drawable.play_indicator_overlay));
+                imageView.setForegroundGravity(Gravity.CENTER);
+                imageView.setForeground(AppCompatResources.getDrawable(itemView.getContext(), R.drawable.ic_play_indicator));
             } else {
                 imageView.setForeground(null);
             }
 
-            setAttachmentClickListener(imageView, listener, i, attachment, true);
+            final CharSequence formattedDescription = AttachmentHelper.getFormattedDescription(attachment, imageView.getContext());
+            setAttachmentClickListener(imageView, listener, i, formattedDescription, true);
 
             if (sensitive) {
                 sensitiveMediaWarning.setText(R.string.post_sensitive_media_title);
@@ -577,13 +605,13 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
     private void updateMediaLabel(int index, boolean sensitive, boolean showingContent) {
         Context context = itemView.getContext();
         CharSequence label = (sensitive && !showingContent) ?
-                context.getString(R.string.post_sensitive_media_title) :
-                mediaDescriptions[index];
+            context.getString(R.string.post_sensitive_media_title) :
+            mediaDescriptions[index];
         mediaLabels[index].setText(label);
     }
 
-    protected void setMediaLabel(List<Attachment> attachments, boolean sensitive,
-                                 final StatusActionListener listener, boolean showingContent) {
+    protected void setMediaLabel(@NonNull List<Attachment> attachments, boolean sensitive,
+                                 final @NonNull StatusActionListener listener, boolean showingContent) {
         Context context = itemView.getContext();
         for (int i = 0; i < mediaLabels.length; i++) {
             TextView mediaLabel = mediaLabels[i];
@@ -595,17 +623,17 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
 
                 // Set the icon next to the label.
                 int drawableId = getLabelIcon(attachments.get(0).getType());
-                mediaLabel.setCompoundDrawablesWithIntrinsicBounds(drawableId, 0, 0, 0);
+                mediaLabel.setCompoundDrawablesRelativeWithIntrinsicBounds(drawableId, 0, 0, 0);
 
-                setAttachmentClickListener(mediaLabel, listener, i, attachment, false);
+                setAttachmentClickListener(mediaLabel, listener, i, mediaDescriptions[i], false);
             } else {
                 mediaLabel.setVisibility(View.GONE);
             }
         }
     }
 
-    private void setAttachmentClickListener(View view, StatusActionListener listener,
-                                            int index, Attachment attachment, boolean animateTransition) {
+    private void setAttachmentClickListener(@NonNull View view, @NonNull StatusActionListener listener,
+                                            int index, CharSequence description, boolean animateTransition) {
         view.setOnClickListener(v -> {
             int position = getBindingAdapterPosition();
             if (position != RecyclerView.NO_POSITION) {
@@ -616,11 +644,7 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
                 }
             }
         });
-        view.setOnLongClickListener(v -> {
-            CharSequence description = AttachmentHelper.getFormattedDescription(attachment, view.getContext());
-            Toast.makeText(view.getContext(), description, Toast.LENGTH_LONG).show();
-            return true;
-        });
+        TooltipCompat.setTooltipText(view, description);
     }
 
     protected void hideSensitiveMediaWarning() {
@@ -628,10 +652,10 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
         sensitiveMediaShow.setVisibility(View.GONE);
     }
 
-    protected void setupButtons(final StatusActionListener listener,
-                                final String accountId,
-                                final String statusContent,
-                                StatusDisplayOptions statusDisplayOptions) {
+    protected void setupButtons(final @NonNull StatusActionListener listener,
+                                final @NonNull String accountId,
+                                final @Nullable String statusContent,
+                                @NonNull StatusDisplayOptions statusDisplayOptions) {
         View.OnClickListener profileButtonClickListener = button -> listener.onViewAccount(accountId);
 
         avatar.setOnClickListener(profileButtonClickListener);
@@ -721,8 +745,9 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
         }
         popup.setOnMenuItemClickListener(item -> {
             listener.onReblog(!buttonState, position);
-            if(!buttonState) {
+            if (!buttonState) {
                 reblogButton.playAnimation();
+                reblogButton.setChecked(true);
             }
             return true;
         });
@@ -742,41 +767,38 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
         }
         popup.setOnMenuItemClickListener(item -> {
             listener.onFavourite(!buttonState, position);
-            if(!buttonState) {
+            if (!buttonState) {
                 favouriteButton.playAnimation();
+                favouriteButton.setChecked(true);
             }
             return true;
         });
         popup.show();
     }
 
-    public void setupWithStatus(StatusViewData.Concrete status, final StatusActionListener listener,
-                                StatusDisplayOptions statusDisplayOptions) {
-        this.setupWithStatus(status, listener, statusDisplayOptions, null);
-    }
-
     public void setupWithStatus(@NonNull StatusViewData.Concrete status,
                                 @NonNull final StatusActionListener listener,
                                 @NonNull StatusDisplayOptions statusDisplayOptions,
-                                @Nullable Object payloads) {
-        if (payloads == null) {
+                                @NonNull List<Object> payloads,
+                                final boolean showStatusInfo) {
+        if (payloads.isEmpty()) {
             Status actionable = status.getActionable();
             setDisplayName(actionable.getAccount().getName(), actionable.getAccount().getEmojis(), statusDisplayOptions);
-            setUsername(status.getUsername());
+            setUsername(actionable.getAccount().getUsername());
             setMetaData(status, statusDisplayOptions, listener);
-            setIsReply(actionable.getInReplyToId() != null);
+            setReplyButtonImage(actionable.isReply());
             setReplyCount(actionable.getRepliesCount(), statusDisplayOptions.showStatsInline());
             setAvatar(actionable.getAccount().getAvatar(), status.getRebloggedAvatar(),
-                    actionable.getAccount().getBot(), statusDisplayOptions);
+                actionable.getAccount().getBot(), statusDisplayOptions);
             setReblogged(actionable.getReblogged());
             setFavourited(actionable.getFavourited());
             setBookmarked(actionable.getBookmarked());
-            List<Attachment> attachments = actionable.getAttachments();
+            List<Attachment> attachments = status.getAttachments();
             boolean sensitive = actionable.getSensitive();
             if (statusDisplayOptions.mediaPreviewEnabled() && hasPreviewableAttachment(attachments)) {
                 setMediaPreviews(attachments, sensitive, listener, status.isShowingContent(), statusDisplayOptions.useBlurhash());
 
-                if (attachments.size() == 0) {
+                if (attachments.isEmpty()) {
                     hideSensitiveMediaWarning();
                 }
                 // Hide the unused label.
@@ -793,12 +815,13 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
             setupCard(status, status.isExpanded(), statusDisplayOptions.cardViewMode(), statusDisplayOptions, listener);
 
             setupButtons(listener, actionable.getAccount().getId(), status.getContent().toString(),
-                    statusDisplayOptions);
-            setRebloggingEnabled(actionable.rebloggingAllowed(), actionable.getVisibility());
+                statusDisplayOptions);
+
+            setTranslationStatus(status, listener);
+
+            setRebloggingEnabled(actionable.isRebloggingAllowed(), actionable.getVisibility());
 
             setSpoilerAndContent(status, statusDisplayOptions, listener);
-
-            setupFilterPlaceholder(status, listener, statusDisplayOptions);
 
             setDescriptionForStatus(status, statusDisplayOptions);
 
@@ -809,41 +832,43 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
             // and let RecyclerView ask for a new delegate.
             itemView.setAccessibilityDelegate(null);
         } else {
-            if (payloads instanceof List)
-                for (Object item : (List<?>) payloads) {
-                    if (Key.KEY_CREATED.equals(item)) {
-                        setMetaData(status, statusDisplayOptions, listener);
+            for (Object item : payloads) {
+                if (Key.KEY_CREATED.equals(item)) {
+                    setMetaData(status, statusDisplayOptions, listener);
+                    if (status.getStatus().getCard() != null && status.getStatus().getCard().getPublishedAt() != null) {
+                        // there is a preview card showing the published time, we need to refresh it as well
+                        setupCard(status, status.isExpanded(), statusDisplayOptions.cardViewMode(), statusDisplayOptions, listener);
                     }
+                    break;
                 }
-
-        }
-    }
-
-    private void setupFilterPlaceholder(StatusViewData.Concrete status, StatusActionListener listener, StatusDisplayOptions displayOptions) {
-        if (status.getFilterAction() != Filter.Action.WARN) {
-            showFilteredPlaceholder(false);
-            return;
-        }
-
-        showFilteredPlaceholder(true);
-
-        Filter matchedFilter = null;
-
-        for (FilterResult result : status.getActionable().getFiltered()) {
-            Filter filter = result.getFilter();
-            if (filter.getAction() == Filter.Action.WARN) {
-                matchedFilter = filter;
-                break;
             }
         }
-
-        filteredPlaceholderLabel.setText(itemView.getContext().getString(R.string.status_filter_placeholder_label_format, matchedFilter.getTitle()));
-        filteredPlaceholderShowButton.setOnClickListener(view -> {
-            listener.clearWarningAction(getBindingAdapterPosition());
-        });
     }
 
-    protected static boolean hasPreviewableAttachment(List<Attachment> attachments) {
+    private void setTranslationStatus(StatusViewData.Concrete status, StatusActionListener listener) {
+        var translationViewData = status.getTranslation();
+        if (translationViewData != null) {
+            if (translationViewData instanceof TranslationViewData.Loaded) {
+                Translation translation = ((TranslationViewData.Loaded) translationViewData).getData();
+                translationStatusView.setVisibility(View.VISIBLE);
+                var langName = LocaleUtilsKt.localeNameForUntrustedISO639LangCode(translation.getDetectedSourceLanguage());
+                translationStatusView.setText(translationStatusView.getContext().getString(R.string.label_translated, langName, translation.getProvider()));
+                untranslateButton.setVisibility(View.VISIBLE);
+                untranslateButton.setOnClickListener((v) -> listener.onUntranslate(getBindingAdapterPosition()));
+            } else {
+                translationStatusView.setVisibility(View.VISIBLE);
+                translationStatusView.setText(R.string.label_translating);
+                untranslateButton.setVisibility(View.GONE);
+                untranslateButton.setOnClickListener(null);
+            }
+        } else {
+            translationStatusView.setVisibility(View.GONE);
+            untranslateButton.setVisibility(View.GONE);
+            untranslateButton.setOnClickListener(null);
+        }
+    }
+
+    protected static boolean hasPreviewableAttachment(@NonNull List<Attachment> attachments) {
         for (Attachment attachment : attachments) {
             if (attachment.getType() == Attachment.Type.AUDIO || attachment.getType() == Attachment.Type.UNKNOWN) {
                 return false;
@@ -858,54 +883,84 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
         Status actionable = status.getActionable();
 
         String description = context.getString(R.string.description_status,
-                actionable.getAccount().getDisplayName(),
-                getContentWarningDescription(context, status),
-                (TextUtils.isEmpty(status.getSpoilerText()) || !actionable.getSensitive() || status.isExpanded() ? status.getContent() : ""),
-                getCreatedAtDescription(actionable.getCreatedAt(), statusDisplayOptions),
-                actionable.getEditedAt() != null ? context.getString(R.string.description_post_edited) : "",
-                getReblogDescription(context, status),
-                status.getUsername(),
-                actionable.getReblogged() ? context.getString(R.string.description_post_reblogged) : "",
-                actionable.getFavourited() ? context.getString(R.string.description_post_favourited) : "",
-                actionable.getBookmarked() ? context.getString(R.string.description_post_bookmarked) : "",
-                getMediaDescription(context, status),
-                getVisibilityDescription(context, actionable.getVisibility()),
-                getFavsText(context, actionable.getFavouritesCount()),
-                getReblogsText(context, actionable.getReblogsCount()),
-                getPollDescription(status, context, statusDisplayOptions)
+            // 1 display_name
+            actionable.getAccount().getDisplayName(),
+            // 2 CW?
+            getContentWarningDescription(context, status),
+            // 3 content?
+            (TextUtils.isEmpty(status.getSpoilerText()) || !actionable.getSensitive() || status.isExpanded() ? status.getContent() : ""),
+            // 4 date
+            getCreatedAtDescription(actionable.getCreatedAt(), statusDisplayOptions),
+            // 5 edited?
+            actionable.getEditedAt() != null ? context.getString(R.string.description_post_edited) : "",
+            // 6 reposted_by?
+            getReblogDescription(context, status),
+            // 7 username
+            actionable.getAccount().getUsername(),
+            // 8 reposted
+            actionable.getReblogged() ? context.getString(R.string.description_post_reblogged) : "",
+            // 9 favorited
+            actionable.getFavourited() ? context.getString(R.string.description_post_favourited) : "",
+            // 10 bookmarked
+            actionable.getBookmarked() ? context.getString(R.string.description_post_bookmarked) : "",
+            // 11 media
+            getMediaDescription(context, status),
+            // 12 visibility
+            getVisibilityDescription(context, actionable.getVisibility()),
+            // 13 fav_number
+            getFavsText(context, actionable.getFavouritesCount()),
+            // 14 reblog_number
+            getReblogsText(context, actionable.getReblogsCount()),
+            // 15 poll?
+            getPollDescription(status, context, statusDisplayOptions),
+            // 16 translated?
+            getTranslatedDescription(context, status.getTranslation())
         );
         itemView.setContentDescription(description);
     }
 
+    private String getTranslatedDescription(Context context, TranslationViewData translationViewData) {
+        if (translationViewData == null) {
+            return "";
+        } else if (translationViewData instanceof TranslationViewData.Loading) {
+            return context.getString(R.string.label_translating);
+        } else {
+            Translation translation = ((TranslationViewData.Loaded) translationViewData).getData();
+            var langName = LocaleUtilsKt.localeNameForUntrustedISO639LangCode(translation.getDetectedSourceLanguage());
+            return context.getString(R.string.label_translated, langName, translation.getProvider());
+        }
+    }
+
     private static CharSequence getReblogDescription(Context context,
                                                      @NonNull StatusViewData.Concrete status) {
+        @Nullable
         Status reblog = status.getRebloggingStatus();
         if (reblog != null) {
             return context
-                    .getString(R.string.post_boosted_format, reblog.getAccount().getUsername());
+                .getString(R.string.post_boosted_format, reblog.getAccount().getUsername());
         } else {
             return "";
         }
     }
 
     private static CharSequence getMediaDescription(Context context,
-                                                    @NonNull StatusViewData.Concrete status) {
-        if (status.getActionable().getAttachments().isEmpty()) {
+                                                    @NonNull StatusViewData.Concrete viewData) {
+        if (viewData.getAttachments().isEmpty()) {
             return "";
         }
         StringBuilder mediaDescriptions = CollectionsKt.fold(
-                status.getActionable().getAttachments(),
-                new StringBuilder(),
-                (builder, a) -> {
-                    if (a.getDescription() == null) {
-                        String placeholder =
-                                context.getString(R.string.description_post_media_no_description_placeholder);
-                        return builder.append(placeholder);
-                    } else {
-                        builder.append("; ");
-                        return builder.append(a.getDescription());
-                    }
-                });
+            viewData.getAttachments(),
+            new StringBuilder(),
+            (builder, a) -> {
+                if (a.getDescription() == null) {
+                    String placeholder =
+                        context.getString(R.string.description_post_media_no_description_placeholder);
+                    return builder.append(placeholder);
+                } else {
+                    builder.append("; ");
+                    return builder.append(a.getDescription());
+                }
+            });
         return context.getString(R.string.description_post_media, mediaDescriptions);
     }
 
@@ -918,7 +973,8 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
         }
     }
 
-    protected static CharSequence getVisibilityDescription(Context context, Status.Visibility visibility) {
+    @NonNull
+    protected static CharSequence getVisibilityDescription(@NonNull Context context, @Nullable Status.Visibility visibility) {
 
         if (visibility == null) {
             return "";
@@ -947,7 +1003,7 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
     private CharSequence getPollDescription(@NonNull StatusViewData.Concrete status,
                                             Context context,
                                             StatusDisplayOptions statusDisplayOptions) {
-        PollViewData poll = PollViewDataKt.toViewData(status.getActionable().getPoll());
+        PollViewData poll = PollViewDataKt.toViewData(status.getPoll());
         if (poll == null) {
             return "";
         } else {
@@ -962,27 +1018,21 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
                 }
             }
             args[4] = getPollInfoText(System.currentTimeMillis(), poll, statusDisplayOptions,
-                    context);
+                context);
             return context.getString(R.string.description_poll, args);
         }
     }
 
-    protected CharSequence getFavsText(Context context, int count) {
-        if (count > 0) {
-            String countString = numberFormat.format(count);
-            return HtmlCompat.fromHtml(context.getResources().getQuantityString(R.plurals.favs, count, countString), HtmlCompat.FROM_HTML_MODE_LEGACY);
-        } else {
-            return "";
-        }
+    @NonNull
+    protected CharSequence getFavsText(@NonNull Context context, int count) {
+        String countString = numberFormat.format(count);
+        return HtmlCompat.fromHtml(context.getResources().getQuantityString(R.plurals.favs, count, countString), HtmlCompat.FROM_HTML_MODE_LEGACY);
     }
 
-    protected CharSequence getReblogsText(Context context, int count) {
-        if (count > 0) {
-            String countString = numberFormat.format(count);
-            return HtmlCompat.fromHtml(context.getResources().getQuantityString(R.plurals.reblogs, count, countString), HtmlCompat.FROM_HTML_MODE_LEGACY);
-        } else {
-            return "";
-        }
+    @NonNull
+    protected CharSequence getReblogsText(@NonNull Context context, int count) {
+        String countString = numberFormat.format(count);
+        return HtmlCompat.fromHtml(context.getResources().getQuantityString(R.plurals.reblogs, count, countString), HtmlCompat.FROM_HTML_MODE_LEGACY);
     }
 
     private void setupPoll(PollViewData poll, List<Emoji> emojis,
@@ -1005,26 +1055,26 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
                 }
             };
             pollAdapter.setup(
-                    poll.getOptions(),
-                    poll.getVotesCount(),
-                    poll.getVotersCount(),
-                    emojis,
-                    PollAdapter.RESULT,
-                    viewThreadListener,
-                    statusDisplayOptions.animateEmojis()
+                poll.getOptions(),
+                poll.getVotesCount(),
+                poll.getVotersCount(),
+                emojis,
+                PollAdapter.RESULT,
+                viewThreadListener,
+                statusDisplayOptions.animateEmojis()
             );
 
             pollButton.setVisibility(View.GONE);
         } else {
             // voting possible
             pollAdapter.setup(
-                    poll.getOptions(),
-                    poll.getVotesCount(),
-                    poll.getVotersCount(),
-                    emojis,
-                    poll.getMultiple() ? PollAdapter.MULTIPLE : PollAdapter.SINGLE,
-                    null,
-                    statusDisplayOptions.animateEmojis()
+                poll.getOptions(),
+                poll.getVotesCount(),
+                poll.getVotersCount(),
+                emojis,
+                poll.getMultiple() ? PollAdapter.MULTIPLE : PollAdapter.SINGLE,
+                null,
+                statusDisplayOptions.animateEmojis()
             );
 
             pollButton.setVisibility(View.VISIBLE);
@@ -1077,68 +1127,104 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
     }
 
     protected void setupCard(
-            final StatusViewData.Concrete status,
-            boolean expanded,
-            final CardViewMode cardViewMode,
-            final StatusDisplayOptions statusDisplayOptions,
-            final StatusActionListener listener
+        final @NonNull StatusViewData.Concrete status,
+        boolean expanded,
+        final @NonNull CardViewMode cardViewMode,
+        final @NonNull StatusDisplayOptions statusDisplayOptions,
+        final @NonNull StatusActionListener listener
     ) {
         if (cardView == null) {
             return;
         }
 
+        final Context context = cardView.getContext();
+
         final Status actionable = status.getActionable();
-        final Card card = actionable.getCard();
+        final PreviewCard card = actionable.getCard();
 
         if (cardViewMode != CardViewMode.NONE &&
-            actionable.getAttachments().size() == 0 &&
+            actionable.getAttachments().isEmpty() &&
             actionable.getPoll() == null &&
             card != null &&
             !TextUtils.isEmpty(card.getUrl()) &&
-            (!actionable.getSensitive() || expanded) &&
+            (TextUtils.isEmpty(actionable.getSpoilerText()) || expanded) &&
             (!status.isCollapsible() || !status.isCollapsed())) {
 
             cardView.setVisibility(View.VISIBLE);
             cardTitle.setText(card.getTitle());
-            if (TextUtils.isEmpty(card.getDescription()) && TextUtils.isEmpty(card.getAuthorName())) {
-                cardDescription.setVisibility(View.GONE);
+
+            String providerName = card.getProviderName();
+            if (TextUtils.isEmpty(providerName)) {
+                providerName = Uri.parse(card.getUrl()).getHost();
+            }
+
+            if (TextUtils.isEmpty(providerName)) {
+                cardMetadata.setVisibility(View.GONE);
             } else {
-                cardDescription.setVisibility(View.VISIBLE);
-                if (TextUtils.isEmpty(card.getDescription())) {
-                    cardDescription.setText(card.getAuthorName());
+                cardMetadata.setVisibility(View.VISIBLE);
+                if (card.getPublishedAt() == null) {
+                    cardMetadata.setText(providerName);
                 } else {
-                    cardDescription.setText(card.getDescription());
+                    String metadataJoiner = context.getString(R.string.metadata_joiner);
+                    cardMetadata.setText(providerName + metadataJoiner + TimestampUtils.getRelativeTimeSpanString(context, card.getPublishedAt().getTime(), System.currentTimeMillis()));
                 }
             }
 
-            cardUrl.setText(card.getUrl());
+            String cardAuthorName;
+            final TimelineAccount cardAuthorAccount;
+            if (card.getAuthors().isEmpty()) {
+                cardAuthorAccount = null;
+                cardAuthorName = card.getAuthorName();
+            } else {
+                cardAuthorName = card.getAuthors().get(0).getName();
+                cardAuthorAccount = card.getAuthors().get(0).getAccount();
+                if (cardAuthorAccount != null) {
+                    cardAuthorName = cardAuthorAccount.getName();
+                }
+            }
+
+            final boolean hasNoAuthorName = TextUtils.isEmpty(cardAuthorName);
+
+            if (hasNoAuthorName && TextUtils.isEmpty(card.getDescription())) {
+                cardAuthor.setVisibility(View.GONE);
+                cardAuthorButton.setVisibility(View.GONE);
+            } else if (hasNoAuthorName) {
+                cardAuthor.setVisibility(View.VISIBLE);
+                cardAuthor.setText(card.getDescription());
+                cardAuthorButton.setVisibility(View.GONE);
+            } else if (cardAuthorAccount == null) {
+                cardAuthor.setVisibility(View.VISIBLE);
+                cardAuthor.setText(context.getString(R.string.preview_card_by_author, cardAuthorName));
+                cardAuthorButton.setVisibility(View.GONE);
+            } else {
+                cardAuthorButton.setVisibility(View.VISIBLE);
+                final String buttonText = context.getString(R.string.preview_card_more_by_author, cardAuthorName);
+                final CharSequence emojifiedButtonText = CustomEmojiHelper.emojify(buttonText, cardAuthorAccount.getEmojis(), cardAuthorButton, statusDisplayOptions.animateEmojis());
+                cardAuthorButton.setText(emojifiedButtonText);
+                cardAuthorButton.setOnClickListener(v-> listener.onViewAccount(cardAuthorAccount.getId()));
+                cardAuthor.setVisibility(View.GONE);
+            }
 
             // Statuses from other activitypub sources can be marked sensitive even if there's no media,
             // so let's blur the preview in that case
             // If media previews are disabled, show placeholder for cards as well
             if (statusDisplayOptions.mediaPreviewEnabled() && !actionable.getSensitive() && !TextUtils.isEmpty(card.getImage())) {
 
-                int radius = cardImage.getContext().getResources()
-                        .getDimensionPixelSize(R.dimen.card_radius);
+                int radius = context.getResources().getDimensionPixelSize(R.dimen.inner_card_radius);
                 ShapeAppearanceModel.Builder cardImageShape = ShapeAppearanceModel.builder();
 
                 if (card.getWidth() > card.getHeight()) {
-                    cardView.setOrientation(LinearLayout.VERTICAL);
-
+                    cardLayout.setOrientation(LinearLayout.VERTICAL);
                     cardImage.getLayoutParams().height = cardImage.getContext().getResources()
-                            .getDimensionPixelSize(R.dimen.card_image_vertical_height);
+                        .getDimensionPixelSize(R.dimen.card_image_vertical_height);
                     cardImage.getLayoutParams().width = ViewGroup.LayoutParams.MATCH_PARENT;
-                    cardInfo.getLayoutParams().height = ViewGroup.LayoutParams.MATCH_PARENT;
-                    cardInfo.getLayoutParams().width = ViewGroup.LayoutParams.WRAP_CONTENT;
                     cardImageShape.setTopLeftCorner(CornerFamily.ROUNDED, radius);
                     cardImageShape.setTopRightCorner(CornerFamily.ROUNDED, radius);
                 } else {
-                    cardView.setOrientation(LinearLayout.HORIZONTAL);
+                    cardLayout.setOrientation(LinearLayout.HORIZONTAL);
                     cardImage.getLayoutParams().height = ViewGroup.LayoutParams.MATCH_PARENT;
                     cardImage.getLayoutParams().width = cardImage.getContext().getResources()
-                            .getDimensionPixelSize(R.dimen.card_image_horizontal_width);
-                    cardInfo.getLayoutParams().height = ViewGroup.LayoutParams.WRAP_CONTENT;
-                    cardInfo.getLayoutParams().width = ViewGroup.LayoutParams.MATCH_PARENT;
+                        .getDimensionPixelSize(R.dimen.card_image_horizontal_width);
                     cardImageShape.setTopLeftCorner(CornerFamily.ROUNDED, radius);
                     cardImageShape.setBottomLeftCorner(CornerFamily.ROUNDED, radius);
                 }
@@ -1148,61 +1234,54 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
                 cardImage.setScaleType(ImageView.ScaleType.CENTER_CROP);
 
                 RequestBuilder<Drawable> builder = Glide.with(cardImage.getContext())
-                        .load(card.getImage())
-                        .dontTransform();
+                    .load(card.getImage());
                 if (statusDisplayOptions.useBlurhash() && !TextUtils.isEmpty(card.getBlurhash())) {
                     builder = builder.placeholder(decodeBlurHash(card.getBlurhash()));
                 }
-                builder.into(cardImage);
+                builder.centerInside()
+                    .into(cardImage);
             } else if (statusDisplayOptions.useBlurhash() && !TextUtils.isEmpty(card.getBlurhash())) {
                 int radius = cardImage.getContext().getResources()
-                        .getDimensionPixelSize(R.dimen.card_radius);
+                    .getDimensionPixelSize(R.dimen.inner_card_radius);
 
-                cardView.setOrientation(LinearLayout.HORIZONTAL);
+                cardLayout.setOrientation(LinearLayout.HORIZONTAL);
                 cardImage.getLayoutParams().height = ViewGroup.LayoutParams.MATCH_PARENT;
                 cardImage.getLayoutParams().width = cardImage.getContext().getResources()
-                        .getDimensionPixelSize(R.dimen.card_image_horizontal_width);
-                cardInfo.getLayoutParams().height = ViewGroup.LayoutParams.WRAP_CONTENT;
-                cardInfo.getLayoutParams().width = ViewGroup.LayoutParams.MATCH_PARENT;
+                    .getDimensionPixelSize(R.dimen.card_image_horizontal_width);
 
                 ShapeAppearanceModel cardImageShape = ShapeAppearanceModel.builder()
-                        .setTopLeftCorner(CornerFamily.ROUNDED, radius)
-                        .setBottomLeftCorner(CornerFamily.ROUNDED, radius)
-                        .build();
+                    .setTopLeftCorner(CornerFamily.ROUNDED, radius)
+                    .setBottomLeftCorner(CornerFamily.ROUNDED, radius)
+                    .build();
                 cardImage.setShapeAppearanceModel(cardImageShape);
 
                 cardImage.setScaleType(ImageView.ScaleType.CENTER_CROP);
 
                 Glide.with(cardImage.getContext())
-                        .load(decodeBlurHash(card.getBlurhash()))
-                        .dontTransform()
-                        .into(cardImage);
+                    .load(decodeBlurHash(card.getBlurhash()))
+                    .into(cardImage);
             } else {
-                cardView.setOrientation(LinearLayout.HORIZONTAL);
+                cardLayout.setOrientation(LinearLayout.HORIZONTAL);
                 cardImage.getLayoutParams().height = ViewGroup.LayoutParams.MATCH_PARENT;
                 cardImage.getLayoutParams().width = cardImage.getContext().getResources()
-                        .getDimensionPixelSize(R.dimen.card_image_horizontal_width);
-                cardInfo.getLayoutParams().height = ViewGroup.LayoutParams.WRAP_CONTENT;
-                cardInfo.getLayoutParams().width = ViewGroup.LayoutParams.MATCH_PARENT;
+                    .getDimensionPixelSize(R.dimen.card_image_horizontal_width);
 
                 cardImage.setShapeAppearanceModel(new ShapeAppearanceModel());
 
                 cardImage.setScaleType(ImageView.ScaleType.CENTER);
 
                 Glide.with(cardImage.getContext())
-                        .load(R.drawable.card_image_placeholder)
-                        .into(cardImage);
+                    .load(R.drawable.card_image_placeholder)
+                    .into(cardImage);
             }
 
             View.OnClickListener visitLink = v -> listener.onViewUrl(card.getUrl());
 
             cardView.setOnClickListener(visitLink);
             // View embedded photos in our image viewer instead of opening the browser
-            cardImage.setOnClickListener(card.getType().equals(Card.TYPE_PHOTO) && !TextUtils.isEmpty(card.getEmbedUrl()) ?
-                    v -> cardView.getContext().startActivity(ViewMediaActivity.newSingleImageIntent(cardView.getContext(), card.getEmbedUrl())) :
-                    visitLink);
-
-            cardView.setClipToOutline(true);
+            cardImage.setOnClickListener(card.getType().equals(PreviewCard.TYPE_PHOTO) && !TextUtils.isEmpty(card.getEmbedUrl()) ?
+                v -> cardView.getContext().startActivity(ViewMediaActivity.newSingleImageIntent(cardView.getContext(), card.getEmbedUrl())) :
+                visitLink);
         } else {
             cardView.setVisibility(View.GONE);
         }
@@ -1228,14 +1307,5 @@ public abstract class StatusBaseViewHolder extends RecyclerView.ViewHolder {
         favouriteButton.setVisibility(visibility);
         bookmarkButton.setVisibility(visibility);
         moreButton.setVisibility(visibility);
-    }
-
-    public void showFilteredPlaceholder(boolean show) {
-        if (statusContainer != null) {
-            statusContainer.setVisibility(show ? View.GONE : View.VISIBLE);
-        }
-        if (filteredPlaceholder != null) {
-            filteredPlaceholder.setVisibility(show ? View.VISIBLE : View.GONE);
-        }
     }
 }

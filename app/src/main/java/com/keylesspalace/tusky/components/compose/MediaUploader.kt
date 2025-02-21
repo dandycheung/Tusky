@@ -27,15 +27,19 @@ import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import com.keylesspalace.tusky.BuildConfig
 import com.keylesspalace.tusky.R
-import com.keylesspalace.tusky.components.compose.ComposeActivity.QueuedMedia
+import com.keylesspalace.tusky.components.compose.ComposeViewModel.QueuedMedia
 import com.keylesspalace.tusky.components.instanceinfo.InstanceInfo
 import com.keylesspalace.tusky.network.MediaUploadApi
-import com.keylesspalace.tusky.network.ProgressRequestBody
+import com.keylesspalace.tusky.network.asRequestBody
 import com.keylesspalace.tusky.util.MEDIA_SIZE_UNKNOWN
 import com.keylesspalace.tusky.util.getImageSquarePixels
 import com.keylesspalace.tusky.util.getMediaSize
 import com.keylesspalace.tusky.util.getServerErrorMessage
 import com.keylesspalace.tusky.util.randomAlphanumericString
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
+import java.io.IOException
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -52,21 +56,20 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.shareIn
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
+import okio.buffer
+import okio.sink
+import okio.source
 import retrofit2.HttpException
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.io.IOException
-import java.util.Date
-import javax.inject.Inject
-import javax.inject.Singleton
 
 sealed interface FinalUploadEvent
 
-sealed class UploadEvent {
-    data class ProgressEvent(val percentage: Int) : UploadEvent()
-    data class FinishedEvent(val mediaId: String, val processed: Boolean) : UploadEvent(), FinalUploadEvent
-    data class ErrorEvent(val error: Throwable) : UploadEvent(), FinalUploadEvent
+sealed interface UploadEvent {
+    data class ProgressEvent(val percentage: Int) : UploadEvent
+    data class FinishedEvent(
+        val mediaId: String,
+        val processed: Boolean
+    ) : UploadEvent, FinalUploadEvent
+    data class ErrorEvent(val error: Throwable) : UploadEvent, FinalUploadEvent
 }
 
 data class UploadData(
@@ -79,11 +82,7 @@ fun createNewImageFile(context: Context, suffix: String = ".jpg"): File {
     val randomId = randomAlphanumericString(12)
     val imageFileName = "Tusky_${randomId}_"
     val storageDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
-    return File.createTempFile(
-        imageFileName, /* prefix */
-        suffix, /* suffix */
-        storageDir /* directory */
-    )
+    return File.createTempFile(imageFileName, suffix, storageDir)
 }
 
 data class PreparedMedia(val type: QueuedMedia.Type, val uri: Uri, val size: Long)
@@ -93,15 +92,16 @@ class MediaTypeException : Exception()
 class CouldNotOpenFileException : Exception()
 class UploadServerError(val errorMessage: String) : Exception()
 
-@Singleton
 class MediaUploader @Inject constructor(
-    private val context: Context,
+    @ApplicationContext private val context: Context,
     private val mediaUploadApi: MediaUploadApi
 ) {
 
-    private val uploads = mutableMapOf<Int, UploadData>()
-
-    private var mostRecentId: Int = 0
+    private companion object {
+        private const val TAG = "MediaUploader"
+        private val uploads = mutableMapOf<Int, UploadData>()
+        private var mostRecentId: Int = 0
+    }
 
     fun getNewLocalMediaId(): Int {
         return mostRecentId++
@@ -151,7 +151,7 @@ class MediaUploader @Inject constructor(
         }
     }
 
-    fun prepareMedia(inUri: Uri, instanceInfo: InstanceInfo): PreparedMedia {
+    fun prepareMedia(inUri: Uri, instanceInfo: InstanceInfo): Result<PreparedMedia> = runCatching {
         var mediaSize = MEDIA_SIZE_UNKNOWN
         var uri = inUri
         val mimeType: String?
@@ -163,22 +163,22 @@ class MediaUploader @Inject constructor(
 
                     val suffix = "." + MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType ?: "tmp")
 
-                    contentResolver.openInputStream(inUri).use { input ->
+                    contentResolver.openInputStream(inUri)?.source().use { input ->
                         if (input == null) {
                             Log.w(TAG, "Media input is null")
                             uri = inUri
                             return@use
                         }
                         val file = File.createTempFile("randomTemp1", suffix, context.cacheDir)
-                        FileOutputStream(file.absoluteFile).use { out ->
-                            input.copyTo(out)
-                            uri = FileProvider.getUriForFile(
-                                context,
-                                BuildConfig.APPLICATION_ID + ".fileprovider",
-                                file
-                            )
-                            mediaSize = getMediaSize(contentResolver, uri)
+                        file.absoluteFile.sink().buffer().use { out ->
+                            out.writeAll(input)
                         }
+                        uri = FileProvider.getUriForFile(
+                            context,
+                            BuildConfig.APPLICATION_ID + ".fileprovider",
+                            file
+                        )
+                        mediaSize = getMediaSize(contentResolver, uri)
                     }
                 }
                 ContentResolver.SCHEME_FILE -> {
@@ -191,17 +191,18 @@ class MediaUploader @Inject constructor(
                     val suffix = inputFile.name.substringAfterLast('.', "tmp")
                     mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(suffix)
                     val file = File.createTempFile("randomTemp1", ".$suffix", context.cacheDir)
-                    val input = FileInputStream(inputFile)
 
-                    FileOutputStream(file.absoluteFile).use { out ->
-                        input.copyTo(out)
-                        uri = FileProvider.getUriForFile(
-                            context,
-                            BuildConfig.APPLICATION_ID + ".fileprovider",
-                            file
-                        )
-                        mediaSize = getMediaSize(contentResolver, uri)
+                    inputFile.source().use { input ->
+                        file.absoluteFile.sink().buffer().use { out ->
+                            out.writeAll(input)
+                        }
                     }
+                    uri = FileProvider.getUriForFile(
+                        context,
+                        BuildConfig.APPLICATION_ID + ".fileprovider",
+                        file
+                    )
+                    mediaSize = getMediaSize(contentResolver, uri)
                 }
                 else -> {
                     Log.w(TAG, "Unknown uri scheme $uri")
@@ -216,9 +217,8 @@ class MediaUploader @Inject constructor(
             Log.w(TAG, "Could not determine file size of upload")
             throw MediaTypeException()
         }
-
         if (mimeType != null) {
-            return when (mimeType.substring(0, mimeType.indexOf('/'))) {
+            when (mimeType.substring(0, mimeType.indexOf('/'))) {
                 "video" -> {
                     if (mediaSize > instanceInfo.videoSizeLimit) {
                         throw FileSizeException(instanceInfo.videoSizeLimit)
@@ -246,7 +246,7 @@ class MediaUploader @Inject constructor(
 
     private val contentResolver = context.contentResolver
 
-    private suspend fun upload(media: QueuedMedia): Flow<UploadEvent> {
+    private fun upload(media: QueuedMedia): Flow<UploadEvent> {
         return callbackFlow {
             var mimeType = contentResolver.getType(media.uri)
 
@@ -254,9 +254,9 @@ class MediaUploader @Inject constructor(
             // .m4a files. See https://github.com/tuskyapp/Tusky/issues/3189 for details.
             // Sniff the content of the file to determine the actual type.
             if (mimeType != null && (
-                mimeType.startsWith("audio/", ignoreCase = true) ||
-                    mimeType.startsWith("video/", ignoreCase = true)
-                )
+                    mimeType.startsWith("audio/", ignoreCase = true) ||
+                        mimeType.startsWith("video/", ignoreCase = true)
+                    )
             ) {
                 val retriever = MediaMetadataRetriever()
                 retriever.setDataSource(context, media.uri)
@@ -264,22 +264,16 @@ class MediaUploader @Inject constructor(
             }
             val map = MimeTypeMap.getSingleton()
             val fileExtension = map.getExtensionFromMimeType(mimeType)
-            val filename = "%s_%s_%s.%s".format(
-                context.getString(R.string.app_name),
-                Date().time.toString(),
-                randomAlphanumericString(10),
-                fileExtension
-            )
-
-            val stream = contentResolver.openInputStream(media.uri)
+            val filename =
+                "${context.getString(R.string.app_name)}_${System.currentTimeMillis()}_${randomAlphanumericString(10)}.$fileExtension"
 
             if (mimeType == null) mimeType = "multipart/form-data"
 
             var lastProgress = -1
-            val fileBody = ProgressRequestBody(
-                stream!!,
-                media.mediaSize,
-                mimeType.toMediaTypeOrNull()!!
+            val fileBody = media.uri.asRequestBody(
+                contentResolver,
+                requireNotNull(mimeType.toMediaTypeOrNull()) { "Invalid Content Type" },
+                media.mediaSize
             ) { percentage ->
                 if (percentage != lastProgress) {
                     trySend(UploadEvent.ProgressEvent(percentage))
@@ -328,9 +322,5 @@ class MediaUploader @Inject constructor(
     private fun shouldResizeMedia(media: QueuedMedia, instanceInfo: InstanceInfo): Boolean {
         return media.type == QueuedMedia.Type.IMAGE &&
             (media.mediaSize > instanceInfo.imageSizeLimit || getImageSquarePixels(context.contentResolver, media.uri) > instanceInfo.imageMatrixLimit)
-    }
-
-    private companion object {
-        private const val TAG = "MediaUploader"
     }
 }

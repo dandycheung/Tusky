@@ -20,18 +20,16 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import com.keylesspalace.tusky.components.notifications.canEnablePushNotifications
-import com.keylesspalace.tusky.components.notifications.isUnifiedPushNotificationEnabledForAccount
-import com.keylesspalace.tusky.components.notifications.updateUnifiedPushSubscription
+import com.keylesspalace.tusky.components.systemnotifications.NotificationService
 import com.keylesspalace.tusky.db.AccountManager
+import com.keylesspalace.tusky.di.ApplicationScope
 import com.keylesspalace.tusky.network.MastodonApi
-import dagger.android.AndroidInjection
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
+import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
-@DelicateCoroutinesApi
+@AndroidEntryPoint
 class NotificationBlockStateBroadcastReceiver : BroadcastReceiver() {
     @Inject
     lateinit var mastodonApi: MastodonApi
@@ -39,14 +37,20 @@ class NotificationBlockStateBroadcastReceiver : BroadcastReceiver() {
     @Inject
     lateinit var accountManager: AccountManager
 
+    @Inject
+    lateinit var notificationService: NotificationService
+
+    @Inject
+    @ApplicationScope
+    lateinit var externalScope: CoroutineScope
+
     override fun onReceive(context: Context, intent: Intent) {
-        AndroidInjection.inject(this, context)
         if (Build.VERSION.SDK_INT < 28) return
-        if (!canEnablePushNotifications(context, accountManager)) return
+        if (!notificationService.arePushNotificationsAvailable()) return
 
         val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        val gid = when (intent.action) {
+        val accountIdentifier = when (intent.action) {
             NotificationManager.ACTION_NOTIFICATION_CHANNEL_BLOCK_STATE_CHANGED -> {
                 val channelId = intent.getStringExtra(NotificationManager.EXTRA_NOTIFICATION_CHANNEL_ID)
                 nm.getNotificationChannel(channelId).group
@@ -57,10 +61,11 @@ class NotificationBlockStateBroadcastReceiver : BroadcastReceiver() {
             else -> null
         } ?: return
 
-        accountManager.getAccountByIdentifier(gid)?.let { account ->
-            if (isUnifiedPushNotificationEnabledForAccount(account)) {
-                // Update UnifiedPush notification subscription
-                GlobalScope.launch { updateUnifiedPushSubscription(context, mastodonApi, accountManager, account) }
+        accountManager.getAccountByIdentifier(accountIdentifier)?.let { account ->
+            if (account.isPushNotificationsEnabled()) {
+                externalScope.launch {
+                    notificationService.updatePushSubscription(account)
+                }
             }
         }
     }

@@ -19,35 +19,39 @@ package com.keylesspalace.tusky.worker
 
 import android.app.Notification
 import android.content.Context
+import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import com.keylesspalace.tusky.R
-import com.keylesspalace.tusky.components.notifications.NotificationFetcher
-import com.keylesspalace.tusky.components.notifications.NotificationHelper
-import com.keylesspalace.tusky.components.notifications.NotificationHelper.NOTIFICATION_ID_FETCH_NOTIFICATION
-import javax.inject.Inject
+import com.keylesspalace.tusky.components.systemnotifications.NotificationFetcher
+import com.keylesspalace.tusky.components.systemnotifications.NotificationService
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 
-/** Fetch and show new notifications. */
-class NotificationWorker(
-    appContext: Context,
-    params: WorkerParameters,
-    private val notificationsFetcher: NotificationFetcher
+@HiltWorker
+class NotificationWorker @AssistedInject constructor(
+    @Assisted appContext: Context,
+    @Assisted params: WorkerParameters,
+    private val notificationsFetcher: NotificationFetcher,
+    notificationService: NotificationService,
 ) : CoroutineWorker(appContext, params) {
-    val notification: Notification = NotificationHelper.createWorkerNotification(applicationContext, R.string.notification_notification_worker)
+    val notification: Notification = notificationService.createWorkerNotification(
+        R.string.notification_notification_worker
+    )
 
     override suspend fun doWork(): Result {
-        notificationsFetcher.fetchAndShow()
+        val accountId = inputData.getLong(KEY_ACCOUNT_ID, 0).takeIf { it != 0L }
+        notificationsFetcher.fetchAndShow(accountId)
         return Result.success()
     }
 
-    override suspend fun getForegroundInfo() = ForegroundInfo(NOTIFICATION_ID_FETCH_NOTIFICATION, notification)
+    override suspend fun getForegroundInfo() = ForegroundInfo(
+        NotificationService.NOTIFICATION_ID_FETCH_NOTIFICATION,
+        notification
+    )
 
-    class Factory @Inject constructor(
-        private val notificationsFetcher: NotificationFetcher
-    ) : ChildWorkerFactory {
-        override fun createWorker(appContext: Context, params: WorkerParameters): CoroutineWorker {
-            return NotificationWorker(appContext, params, notificationsFetcher)
-        }
+    companion object {
+        const val KEY_ACCOUNT_ID = "accountId"
     }
 }

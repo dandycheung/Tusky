@@ -18,24 +18,10 @@
         android:supportsRtl="true"
         android:theme="@style/TuskyTheme"
         android:usesCleartextTraffic="false"
-        android:localeConfig="@xml/locales_config">
+        android:localeConfig="@xml/locales_config"
+        android:enableOnBackInvokedCallback="true"
+        android:networkSecurityConfig="@xml/network_security_config">
 
-        <activity
-            android:name=".SplashActivity"
-            android:theme="@style/SplashTheme"
-            android:exported="true">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-
-            <meta-data
-                android:name="android.app.shortcuts"
-                android:resource="@xml/share_shortcuts" />
-
-        </activity>
         <activity
             android:name=".components.login.LoginActivity"
             android:windowSoftInputMode="adjustResize"
@@ -54,9 +40,16 @@
         <activity android:name=".components.login.LoginWebViewActivity" />
         <activity
             android:name=".MainActivity"
-            android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize"
-            android:exported="true">
+            android:exported="true"
+            android:alwaysRetainTaskState="true"
+            android:maxRecents="1"
+            android:theme="@style/SplashTheme">
 
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
 
@@ -101,14 +94,20 @@
             </intent-filter>
 
             <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/share_shortcuts" />
+            <meta-data
                 android:name="android.service.chooser.chooser_target_service"
                 android:value="androidx.sharetarget.ChooserTargetServiceCompat" />
 
         </activity>
+        <!-- When content is shared to Tusky ComposeActivity can be the only active activity,
+             so it must be excluded from recents or the sharing process can be restarted from recents
+             which would be very unexpected -->
         <activity
             android:name=".components.compose.ComposeActivity"
             android:theme="@style/TuskyDialogActivityTheme"
-            android:windowSoftInputMode="stateVisible|adjustResize" />
+            android:alwaysRetainTaskState="true" />
         <activity
             android:name=".components.viewthread.ViewThreadActivity"
             android:configChanges="orientation|screenSize" />
@@ -116,10 +115,8 @@
             android:name=".ViewMediaActivity"
             android:theme="@style/TuskyBaseTheme"
             android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize" />
-        <activity
-            android:name=".components.account.AccountActivity"
-            android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize" />
-        <activity android:name=".EditProfileActivity" />
+        <activity android:name=".components.account.AccountActivity" />
+        <activity android:name=".EditProfileActivity"/>
         <activity android:name=".components.preference.PreferencesActivity" />
         <activity android:name=".StatusListActivity" />
         <activity android:name=".components.accountlist.AccountListActivity" />
@@ -130,7 +127,7 @@
             android:theme="@style/Base.Theme.AppCompat" />
         <activity
             android:name=".components.search.SearchActivity"
-            android:launchMode="singleTop"
+            android:launchMode="singleTask"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.SEARCH" />
@@ -148,12 +145,15 @@
         <activity
             android:name=".components.report.ReportActivity"
             android:windowSoftInputMode="stateAlwaysHidden|adjustResize" />
-        <activity android:name=".components.instancemute.InstanceListActivity" />
+        <activity android:name=".components.domainblocks.DomainBlocksActivity" />
         <activity android:name=".components.scheduled.ScheduledStatusActivity" />
         <activity android:name=".components.announcements.AnnouncementsActivity" />
         <activity android:name=".components.drafts.DraftsActivity" />
         <activity android:name="com.keylesspalace.tusky.components.filters.EditFilterActivity"
             android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".components.preference.notificationpolicies.NotificationPoliciesActivity"/>
+        <activity android:name=".components.notifications.requests.NotificationRequestsActivity"/>
+        <activity android:name=".components.notifications.requests.details.NotificationRequestDetailsActivity"/>
 
         <receiver
             android:name=".receiver.SendStatusBroadcastReceiver"
@@ -188,14 +188,14 @@
             android:icon="@drawable/ic_quicksettings"
             android:label="@string/tusky_compose_post_quicksetting_label"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
-            android:exported="true"
-            tools:targetApi="24">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
         </service>
 
         <service android:name=".service.SendStatusService"
+            android:foregroundServiceType="shortService"
             android:exported="false" />
 
         <provider

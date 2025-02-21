@@ -1,5 +1,4 @@
-/*
- * Copyright 2023 Tusky Contributors
+/* Copyright 2024 Tusky Contributors
  *
  * This file is a part of Tusky.
  *
@@ -12,577 +11,288 @@
  * Public License for more details.
  *
  * You should have received a copy of the GNU General Public License along with Tusky; if not,
- * see <http://www.gnu.org/licenses>.
- */
+ * see <http://www.gnu.org/licenses>. */
 
 package com.keylesspalace.tusky.components.notifications
 
-import android.app.Dialog
 import android.content.DialogInterface
+import android.content.SharedPreferences
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AlertDialog
+import android.widget.ArrayAdapter
+import android.widget.ListView
+import android.widget.PopupWindow
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.MenuProvider
-import androidx.core.view.isVisible
-import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.paging.LoadState
-import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.recyclerview.widget.RecyclerView.NO_POSITION
-import androidx.recyclerview.widget.RecyclerView.SCROLL_STATE_IDLE
 import androidx.recyclerview.widget.SimpleItemAnimator
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout.OnRefreshListener
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import at.connyduck.calladapter.networkresult.onFailure
 import at.connyduck.sparkbutton.helpers.Utils
-import com.google.android.material.appbar.AppBarLayout.ScrollingViewBehavior
-import com.google.android.material.color.MaterialColors
+import com.google.android.material.appbar.AppBarLayout
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import com.keylesspalace.tusky.BaseActivity
 import com.keylesspalace.tusky.R
-import com.keylesspalace.tusky.adapter.StatusBaseViewHolder
+import com.keylesspalace.tusky.appstore.EventHub
+import com.keylesspalace.tusky.appstore.PreferenceChangedEvent
+import com.keylesspalace.tusky.components.notifications.requests.NotificationRequestsActivity
+import com.keylesspalace.tusky.components.preference.PreferencesFragment.ReadingOrder
+import com.keylesspalace.tusky.components.systemnotifications.NotificationService
 import com.keylesspalace.tusky.databinding.FragmentTimelineNotificationsBinding
-import com.keylesspalace.tusky.di.Injectable
-import com.keylesspalace.tusky.di.ViewModelFactory
+import com.keylesspalace.tusky.databinding.NotificationsFilterBinding
 import com.keylesspalace.tusky.entity.Notification
-import com.keylesspalace.tusky.entity.Status
 import com.keylesspalace.tusky.fragment.SFragment
 import com.keylesspalace.tusky.interfaces.AccountActionListener
-import com.keylesspalace.tusky.interfaces.ActionButtonActivity
 import com.keylesspalace.tusky.interfaces.ReselectableFragment
 import com.keylesspalace.tusky.interfaces.StatusActionListener
+import com.keylesspalace.tusky.settings.PrefKeys
+import com.keylesspalace.tusky.util.CardViewMode
 import com.keylesspalace.tusky.util.ListStatusAccessibilityDelegate
+import com.keylesspalace.tusky.util.StatusDisplayOptions
+import com.keylesspalace.tusky.util.StatusProvider
+import com.keylesspalace.tusky.util.ensureBottomPadding
+import com.keylesspalace.tusky.util.hide
 import com.keylesspalace.tusky.util.openLink
+import com.keylesspalace.tusky.util.show
+import com.keylesspalace.tusky.util.startActivityWithSlideInAnimation
+import com.keylesspalace.tusky.util.updateRelativeTimePeriodically
 import com.keylesspalace.tusky.util.viewBinding
-import com.keylesspalace.tusky.viewdata.AttachmentViewData.Companion.list
+import com.keylesspalace.tusky.viewdata.AttachmentViewData
 import com.keylesspalace.tusky.viewdata.NotificationViewData
-import com.mikepenz.iconics.IconicsDrawable
-import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
-import com.mikepenz.iconics.utils.colorInt
-import com.mikepenz.iconics.utils.sizeDp
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChangedBy
-import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
-import java.io.IOException
+import com.keylesspalace.tusky.viewdata.TranslationViewData
+import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class NotificationsFragment :
-    SFragment(),
+    SFragment(R.layout.fragment_timeline_notifications),
+    SwipeRefreshLayout.OnRefreshListener,
     StatusActionListener,
     NotificationActionListener,
     AccountActionListener,
-    OnRefreshListener,
     MenuProvider,
-    Injectable,
     ReselectableFragment {
 
     @Inject
-    lateinit var viewModelFactory: ViewModelFactory
+    lateinit var preferences: SharedPreferences
 
-    private val viewModel: NotificationsViewModel by viewModels { viewModelFactory }
+    @Inject
+    lateinit var eventHub: EventHub
+
+    @Inject
+    lateinit var notificationService: NotificationService
 
     private val binding by viewBinding(FragmentTimelineNotificationsBinding::bind)
 
-    private lateinit var adapter: NotificationsPagingAdapter
+    private val viewModel: NotificationsViewModel by viewModels()
 
-    private lateinit var layoutManager: LinearLayoutManager
+    private var notificationsAdapter: NotificationsPagingAdapter? = null
+    private var notificationsPolicyAdapter: NotificationPolicySummaryAdapter? = null
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    private var showNotificationsFilterBar: Boolean = true
+    private var readingOrder: ReadingOrder = ReadingOrder.NEWEST_FIRST
 
-        adapter = NotificationsPagingAdapter(
-            notificationDiffCallback,
-            accountId = viewModel.account.accountId,
-            statusActionListener = this,
-            notificationActionListener = this,
-            accountActionListener = this,
-            statusDisplayOptions = viewModel.statusDisplayOptions.value
-        )
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        return inflater.inflate(R.layout.fragment_timeline_notifications, container, false)
-    }
-
-    private fun updateFilterVisibility(showFilter: Boolean) {
-        val params = binding.swipeRefreshLayout.layoutParams as CoordinatorLayout.LayoutParams
-        if (showFilter) {
-            binding.appBarOptions.setExpanded(true, false)
-            binding.appBarOptions.visibility = View.VISIBLE
-            // Set content behaviour to hide filter on scroll
-            params.behavior = ScrollingViewBehavior()
-        } else {
-            binding.appBarOptions.setExpanded(false, false)
-            binding.appBarOptions.visibility = View.GONE
-            // Clear behaviour to hide app bar
-            params.behavior = null
-        }
-    }
-
-    private fun confirmClearNotifications() {
-        AlertDialog.Builder(requireContext())
-            .setMessage(R.string.notification_clear_text)
-            .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int -> clearNotifications() }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
-    }
+    /** see [com.keylesspalace.tusky.components.timeline.TimelineFragment] for explanation of the load more mechanism */
+    private var loadMorePosition: Int? = null
+    private var statusIdBelowLoadMore: String? = null
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
         requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
+
+        val statusDisplayOptions = StatusDisplayOptions(
+            animateAvatars = preferences.getBoolean(PrefKeys.ANIMATE_GIF_AVATARS, false),
+            mediaPreviewEnabled = accountManager.activeAccount!!.mediaPreviewEnabled,
+            useAbsoluteTime = preferences.getBoolean(PrefKeys.ABSOLUTE_TIME_VIEW, false),
+            showBotOverlay = preferences.getBoolean(PrefKeys.SHOW_BOT_OVERLAY, true),
+            useBlurhash = preferences.getBoolean(PrefKeys.USE_BLURHASH, true),
+            cardViewMode = if (preferences.getBoolean(PrefKeys.SHOW_CARDS_IN_TIMELINES, false)) {
+                CardViewMode.INDENTED
+            } else {
+                CardViewMode.NONE
+            },
+            confirmReblogs = preferences.getBoolean(PrefKeys.CONFIRM_REBLOGS, true),
+            confirmFavourites = preferences.getBoolean(PrefKeys.CONFIRM_FAVOURITES, false),
+            hideStats = preferences.getBoolean(PrefKeys.WELLBEING_HIDE_STATS_POSTS, false),
+            animateEmojis = preferences.getBoolean(PrefKeys.ANIMATE_CUSTOM_EMOJIS, false),
+            showStatsInline = preferences.getBoolean(PrefKeys.SHOW_STATS_INLINE, false),
+            showSensitiveMedia = accountManager.activeAccount!!.alwaysShowSensitiveMedia,
+            openSpoiler = accountManager.activeAccount!!.alwaysOpenSpoiler
+        )
+
+        binding.recyclerView.ensureBottomPadding(fab = true)
+
+        // setup the notifications filter bar
+        showNotificationsFilterBar = preferences.getBoolean(PrefKeys.SHOW_NOTIFICATIONS_FILTER, true)
+        updateFilterBarVisibility()
+        binding.buttonClear.setOnClickListener { confirmClearNotifications() }
+        binding.buttonFilter.setOnClickListener { showFilterMenu() }
 
         // Setup the SwipeRefreshLayout.
         binding.swipeRefreshLayout.setOnRefreshListener(this)
-        binding.swipeRefreshLayout.setColorSchemeResources(R.color.tusky_blue)
 
         // Setup the RecyclerView.
         binding.recyclerView.setHasFixedSize(true)
-        layoutManager = LinearLayoutManager(context)
-        binding.recyclerView.layoutManager = layoutManager
+        val adapter = NotificationsPagingAdapter(
+            accountId = accountManager.activeAccount!!.accountId,
+            statusListener = this,
+            notificationActionListener = this,
+            accountActionListener = this,
+            statusDisplayOptions = statusDisplayOptions
+        )
+        this.notificationsAdapter = adapter
+        binding.recyclerView.layoutManager = LinearLayoutManager(context)
         binding.recyclerView.setAccessibilityDelegateCompat(
             ListStatusAccessibilityDelegate(
                 binding.recyclerView,
-                this
-            ) { pos: Int ->
-                val notification = adapter.snapshot().getOrNull(pos)
-                // We support replies only for now
-                if (notification is NotificationViewData) {
-                    notification.statusViewData
-                } else {
-                    null
+                this,
+                StatusProvider { pos: Int ->
+                    if (pos in 0 until adapter.itemCount) {
+                        val notification = adapter.peek(pos)
+                        // We support replies only for now
+                        if (notification is NotificationViewData.Concrete) {
+                            return@StatusProvider notification.statusViewData
+                        } else {
+                            return@StatusProvider null
+                        }
+                    } else {
+                        null
+                    }
                 }
-            }
-        )
-        binding.recyclerView.addItemDecoration(
-            DividerItemDecoration(
-                context,
-                DividerItemDecoration.VERTICAL
             )
         )
 
-        binding.recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            val actionButton = (activity as ActionButtonActivity).actionButton
+        val notificationsPolicyAdapter = NotificationPolicySummaryAdapter {
+            (activity as BaseActivity).startActivityWithSlideInAnimation(NotificationRequestsActivity.newIntent(requireContext()))
+        }
+        this.notificationsPolicyAdapter = notificationsPolicyAdapter
 
-            override fun onScrolled(view: RecyclerView, dx: Int, dy: Int) {
-                actionButton?.let { fab ->
-                    if (!viewModel.uiState.value.showFabWhileScrolling) {
-                        if (dy > 0 && fab.isShown) {
-                            fab.hide() // Hide when scrolling down
-                        } else if (dy < 0 && !fab.isShown) {
-                            fab.show() // Show when scrolling up
-                        }
-                    } else if (!fab.isShown) {
-                        fab.show()
-                    }
-                }
-            }
+        binding.recyclerView.adapter = ConcatAdapter(notificationsPolicyAdapter, notificationsAdapter)
 
-            @Suppress("SyntheticAccessor")
-            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
-                newState != SCROLL_STATE_IDLE && return
+        (binding.recyclerView.itemAnimator as SimpleItemAnimator).supportsChangeAnimations = false
 
-                // Save the ID of the first notification visible in the list, so the user's
-                // reading position is always restorable.
-                layoutManager.findFirstVisibleItemPosition().takeIf { it != NO_POSITION }?.let { position ->
-                    adapter.snapshot().getOrNull(position)?.id?.let { id ->
-                        viewModel.accept(InfallibleUiAction.SaveVisibleId(visibleId = id))
-                    }
-                }
-            }
-        })
-
-        binding.recyclerView.adapter = adapter.withLoadStateHeaderAndFooter(
-            header = NotificationsLoadStateAdapter { adapter.retry() },
-            footer = NotificationsLoadStateAdapter { adapter.retry() }
+        binding.recyclerView.addItemDecoration(
+            DividerItemDecoration(context, DividerItemDecoration.VERTICAL)
         )
 
-        binding.buttonClear.setOnClickListener { confirmClearNotifications() }
-        binding.buttonFilter.setOnClickListener { showFilterDialog() }
-        (binding.recyclerView.itemAnimator as SimpleItemAnimator?)!!.supportsChangeAnimations =
-            false
+        readingOrder = ReadingOrder.from(preferences.getString(PrefKeys.READING_ORDER, null))
 
-        // Signal the user that a refresh has loaded new items above their current position
-        // by scrolling up slightly to disclose the new content
-        adapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
+        notificationsPolicyAdapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
             override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
-                if (positionStart == 0 && adapter.itemCount != itemCount) {
-                    binding.recyclerView.post {
-                        if (getView() != null) {
-                            binding.recyclerView.scrollBy(0, Utils.dpToPx(requireContext(), -30))
+                binding.recyclerView.scrollToPosition(0)
+            }
+        })
+
+        adapter.addLoadStateListener { loadState ->
+            if (loadState.refresh != LoadState.Loading && loadState.source.refresh != LoadState.Loading) {
+                binding.swipeRefreshLayout.isRefreshing = false
+            }
+
+            binding.statusView.hide()
+            binding.progressBar.hide()
+
+            if (adapter.itemCount == 0) {
+                when (loadState.refresh) {
+                    is LoadState.NotLoading -> {
+                        if (loadState.append is LoadState.NotLoading && loadState.source.refresh is LoadState.NotLoading) {
+                            binding.statusView.show()
+                            binding.statusView.setup(R.drawable.elephant_friend_empty, R.string.message_empty)
                         }
                     }
+                    is LoadState.Error -> {
+                        binding.statusView.show()
+                        binding.statusView.setup((loadState.refresh as LoadState.Error).error) { onRefresh() }
+                    }
+                    is LoadState.Loading -> {
+                        binding.progressBar.show()
+                    }
+                }
+            }
+        }
+
+        adapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
+            override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
+                val firstPos = (binding.recyclerView.layoutManager as LinearLayoutManager).findFirstCompletelyVisibleItemPosition()
+                if (firstPos == 0 && positionStart == 0 && adapter.itemCount != itemCount) {
+                    binding.recyclerView.post {
+                        if (getView() != null) {
+                            binding.recyclerView.scrollBy(
+                                0,
+                                Utils.dpToPx(binding.recyclerView.context, -30)
+                            )
+                        }
+                    }
+                    loadMorePosition = null
+                }
+                if (readingOrder == ReadingOrder.OLDEST_FIRST) {
+                    updateReadingPositionForOldestFirst(adapter)
                 }
             }
         })
 
-        // update post timestamps
-        val updateTimestampFlow = flow {
-            while (true) {
-                delay(60000)
-                emit(Unit)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.notifications.collectLatest { pagingData ->
+                adapter.submitData(pagingData)
             }
-        }.onEach {
-            adapter.notifyItemRangeChanged(0, adapter.itemCount, listOf(StatusBaseViewHolder.Key.KEY_CREATED))
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    viewModel.pagingData.collectLatest { pagingData ->
-                        Log.d(TAG, "Submitting data to adapter")
-                        adapter.submitData(pagingData)
-                    }
+            eventHub.events.collect { event ->
+                if (event is PreferenceChangedEvent) {
+                    onPreferenceChanged(adapter, event.preferenceKey)
                 }
+            }
+        }
 
-                // Show errors from the view model as snack bars.
-                //
-                // Errors are shown:
-                // - Indefinitely, so the user has a chance to read and understand
-                //   the message
-                // - With a max of 5 text lines, to allow space for longer errors.
-                //   E.g., on a typical device, an error message like "Bookmarking
-                //   post failed: Unable to resolve host 'mastodon.social': No
-                //   address associated with hostname" is 3 lines.
-                // - With a "Retry" option if the error included a UiAction to retry.
-                launch {
-                    viewModel.uiError.collect { error ->
-                        Log.d(TAG, error.toString())
-                        val message = getString(
-                            error.message,
-                            error.throwable.localizedMessage
-                                ?: getString(R.string.ui_error_unknown)
-                        )
-                        val snackbar = Snackbar.make(
-                            // Without this the FAB will not move out of the way
-                            (activity as ActionButtonActivity).actionButton ?: binding.root,
-                            message,
-                            Snackbar.LENGTH_INDEFINITE
-                        ).setTextMaxLines(5)
-                        error.action?.let { action ->
-                            snackbar.setAction(R.string.action_retry) {
-                                viewModel.accept(action)
-                            }
-                        }
-                        snackbar.show()
-
-                        // The status view has pre-emptively updated its state to show
-                        // that the action succeeded. Since it hasn't, re-bind the view
-                        // to show the correct data.
-                        error.action?.let { action ->
-                            action is StatusAction || return@let
-
-                            val position = adapter.snapshot().indexOfFirst {
-                                it?.statusViewData?.status?.id == (action as StatusAction).statusViewData.id
-                            }
-                            if (position != RecyclerView.NO_POSITION) {
-                                adapter.notifyItemChanged(position)
-                            }
-                        }
-                    }
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                accountManager.activeAccount?.let { account ->
+                    notificationService.clearNotificationsForAccount(account)
                 }
+            }
+        }
 
-                // Show successful notification action as brief snackbars, so the
-                // user is clear the action has happened.
-                launch {
-                    viewModel.uiSuccess
-                        .filterIsInstance<NotificationActionSuccess>()
-                        .collect {
-                            Snackbar.make(
-                                (activity as ActionButtonActivity).actionButton ?: binding.root,
-                                getString(it.msg),
-                                Snackbar.LENGTH_SHORT
-                            ).show()
+        updateRelativeTimePeriodically(preferences, adapter)
 
-                            when (it) {
-                                // The follow request is no longer valid, refresh the adapter to
-                                // remove it.
-                                is NotificationActionSuccess.AcceptFollowRequest,
-                                is NotificationActionSuccess.RejectFollowRequest -> adapter.refresh()
-                            }
-                        }
-                }
-
-                // Update adapter data when status actions are successful, and re-bind to update
-                // the UI.
-                launch {
-                    viewModel.uiSuccess
-                        .filterIsInstance<StatusActionSuccess>()
-                        .collect {
-                            val indexedViewData = adapter.snapshot()
-                                .withIndex()
-                                .firstOrNull { notificationViewData ->
-                                    notificationViewData.value?.statusViewData?.status?.id ==
-                                        it.action.statusViewData.id
-                                } ?: return@collect
-
-                            val statusViewData =
-                                indexedViewData.value?.statusViewData ?: return@collect
-
-                            val status = when (it) {
-                                is StatusActionSuccess.Bookmark ->
-                                    statusViewData.status.copy(bookmarked = it.action.state)
-                                is StatusActionSuccess.Favourite ->
-                                    statusViewData.status.copy(favourited = it.action.state)
-                                is StatusActionSuccess.Reblog ->
-                                    statusViewData.status.copy(reblogged = it.action.state)
-                                is StatusActionSuccess.VoteInPoll ->
-                                    statusViewData.status.copy(
-                                        poll = it.action.poll.votedCopy(it.action.choices)
-                                    )
-                            }
-                            indexedViewData.value?.statusViewData = statusViewData.copy(
-                                status = status
-                            )
-
-                            adapter.notifyItemChanged(indexedViewData.index)
-                        }
-                }
-
-                // Refresh adapter on mutes and blocks
-                launch {
-                    viewModel.uiSuccess.collectLatest {
-                        when (it) {
-                            is UiSuccess.Block, is UiSuccess.Mute, is UiSuccess.MuteConversation ->
-                                adapter.refresh()
-                            else -> { /* nothing to do */
-                            }
-                        }
-                    }
-                }
-
-                // Update filter option visibility from uiState
-                launch {
-                    viewModel.uiState.collectLatest { updateFilterVisibility(it.showFilterOptions) }
-                }
-
-                // Update status display from statusDisplayOptions. If the new options request
-                // relative time display collect the flow to periodically update the timestamp in the list gui elements.
-                launch {
-                    viewModel.statusDisplayOptions
-                        .collectLatest {
-                            // NOTE this this also triggered (emitted?) on resume.
-
-                            adapter.statusDisplayOptions = it
-                            adapter.notifyItemRangeChanged(0, adapter.itemCount, null)
-
-                            if (!it.useAbsoluteTime) {
-                                updateTimestampFlow.collect()
-                            }
-                        }
-                }
-
-                // Update the UI from the loadState
-                adapter.loadStateFlow
-                    .distinctUntilChangedBy { it.refresh }
-                    .collect { loadState ->
-                        binding.recyclerView.isVisible = true
-                        binding.progressBar.isVisible = loadState.refresh is LoadState.Loading &&
-                            !binding.swipeRefreshLayout.isRefreshing
-                        binding.swipeRefreshLayout.isRefreshing =
-                            loadState.refresh is LoadState.Loading && !binding.progressBar.isVisible
-
-                        binding.statusView.isVisible = false
-                        if (loadState.refresh is LoadState.NotLoading) {
-                            if (adapter.itemCount == 0) {
-                                binding.statusView.setup(
-                                    R.drawable.elephant_friend_empty,
-                                    R.string.message_empty
-                                )
-                                binding.recyclerView.isVisible = false
-                                binding.statusView.isVisible = true
-                            } else {
-                                binding.statusView.isVisible = false
-                            }
-                        }
-
-                        if (loadState.refresh is LoadState.Error) {
-                            when ((loadState.refresh as LoadState.Error).error) {
-                                is IOException -> {
-                                    binding.statusView.setup(
-                                        R.drawable.elephant_offline,
-                                        R.string.error_network
-                                    ) { adapter.retry() }
-                                }
-                                else -> {
-                                    binding.statusView.setup(
-                                        R.drawable.elephant_error,
-                                        R.string.error_generic
-                                    ) { adapter.retry() }
-                                }
-                            }
-                            binding.recyclerView.isVisible = false
-                            binding.statusView.isVisible = true
-                        }
-                    }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.notificationPolicy.collect {
+                notificationsPolicyAdapter.updateState(it)
             }
         }
     }
 
-    override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
-        menuInflater.inflate(R.menu.fragment_notifications, menu)
-        menu.findItem(R.id.action_refresh)?.apply {
-            icon = IconicsDrawable(requireContext(), GoogleMaterial.Icon.gmd_refresh).apply {
-                sizeDp = 20
-                colorInt = MaterialColors.getColor(binding.root, android.R.attr.textColorPrimary)
-            }
-        }
+    override fun onDestroyView() {
+        // Clear the adapters to prevent leaking the View
+        notificationsAdapter = null
+        notificationsPolicyAdapter = null
+        super.onDestroyView()
     }
 
-    override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
-        return when (menuItem.itemId) {
-            R.id.action_refresh -> {
-                binding.swipeRefreshLayout.isRefreshing = true
-                onRefresh()
-                true
-            }
-            R.id.load_newest -> {
-                viewModel.accept(InfallibleUiAction.LoadNewest)
-                true
-            }
-            else -> false
+    override fun onReselect() {
+        if (view != null) {
+            binding.recyclerView.layoutManager?.scrollToPosition(0)
+            binding.recyclerView.stopScroll()
         }
     }
 
     override fun onRefresh() {
-        binding.progressBar.isVisible = false
-        adapter.refresh()
-        NotificationHelper.clearNotificationsForAccount(requireContext(), viewModel.account)
-    }
-
-    override fun onPause() {
-        super.onPause()
-
-        // Save the ID of the first notification visible in the list
-        val position = layoutManager.findFirstVisibleItemPosition()
-        if (position >= 0) {
-            adapter.snapshot().getOrNull(position)?.id?.let { id ->
-                viewModel.accept(InfallibleUiAction.SaveVisibleId(visibleId = id))
-            }
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        NotificationHelper.clearNotificationsForAccount(requireContext(), viewModel.account)
-    }
-
-    override fun onReply(position: Int) {
-        val status = adapter.peek(position)?.statusViewData?.status ?: return
-        super.reply(status)
-    }
-
-    override fun onReblog(reblog: Boolean, position: Int) {
-        val statusViewData = adapter.peek(position)?.statusViewData ?: return
-        viewModel.accept(StatusAction.Reblog(reblog, statusViewData))
-    }
-
-    override fun onFavourite(favourite: Boolean, position: Int) {
-        val statusViewData = adapter.peek(position)?.statusViewData ?: return
-        viewModel.accept(StatusAction.Favourite(favourite, statusViewData))
-    }
-
-    override fun onBookmark(bookmark: Boolean, position: Int) {
-        val statusViewData = adapter.peek(position)?.statusViewData ?: return
-        viewModel.accept(StatusAction.Bookmark(bookmark, statusViewData))
-    }
-
-    override fun onVoteInPoll(position: Int, choices: List<Int>) {
-        val statusViewData = adapter.peek(position)?.statusViewData ?: return
-        val poll = statusViewData.status.poll ?: return
-        viewModel.accept(StatusAction.VoteInPoll(poll, choices, statusViewData))
-    }
-
-    override fun onMore(view: View, position: Int) {
-        val status = adapter.peek(position)?.statusViewData?.status ?: return
-        super.more(status, view, position)
-    }
-
-    override fun onViewMedia(position: Int, attachmentIndex: Int, view: View?) {
-        val status = adapter.peek(position)?.statusViewData?.status ?: return
-        super.viewMedia(attachmentIndex, list(status), view)
-    }
-
-    override fun onViewThread(position: Int) {
-        val status = adapter.peek(position)?.statusViewData?.status ?: return
-        super.viewThread(status.actionableId, status.actionableStatus.url)
-    }
-
-    override fun onOpenReblog(position: Int) {
-        val account = adapter.peek(position)?.account!!
-        onViewAccount(account.id)
-    }
-
-    override fun onExpandedChange(expanded: Boolean, position: Int) {
-        val notificationViewData = adapter.snapshot()[position] ?: return
-        notificationViewData.statusViewData = notificationViewData.statusViewData?.copy(
-            isExpanded = expanded
-        )
-        adapter.notifyItemChanged(position)
-    }
-
-    override fun onContentHiddenChange(isShowing: Boolean, position: Int) {
-        val notificationViewData = adapter.snapshot()[position] ?: return
-        notificationViewData.statusViewData = notificationViewData.statusViewData?.copy(
-            isShowingContent = isShowing
-        )
-        adapter.notifyItemChanged(position)
-    }
-
-    override fun onLoadMore(position: Int) {
-        // Empty -- this fragment doesn't show placeholders
-    }
-
-    override fun onContentCollapsedChange(isCollapsed: Boolean, position: Int) {
-        val notificationViewData = adapter.snapshot()[position] ?: return
-        notificationViewData.statusViewData = notificationViewData.statusViewData?.copy(
-            isCollapsed = isCollapsed
-        )
-        adapter.notifyItemChanged(position)
-    }
-
-    override fun onNotificationContentCollapsedChange(isCollapsed: Boolean, position: Int) {
-        onContentCollapsedChange(isCollapsed, position)
-    }
-
-    override fun clearWarningAction(position: Int) {
-    }
-
-    private fun clearNotifications() {
-        binding.swipeRefreshLayout.isRefreshing = false
-        binding.progressBar.isVisible = false
-        viewModel.accept(FallibleUiAction.ClearNotifications)
-    }
-
-    private fun showFilterDialog() {
-        FilterDialogFragment(viewModel.uiState.value.activeFilter) { filter ->
-            if (viewModel.uiState.value.activeFilter != filter) {
-                viewModel.accept(InfallibleUiAction.ApplyFilter(filter))
-            }
-        }
-            .show(parentFragmentManager, "dialogFilter")
-    }
-
-    override fun onViewTag(tag: String) {
-        super.viewTag(tag)
+        notificationsAdapter?.refresh()
+        viewModel.loadNotificationPolicy()
     }
 
     override fun onViewAccount(id: String) {
@@ -590,103 +300,269 @@ class NotificationsFragment :
     }
 
     override fun onMute(mute: Boolean, id: String, position: Int, notifications: Boolean) {
-        adapter.refresh()
+        // not needed, muting via the more menu on statuses is handled in SFragment
     }
 
     override fun onBlock(block: Boolean, id: String, position: Int) {
-        adapter.refresh()
+        // not needed, blocking via the more menu on statuses is handled in SFragment
     }
 
-    override fun onRespondToFollowRequest(accept: Boolean, accountId: String, position: Int) {
-        if (accept) {
-            viewModel.accept(NotificationAction.AcceptFollowRequest(accountId))
-        } else {
-            viewModel.accept(NotificationAction.RejectFollowRequest(accountId))
-        }
-    }
-
-    override fun onViewThreadForStatus(status: Status) {
-        super.viewThread(status.actionableId, status.actionableStatus.url)
+    override fun onRespondToFollowRequest(accept: Boolean, accountIdRequestingFollow: String, position: Int) {
+        val notification = notificationsAdapter?.peek(position) ?: return
+        viewModel.respondToFollowRequest(accept, accountIdRequestingFollow = accountIdRequestingFollow, notificationId = notification.id)
     }
 
     override fun onViewReport(reportId: String) {
         requireContext().openLink(
-            "https://${viewModel.account.domain}/admin/reports/$reportId"
+            "https://${accountManager.activeAccount!!.domain}/admin/reports/$reportId"
         )
     }
 
-    public override fun removeItem(position: Int) {
-        // Empty -- this fragment doesn't remove items
+    override fun onViewTag(tag: String) {
+        super.viewTag(tag)
     }
 
-    override fun onReselect() {
-        if (isAdded) {
-            binding.appBarOptions.setExpanded(true, false)
-            layoutManager.scrollToPosition(0)
+    override fun onReply(position: Int) {
+        val status = notificationsAdapter?.peek(position)?.asStatusOrNull() ?: return
+        super.reply(status.status)
+    }
+
+    override fun removeItem(position: Int) {
+        val notification = notificationsAdapter?.peek(position) ?: return
+        viewModel.remove(notification.id)
+    }
+
+    override fun onReblog(reblog: Boolean, position: Int) {
+        val status = notificationsAdapter?.peek(position)?.asStatusOrNull() ?: return
+        viewModel.reblog(reblog, status)
+    }
+
+    override val onMoreTranslate: (translate: Boolean, position: Int) -> Unit
+        get() = { translate: Boolean, position: Int ->
+            if (translate) {
+                onTranslate(position)
+            } else {
+                onUntranslate(position)
+            }
+        }
+
+    private fun onTranslate(position: Int) {
+        val status = notificationsAdapter?.peek(position)?.asStatusOrNull() ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.translate(status)
+                .onFailure {
+                    Snackbar.make(
+                        requireView(),
+                        getString(R.string.ui_error_translate, it.message),
+                        Snackbar.LENGTH_LONG
+                    ).show()
+                }
         }
     }
 
-    companion object {
-        private const val TAG = "NotificationsFragment"
-        fun newInstance() = NotificationsFragment()
-
-        private val notificationDiffCallback: DiffUtil.ItemCallback<NotificationViewData> =
-            object : DiffUtil.ItemCallback<NotificationViewData>() {
-                override fun areItemsTheSame(
-                    oldItem: NotificationViewData,
-                    newItem: NotificationViewData
-                ): Boolean {
-                    return oldItem.id == newItem.id
-                }
-
-                override fun areContentsTheSame(
-                    oldItem: NotificationViewData,
-                    newItem: NotificationViewData
-                ): Boolean {
-                    return false
-                }
-
-                override fun getChangePayload(
-                    oldItem: NotificationViewData,
-                    newItem: NotificationViewData
-                ): Any? {
-                    return if (oldItem == newItem) {
-                        //  If items are equal - update timestamp only
-                        listOf(StatusBaseViewHolder.Key.KEY_CREATED)
-                    } else {
-                        // If items are different - update a whole view holder
-                        null
-                    }
-                }
-            }
+    override fun onUntranslate(position: Int) {
+        val status = notificationsAdapter?.peek(position)?.asStatusOrNull() ?: return
+        viewModel.untranslate(status)
     }
-}
 
-class FilterDialogFragment(
-    private val activeFilter: Set<Notification.Type>,
-    private val listener: ((filter: Set<Notification.Type>) -> Unit)
-) : DialogFragment() {
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val context = requireContext()
+    override fun onFavourite(favourite: Boolean, position: Int) {
+        val status = notificationsAdapter?.peek(position)?.asStatusOrNull() ?: return
+        viewModel.favorite(favourite, status)
+    }
 
-        val items = Notification.Type.visibleTypes.map { getString(it.uiString) }.toTypedArray()
-        val checkedItems = Notification.Type.visibleTypes.map {
-            !activeFilter.contains(it)
-        }.toBooleanArray()
+    override fun onBookmark(bookmark: Boolean, position: Int) {
+        val status = notificationsAdapter?.peek(position)?.asStatusOrNull() ?: return
+        viewModel.bookmark(bookmark, status)
+    }
 
-        val builder = AlertDialog.Builder(context)
-            .setTitle(R.string.notifications_apply_filter)
-            .setMultiChoiceItems(items, checkedItems) { _, which, isChecked ->
-                checkedItems[which] = isChecked
+    override fun onVoteInPoll(position: Int, choices: List<Int>) {
+        val status = notificationsAdapter?.peek(position)?.asStatusOrNull() ?: return
+        viewModel.voteInPoll(choices, status)
+    }
+
+    override fun clearWarningAction(position: Int) {
+        val status = notificationsAdapter?.peek(position)?.asStatusOrNull() ?: return
+        viewModel.clearWarning(status)
+    }
+
+    override fun onMore(view: View, position: Int) {
+        val status = notificationsAdapter?.peek(position)?.asStatusOrNull() ?: return
+        super.more(
+            status.status,
+            view,
+            position,
+            (status.translation as? TranslationViewData.Loaded)?.data
+        )
+    }
+
+    override fun onViewMedia(position: Int, attachmentIndex: Int, view: View?) {
+        val status = notificationsAdapter?.peek(position)?.asStatusOrNull() ?: return
+        super.viewMedia(attachmentIndex, AttachmentViewData.list(status), view)
+    }
+
+    override fun onViewThread(position: Int) {
+        val status = notificationsAdapter?.peek(position)?.asStatusOrNull()?.status ?: return
+        super.viewThread(status.id, status.url)
+    }
+
+    override fun onOpenReblog(position: Int) {
+        val status = notificationsAdapter?.peek(position)?.asStatusOrNull() ?: return
+        super.openReblog(status.status)
+    }
+
+    override fun onExpandedChange(expanded: Boolean, position: Int) {
+        val status = notificationsAdapter?.peek(position)?.asStatusOrNull() ?: return
+        viewModel.changeExpanded(expanded, status)
+    }
+
+    override fun onContentHiddenChange(isShowing: Boolean, position: Int) {
+        val status = notificationsAdapter?.peek(position)?.asStatusOrNull() ?: return
+        viewModel.changeContentShowing(isShowing, status)
+    }
+
+    override fun onLoadMore(position: Int) {
+        val adapter = this.notificationsAdapter
+        val placeholder = adapter?.peek(position)?.asPlaceholderOrNull() ?: return
+        loadMorePosition = position
+        statusIdBelowLoadMore =
+            if (position + 1 < adapter.itemCount) adapter.peek(position + 1)?.id else null
+        viewModel.loadMore(placeholder.id)
+    }
+
+    override fun onContentCollapsedChange(isCollapsed: Boolean, position: Int) {
+        val status = notificationsAdapter?.peek(position)?.asStatusOrNull() ?: return
+        viewModel.changeContentCollapsed(isCollapsed, status)
+    }
+
+    private fun confirmClearNotifications() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setMessage(R.string.notification_clear_text)
+            .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int -> clearNotifications() }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun clearNotifications() {
+        viewModel.clearNotifications()
+    }
+
+    private fun showFilterMenu() {
+        val notificationTypeList = Notification.Type.visibleTypes.map { type ->
+            getString(type.uiString)
+        }
+
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_multiple_choice, notificationTypeList)
+        val window = PopupWindow(requireContext(), null, com.google.android.material.R.attr.listPopupWindowStyle)
+        val menuBinding = NotificationsFilterBinding.inflate(LayoutInflater.from(requireContext()), binding.root as ViewGroup, false)
+
+        menuBinding.buttonApply.setOnClickListener {
+            val checkedItems = menuBinding.listView.getCheckedItemPositions()
+            val excludes = Notification.Type.visibleTypes.filterIndexed { index, _ ->
+                !checkedItems[index, false]
             }
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                val excludes: MutableSet<Notification.Type> = HashSet()
-                for (i in Notification.Type.visibleTypes.indices) {
-                    if (!checkedItems[i]) excludes.add(Notification.Type.visibleTypes[i])
+            window.dismiss()
+            viewModel.updateNotificationFilters(excludes.toSet())
+        }
+
+        menuBinding.listView.setAdapter(adapter)
+        menuBinding.listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE)
+
+        Notification.Type.visibleTypes.forEachIndexed { index, type ->
+            menuBinding.listView.setItemChecked(index, !viewModel.excludes.value.contains(type))
+        }
+
+        window.setContentView(menuBinding.root)
+        window.isFocusable = true
+        window.width = ViewGroup.LayoutParams.WRAP_CONTENT
+        window.height = ViewGroup.LayoutParams.WRAP_CONTENT
+        window.showAsDropDown(binding.buttonFilter)
+    }
+
+    private fun onPreferenceChanged(adapter: NotificationsPagingAdapter, key: String) {
+        when (key) {
+            PrefKeys.MEDIA_PREVIEW_ENABLED -> {
+                val enabled = accountManager.activeAccount!!.mediaPreviewEnabled
+                val oldMediaPreviewEnabled = adapter.mediaPreviewEnabled
+                if (enabled != oldMediaPreviewEnabled) {
+                    adapter.mediaPreviewEnabled = enabled
                 }
-                listener(excludes)
             }
-            .setNegativeButton(android.R.string.cancel) { _, _ -> }
-        return builder.create()
+
+            PrefKeys.SHOW_NOTIFICATIONS_FILTER -> {
+                if (view != null) {
+                    showNotificationsFilterBar = preferences.getBoolean(PrefKeys.SHOW_NOTIFICATIONS_FILTER, true)
+                    updateFilterBarVisibility()
+                }
+            }
+
+            PrefKeys.READING_ORDER -> {
+                readingOrder = ReadingOrder.from(
+                    preferences.getString(PrefKeys.READING_ORDER, null)
+                )
+            }
+        }
+    }
+
+    private fun updateFilterBarVisibility() {
+        val params = binding.swipeRefreshLayout.layoutParams as CoordinatorLayout.LayoutParams
+        if (showNotificationsFilterBar) {
+            binding.appBarOptions.setExpanded(true, false)
+            binding.appBarOptions.show()
+            // Set content behaviour to hide filter on scroll
+            params.behavior = AppBarLayout.ScrollingViewBehavior()
+        } else {
+            binding.appBarOptions.setExpanded(false, false)
+            binding.appBarOptions.hide()
+            // Clear behaviour to hide app bar
+            params.behavior = null
+        }
+    }
+
+    private fun updateReadingPositionForOldestFirst(adapter: NotificationsPagingAdapter) {
+        var position = loadMorePosition ?: return
+        val notificationIdBelowLoadMore = statusIdBelowLoadMore ?: return
+
+        var notification: NotificationViewData?
+        while (adapter.peek(position).let {
+                notification = it
+                it != null
+            }
+        ) {
+            if (notification?.id == notificationIdBelowLoadMore) {
+                val lastVisiblePosition =
+                    (binding.recyclerView.layoutManager as LinearLayoutManager).findLastVisibleItemPosition()
+                if (position > lastVisiblePosition) {
+                    binding.recyclerView.scrollToPosition(position)
+                }
+                break
+            }
+            position++
+        }
+        loadMorePosition = null
+    }
+
+    override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+        menuInflater.inflate(R.menu.fragment_notifications, menu)
+    }
+
+    override fun onMenuItemSelected(menuItem: MenuItem) = when (menuItem.itemId) {
+        R.id.action_refresh -> {
+            binding.swipeRefreshLayout.isRefreshing = true
+            onRefresh()
+            true
+        }
+        R.id.action_edit_notification_filter -> {
+            showFilterMenu()
+            true
+        }
+        R.id.action_clear_notifications -> {
+            confirmClearNotifications()
+            true
+        }
+        else -> false
+    }
+
+    companion object {
+        fun newInstance() = NotificationsFragment()
     }
 }

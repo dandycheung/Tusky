@@ -24,8 +24,6 @@
     <dimen name="compose_activity_scrollview_height">-1px</dimen> <!-- match_parent -->
     <dimen name="timeline_width">-1px</dimen> <!-- match_parent -->
 
-    <dimen name="actionbar_elevation">4dp</dimen>
-
     <item name="wrap_content" format="integer" type="dimen">-2</item>
 
     <dimen name="preference_icon_size">20dp</dimen>
@@ -41,13 +39,14 @@
     <dimen name="min_report_button_width">160dp</dimen>
     <dimen name="account_avatar_background_radius">14dp</dimen>
 
+    <!-- default radius of card (12dp) minus 1dp frame -->
+    <dimen name="inner_card_radius">11dp</dimen>
 
-    <dimen name="card_radius">5dp</dimen>
-
-    <dimen name="poll_preview_padding">12dp</dimen>
+    <dimen name="poll_preview_padding_vertical">8dp</dimen>
+    <dimen name="poll_preview_padding_horizontal">16dp</dimen>
     <dimen name="poll_preview_min_width">120dp</dimen>
 
-    <dimen name="adaptive_bitmap_inner_size">72dp</dimen>
+    <dimen name="adaptive_bitmap_inner_size">74dp</dimen>
     <dimen name="adaptive_bitmap_outer_size">108dp</dimen>
 
     <dimen name="fabMargin">16dp</dimen>
@@ -63,4 +62,28 @@
     <dimen name="graph_line_thickness">1dp</dimen>
 
     <dimen name="minimum_touch_target">48dp</dimen>
+
+    <dimen name="timeline_status_avatar_height">48dp</dimen>
+    <dimen name="timeline_status_avatar_width">48dp</dimen>
+
+    <dimen name="profile_badge_stroke_width">1dp</dimen>
+    <dimen name="profile_badge_min_height">24dp</dimen>
+    <dimen name="profile_badge_icon_size">16dp</dimen>
+    <dimen name="profile_badge_icon_start_padding">8dp</dimen>
+    <dimen name="profile_badge_icon_end_padding">0dp</dimen>
+
+    <dimen name="account_swiperefresh_distance">64dp</dimen>
+
+    <dimen name="fallback_emoji_size">16sp</dimen>
+
+    <!-- 56dp + 16dp padding on top and bottom -->
+    <dimen name="recyclerview_bottom_padding_actionbutton">88dp</dimen>
+    <dimen name="recyclerview_bottom_padding_no_actionbutton">32dp</dimen>
+
+    <dimen name="dialog_inset">24dp</dimen>
+
+    <dimen name="media_description_sheet_bottom_padding">8dp</dimen>
+
+    <dimen name="bottomAppBarHeight">64dp</dimen>
+
 </resources>

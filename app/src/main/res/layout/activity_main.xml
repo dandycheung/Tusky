@@ -5,57 +5,54 @@
     android:id="@+id/mainDrawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="@bool/is_not_edge_to_edge"
+    tools:context="com.keylesspalace.tusky.MainActivity">
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:id="@+id/mainCoordinatorLayout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        tools:context="com.keylesspalace.tusky.MainActivity">
+        android:layout_height="match_parent">
 
         <com.google.android.material.appbar.AppBarLayout
             android:id="@+id/appBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:elevation="@dimen/actionbar_elevation"
-            app:elevationOverlayEnabled="false">
+            android:fitsSystemWindows="@bool/is_edge_to_edge"
+            app:liftOnScroll="false"
+            app:statusBarForeground="?attr/colorSurface">
 
-            <androidx.appcompat.widget.Toolbar
+            <com.google.android.material.appbar.MaterialToolbar
                 android:id="@+id/mainToolbar"
-                style="@style/Widget.AppCompat.Toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:minHeight="?attr/actionBarSize"
                 app:contentInsetStartWithNavigation="0dp"
                 app:layout_scrollFlags="scroll|enterAlways"
                 app:navigationContentDescription="@string/action_open_drawer" />
 
-            <LinearLayout
+            <com.google.android.material.appbar.MaterialToolbar
                 android:id="@+id/topNav"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:layout_height="48dp"
+                android:orientation="horizontal"
+                android:paddingLeft="0dp"
+                android:paddingRight="0dp"
+                app:contentInsetStart="0dp"
+                app:contentInsetStartWithNavigation="0dp"
+                app:navigationContentDescription="@string/action_open_drawer">
 
-                <com.google.android.material.imageview.ShapeableImageView
-                    android:id="@+id/topNavAvatar"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:layout_gravity="center_vertical"
-                    android:layout_marginStart="10dp"
-                    android:layout_marginEnd="10dp"
-                    android:contentDescription="@string/action_open_drawer"
-                    app:shapeAppearance="@style/ShapeAppearance.Avatar"
-                    tools:src="@drawable/avatar_default" />
-
-                <com.google.android.material.tabs.TabLayout
+                <com.keylesspalace.tusky.view.AdaptiveTabLayout
                     android:id="@+id/tabLayout"
                     style="@style/TuskyTabAppearance"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     app:tabGravity="fill"
+                    app:tabIndicator="@drawable/tab_indicator_top"
+                    app:tabIndicatorFullWidth="true"
                     app:tabMaxWidth="0dp"
-                    app:tabMode="fixed" />
+                    app:tabMode="scrollable" />
 
-            </LinearLayout>
+            </com.google.android.material.appbar.MaterialToolbar>
 
         </com.google.android.material.appbar.AppBarLayout>
 
@@ -63,43 +60,33 @@
             android:id="@+id/viewPager"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginBottom="?attr/actionBarSize"
             android:background="?attr/windowBackgroundColor"
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
         <com.google.android.material.bottomappbar.BottomAppBar
             android:id="@+id/bottomNav"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="@dimen/bottomAppBarHeight"
             android:layout_gravity="bottom"
+            android:backgroundTint="?attr/colorSurface"
             app:contentInsetStart="0dp"
-            app:fabAlignmentMode="end">
+            app:contentInsetStartWithNavigation="0dp"
+            app:fabAlignmentMode="end"
+            app:menuAlignmentMode="auto"
+            app:navigationContentDescription="@string/action_open_drawer" >
 
-            <LinearLayout
+            <com.keylesspalace.tusky.view.AdaptiveTabLayout
+                android:id="@+id/bottomTabLayout"
+                style="@style/TuskyTabAppearance"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <com.google.android.material.imageview.ShapeableImageView
-                    android:id="@+id/bottomNavAvatar"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:layout_gravity="center_vertical"
-                    android:layout_marginStart="10dp"
-                    android:layout_marginEnd="10dp"
-                    android:contentDescription="@string/action_open_drawer"
-                    app:shapeAppearance="@style/ShapeAppearance.Avatar"
-                    tools:src="@drawable/avatar_default" />
-
-                <com.google.android.material.tabs.TabLayout
-                    android:id="@+id/bottomTabLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="?attr/actionBarSize"
-                    app:tabGravity="fill"
-                    app:tabIndicator="@null"
-                    app:tabMode="fixed" />
-
-            </LinearLayout>
+                android:layout_height="@dimen/bottomAppBarHeight"
+                android:background="?attr/colorSurface"
+                app:tabGravity="fill"
+                app:tabIndicator="@drawable/tab_indicator_bottom"
+                app:tabIndicatorFullWidth="true"
+                app:tabIndicatorGravity="top"
+                app:tabMode="scrollable"
+                app:tabPaddingTop="0dp" />
 
         </com.google.android.material.bottomappbar.BottomAppBar>
 
@@ -111,15 +98,17 @@
             android:contentDescription="@string/action_compose"
             app:layout_anchor="@id/viewPager"
             app:layout_anchorGravity="bottom|end"
-            app:srcCompat="@drawable/ic_create_24dp" />
+            app:srcCompat="@drawable/ic_create_24dp"
+            app:tint="?attr/colorOnPrimary" />
 
         <include layout="@layout/item_status_bottom_sheet" />
 
-        <ProgressBar
+        <com.google.android.material.progressindicator.CircularProgressIndicator
             android:id="@+id/progressBar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
+            android:indeterminate="true"
             android:visibility="gone" />
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
@@ -132,4 +121,3 @@
         android:fitsSystemWindows="true" />
 
 </androidx.drawerlayout.widget.DrawerLayout>
-

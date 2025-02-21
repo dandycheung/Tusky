@@ -15,14 +15,13 @@
 
 package com.keylesspalace.tusky.components.viewthread
 
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
-import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
-import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.annotation.CheckResult
 import androidx.core.view.MenuProvider
@@ -30,20 +29,17 @@ import androidx.fragment.app.commit
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.SimpleItemAnimator
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout.OnRefreshListener
+import at.connyduck.calladapter.networkresult.onFailure
 import com.google.android.material.snackbar.Snackbar
-import com.keylesspalace.tusky.BaseActivity
 import com.keylesspalace.tusky.R
 import com.keylesspalace.tusky.components.accountlist.AccountListActivity
 import com.keylesspalace.tusky.components.accountlist.AccountListActivity.Companion.newIntent
 import com.keylesspalace.tusky.components.viewthread.edits.ViewEditsFragment
 import com.keylesspalace.tusky.databinding.FragmentViewThreadBinding
-import com.keylesspalace.tusky.di.Injectable
-import com.keylesspalace.tusky.di.ViewModelFactory
 import com.keylesspalace.tusky.fragment.SFragment
 import com.keylesspalace.tusky.interfaces.StatusActionListener
 import com.keylesspalace.tusky.settings.PrefKeys
@@ -53,30 +49,34 @@ import com.keylesspalace.tusky.util.StatusDisplayOptions
 import com.keylesspalace.tusky.util.hide
 import com.keylesspalace.tusky.util.openLink
 import com.keylesspalace.tusky.util.show
+import com.keylesspalace.tusky.util.startActivityWithSlideInAnimation
+import com.keylesspalace.tusky.util.updateRelativeTimePeriodically
 import com.keylesspalace.tusky.util.viewBinding
 import com.keylesspalace.tusky.viewdata.AttachmentViewData.Companion.list
 import com.keylesspalace.tusky.viewdata.StatusViewData
+import com.keylesspalace.tusky.viewdata.TranslationViewData
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
+@AndroidEntryPoint
 class ViewThreadFragment :
-    SFragment(),
+    SFragment(R.layout.fragment_view_thread),
     OnRefreshListener,
     StatusActionListener,
-    MenuProvider,
-    Injectable {
+    MenuProvider {
 
     @Inject
-    lateinit var viewModelFactory: ViewModelFactory
+    lateinit var preferences: SharedPreferences
 
-    private val viewModel: ViewThreadViewModel by viewModels { viewModelFactory }
+    private val viewModel: ViewThreadViewModel by viewModels()
 
     private val binding by viewBinding(FragmentViewThreadBinding::bind)
 
-    private lateinit var adapter: ThreadAdapter
+    private var adapter: ThreadAdapter? = null
     private lateinit var thisThreadsStatusId: String
 
     private var alwaysShowSensitiveMedia = false
@@ -95,43 +95,38 @@ class ViewThreadFragment :
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         thisThreadsStatusId = requireArguments().getString(ID_EXTRA)!!
-        val preferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
+    }
 
+    private fun createAdapter(): ThreadAdapter {
         val statusDisplayOptions = StatusDisplayOptions(
-            animateAvatars = preferences.getBoolean("animateGifAvatars", false),
+            animateAvatars = preferences.getBoolean(PrefKeys.ANIMATE_GIF_AVATARS, false),
             mediaPreviewEnabled = accountManager.activeAccount!!.mediaPreviewEnabled,
-            useAbsoluteTime = preferences.getBoolean("absoluteTimeView", false),
-            showBotOverlay = preferences.getBoolean("showBotOverlay", true),
-            useBlurhash = preferences.getBoolean("useBlurhash", true),
-            cardViewMode = if (preferences.getBoolean("showCardsInTimelines", false)) {
+            useAbsoluteTime = preferences.getBoolean(PrefKeys.ABSOLUTE_TIME_VIEW, false),
+            showBotOverlay = preferences.getBoolean(PrefKeys.SHOW_BOT_OVERLAY, true),
+            useBlurhash = preferences.getBoolean(PrefKeys.USE_BLURHASH, true),
+            cardViewMode = if (preferences.getBoolean(PrefKeys.SHOW_CARDS_IN_TIMELINES, false)) {
                 CardViewMode.INDENTED
             } else {
                 CardViewMode.NONE
             },
-            confirmReblogs = preferences.getBoolean("confirmReblogs", true),
-            confirmFavourites = preferences.getBoolean("confirmFavourites", false),
+            confirmReblogs = preferences.getBoolean(PrefKeys.CONFIRM_REBLOGS, true),
+            confirmFavourites = preferences.getBoolean(PrefKeys.CONFIRM_FAVOURITES, false),
             hideStats = preferences.getBoolean(PrefKeys.WELLBEING_HIDE_STATS_POSTS, false),
             animateEmojis = preferences.getBoolean(PrefKeys.ANIMATE_CUSTOM_EMOJIS, false),
             showStatsInline = preferences.getBoolean(PrefKeys.SHOW_STATS_INLINE, false),
             showSensitiveMedia = accountManager.activeAccount!!.alwaysShowSensitiveMedia,
             openSpoiler = accountManager.activeAccount!!.alwaysOpenSpoiler
         )
-        adapter = ThreadAdapter(statusDisplayOptions, this)
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(R.layout.fragment_view_thread, container, false)
+        return ThreadAdapter(statusDisplayOptions, this)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
 
+        val adapter = createAdapter()
+        this.adapter = adapter
+
         binding.swipeRefreshLayout.setOnRefreshListener(this)
-        binding.swipeRefreshLayout.setColorSchemeResources(R.color.tusky_blue)
 
         binding.recyclerView.setHasFixedSize(true)
         binding.recyclerView.layoutManager = LinearLayoutManager(context)
@@ -166,6 +161,7 @@ class ViewThreadFragment :
                         initialProgressBar = getProgressBarJob(binding.initialProgressBar, 500)
                         initialProgressBar.start()
                     }
+
                     is ThreadUiState.LoadingThread -> {
                         if (uiState.statusViewDatum == null) {
                             // no detailed statuses available, e.g. because author is blocked
@@ -189,6 +185,7 @@ class ViewThreadFragment :
                         binding.recyclerView.show()
                         binding.statusView.hide()
                     }
+
                     is ThreadUiState.Error -> {
                         Log.w(TAG, "failed to load status", uiState.throwable)
                         initialProgressBar.cancel()
@@ -200,8 +197,11 @@ class ViewThreadFragment :
                         binding.recyclerView.hide()
                         binding.statusView.show()
 
-                        binding.statusView.setup(uiState.throwable) { viewModel.retry(thisThreadsStatusId) }
+                        binding.statusView.setup(
+                            uiState.throwable
+                        ) { viewModel.retry(thisThreadsStatusId) }
                     }
+
                     is ThreadUiState.Success -> {
                         if (uiState.statusViewData.none { viewData -> viewData.isDetailed }) {
                             // no detailed statuses available, e.g. because author is blocked
@@ -229,6 +229,7 @@ class ViewThreadFragment :
                         binding.recyclerView.show()
                         binding.statusView.hide()
                     }
+
                     is ThreadUiState.Refreshing -> {
                         threadProgressBar.cancel()
                     }
@@ -236,7 +237,7 @@ class ViewThreadFragment :
             }
         }
 
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             viewModel.errors.collect { throwable ->
                 Log.w(TAG, "failed to load status context", throwable)
                 Snackbar.make(binding.root, R.string.error_generic, Snackbar.LENGTH_SHORT)
@@ -247,7 +248,15 @@ class ViewThreadFragment :
             }
         }
 
+        updateRelativeTimePeriodically(preferences, adapter)
+
         viewModel.loadThread(thisThreadsStatusId)
+    }
+
+    override fun onDestroyView() {
+        // Clear the adapter to prevent leaking the View
+        adapter = null
+        super.onDestroyView()
     }
 
     override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
@@ -268,21 +277,19 @@ class ViewThreadFragment :
                 viewModel.toggleRevealButton()
                 true
             }
+
             R.id.action_open_in_web -> {
                 context?.openLink(requireArguments().getString(URL_EXTRA)!!)
                 true
             }
+
             R.id.action_refresh -> {
                 onRefresh()
                 true
             }
+
             else -> false
         }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        requireActivity().title = getString(R.string.title_view_thread)
     }
 
     /**
@@ -295,52 +302,94 @@ class ViewThreadFragment :
      * any time `view` is hidden.
      */
     @CheckResult
-    private fun getProgressBarJob(view: View, delayMs: Long) = viewLifecycleOwner.lifecycleScope.launch(
-        start = CoroutineStart.LAZY
-    ) {
-        try {
-            delay(delayMs)
-            view.show()
-            awaitCancellation()
-        } finally {
-            view.hide()
+    private fun getProgressBarJob(view: View, delayMs: Long) =
+        viewLifecycleOwner.lifecycleScope.launch(
+            start = CoroutineStart.LAZY
+        ) {
+            try {
+                delay(delayMs)
+                view.show()
+                awaitCancellation()
+            } finally {
+                view.hide()
+            }
         }
-    }
 
     override fun onRefresh() {
         viewModel.refresh(thisThreadsStatusId)
     }
 
     override fun onReply(position: Int) {
-        super.reply(adapter.currentList[position].status)
+        val viewData = adapter?.currentList?.getOrNull(position) ?: return
+        super.reply(viewData.status)
     }
 
     override fun onReblog(reblog: Boolean, position: Int) {
-        val status = adapter.currentList[position]
+        val status = adapter?.currentList?.getOrNull(position) ?: return
         viewModel.reblog(reblog, status)
     }
 
+    override val onMoreTranslate: ((translate: Boolean, position: Int) -> Unit) =
+        { translate: Boolean, position: Int ->
+            if (translate) {
+                onTranslate(position)
+            } else {
+                onUntranslate(
+                    position
+                )
+            }
+        }
+
+    private fun onTranslate(position: Int) {
+        val status = adapter?.currentList?.getOrNull(position) ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.translate(status)
+                .onFailure {
+                    Snackbar.make(
+                        requireView(),
+                        getString(R.string.ui_error_translate, it.message),
+                        Snackbar.LENGTH_LONG
+                    ).show()
+                }
+        }
+    }
+
+    override fun onUntranslate(position: Int) {
+        val status = adapter?.currentList?.getOrNull(position) ?: return
+        viewModel.untranslate(status)
+    }
+
     override fun onFavourite(favourite: Boolean, position: Int) {
-        val status = adapter.currentList[position]
+        val status = adapter?.currentList?.getOrNull(position) ?: return
         viewModel.favorite(favourite, status)
     }
 
     override fun onBookmark(bookmark: Boolean, position: Int) {
-        val status = adapter.currentList[position]
+        val status = adapter?.currentList?.getOrNull(position) ?: return
         viewModel.bookmark(bookmark, status)
     }
 
     override fun onMore(view: View, position: Int) {
-        super.more(adapter.currentList[position].status, view, position)
+        val viewData = adapter?.currentList?.getOrNull(position) ?: return
+        super.more(
+            viewData.status,
+            view,
+            position,
+            (viewData.translation as? TranslationViewData.Loaded)?.data
+        )
     }
 
     override fun onViewMedia(position: Int, attachmentIndex: Int, view: View?) {
-        val status = adapter.currentList[position].status
-        super.viewMedia(attachmentIndex, list(status), view)
+        val status = adapter?.currentList?.getOrNull(position) ?: return
+        super.viewMedia(
+            attachmentIndex,
+            list(status, alwaysShowSensitiveMedia),
+            view
+        )
     }
 
     override fun onViewThread(position: Int) {
-        val status = adapter.currentList[position]
+        val status = adapter?.currentList?.getOrNull(position) ?: return
         if (thisThreadsStatusId == status.id) {
             // If already viewing this thread, don't reopen it.
             return
@@ -365,11 +414,13 @@ class ViewThreadFragment :
     }
 
     override fun onExpandedChange(expanded: Boolean, position: Int) {
-        viewModel.changeExpanded(expanded, adapter.currentList[position])
+        val status = adapter?.currentList?.getOrNull(position) ?: return
+        viewModel.changeExpanded(expanded, status)
     }
 
     override fun onContentHiddenChange(isShowing: Boolean, position: Int) {
-        viewModel.changeContentShowing(isShowing, adapter.currentList[position])
+        val status = adapter?.currentList?.getOrNull(position) ?: return
+        viewModel.changeContentShowing(isShowing, status)
     }
 
     override fun onLoadMore(position: Int) {
@@ -377,19 +428,20 @@ class ViewThreadFragment :
     }
 
     override fun onShowReblogs(position: Int) {
-        val statusId = adapter.currentList[position].id
-        val intent = newIntent(requireContext(), AccountListActivity.Type.REBLOGGED, statusId)
-        (requireActivity() as BaseActivity).startActivityWithSlideInAnimation(intent)
+        val status = adapter?.currentList?.getOrNull(position) ?: return
+        val intent = newIntent(requireContext(), AccountListActivity.Type.REBLOGGED, status.id)
+        requireActivity().startActivityWithSlideInAnimation(intent)
     }
 
     override fun onShowFavs(position: Int) {
-        val statusId = adapter.currentList[position].id
-        val intent = newIntent(requireContext(), AccountListActivity.Type.FAVOURITED, statusId)
-        (requireActivity() as BaseActivity).startActivityWithSlideInAnimation(intent)
+        val status = adapter?.currentList?.getOrNull(position) ?: return
+        val intent = newIntent(requireContext(), AccountListActivity.Type.FAVOURITED, status.id)
+        requireActivity().startActivityWithSlideInAnimation(intent)
     }
 
     override fun onContentCollapsedChange(isCollapsed: Boolean, position: Int) {
-        viewModel.changeContentCollapsed(isCollapsed, adapter.currentList[position])
+        val status = adapter?.currentList?.getOrNull(position) ?: return
+        viewModel.changeContentCollapsed(isCollapsed, status)
     }
 
     override fun onViewTag(tag: String) {
@@ -401,7 +453,7 @@ class ViewThreadFragment :
     }
 
     public override fun removeItem(position: Int) {
-        adapter.currentList.getOrNull(position)?.let { status ->
+        adapter?.currentList?.getOrNull(position)?.let { status ->
             if (status.isDetailed) {
                 // the main status we are viewing is being removed, finish the activity
                 activity?.finish()
@@ -412,23 +464,29 @@ class ViewThreadFragment :
     }
 
     override fun onVoteInPoll(position: Int, choices: List<Int>) {
-        val status = adapter.currentList[position]
+        val status = adapter?.currentList?.getOrNull(position) ?: return
         viewModel.voteInPoll(choices, status)
     }
 
     override fun onShowEdits(position: Int) {
-        val status = adapter.currentList[position]
+        val status = adapter?.currentList?.getOrNull(position) ?: return
         val viewEditsFragment = ViewEditsFragment.newInstance(status.actionableId)
 
         parentFragmentManager.commit {
-            setCustomAnimations(R.anim.slide_from_right, R.anim.slide_to_left, R.anim.slide_from_left, R.anim.slide_to_right)
+            setCustomAnimations(
+                R.anim.activity_open_enter,
+                R.anim.activity_open_exit,
+                R.anim.activity_close_enter,
+                R.anim.activity_close_exit
+            )
             replace(R.id.fragment_container, viewEditsFragment, "ViewEditsFragment_$id")
             addToBackStack(null)
         }
     }
 
     override fun clearWarningAction(position: Int) {
-        viewModel.clearWarning(adapter.currentList[position])
+        val status = adapter?.currentList?.getOrNull(position) ?: return
+        viewModel.clearWarning(status)
     }
 
     companion object {
