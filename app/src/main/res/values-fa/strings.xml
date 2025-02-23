@@ -32,7 +32,7 @@
     <string name="title_edit_profile">ویرایش نمایه‌تان</string>
     <string name="title_drafts">پیش‌نویس‌ها</string>
     <string name="title_licenses">پروانه‌ها</string>
-    <string name="post_boosted_format">%s تقویت کرد</string>
+    <string name="post_boosted_format">%1$s تقویت کرد</string>
     <string name="post_sensitive_media_title">محتوای حسّاس</string>
     <string name="post_media_hidden_title">رسانهٔ نهفته</string>
     <string name="post_sensitive_media_directions">کلیک برای نمایش</string>
@@ -41,10 +41,10 @@
     <string name="post_content_show_more">گسترش</string>
     <string name="post_content_show_less">جمع کردن</string>
     <string name="footer_empty">این‌جا هیچ‌چیز نیست. برای تازه‌سازی، به پایین بکشید!</string>
-    <string name="notification_reblog_format">%s فرسته‌تان را تقویت کرد</string>
-    <string name="notification_favourite_format">%s فرسته‌تان را برگزید</string>
-    <string name="notification_follow_format">%s پی‌گیرتان شد</string>
-    <string name="report_username_format">گزارش @%s</string>
+    <string name="notification_reblog_format">%1$s فرسته‌تان را تقویت کرد</string>
+    <string name="notification_favourite_format">%1$s فرسته‌تان را برگزید</string>
+    <string name="notification_follow_format">%1$s پی‌گیرتان شد</string>
+    <string name="report_username_format">گزارش @%1$s</string>
     <string name="report_comment_hint">نظرهای اضافی؟</string>
     <string name="action_quick_reply">پاسخ سریع</string>
     <string name="action_reply">پاسخ</string>
@@ -102,8 +102,6 @@
     <string name="confirmation_reported">فرستاده شد!</string>
     <string name="confirmation_unblocked">کاربرنامسدود شد</string>
     <string name="confirmation_unmuted">کاربر ناخموش شد</string>
-    <string name="post_sent">فرستاده شد!</string>
-    <string name="post_sent_long">پاسخ با موفّقیت فرستاده شد‌.</string>
     <string name="hint_domain">کدام نمونه؟</string>
     <string name="hint_compose">چه خبر؟</string>
     <string name="hint_content_warning">هشدار محتوا</string>
@@ -116,13 +114,13 @@
     <string name="label_header">سرایند</string>
     <string name="link_whats_an_instance">نمونه چیست؟</string>
     <string name="login_connection">در حال وصل شدن…</string>
-    <string name="dialog_whats_an_instance">نشانی یا دامنهٔ هر نمونه‌ای می‌تواند وارد شود، مثل mastodon.social, icosahedron.website, social.tchncs.de, و <a href="https://instances.social">بیش‌تر!</a>.
+    <string name="dialog_whats_an_instance">نشانی یا دامنهٔ هر نمونه‌ای می‌تواند وارد شود، چون mastodon.social, icosahedron.website, social.tchncs.de و <a href="https://instances.social">بیش‌تر!</a>.
 \n
-\n اگر هنوز حسابی ندارید، می‌توانید نام نمونه مورد نظر را وارد کرده و در آن حسابی بسازید.
+\nاگر هنوز حسابی ندارید، می‌توانید نام نمونه‌ای که می‌خواهید به آن بپیوندید را وارد کرده و در آن‌جا حسابی بسازید.
 \n
-\n نمونه، جاییست که حسابتان رویش میزبانی می‌شود، ولی به راحتی می‌توانید با دیگر افراد روی نمونه‌های دیگر ارتباط داشته و دنبالشان کنید؛ انگار که روی یک پایگاه باشید.
+\nنمونه جاییست که حسابتان رویش میزبانی می‌شود. به راحتی می‌توانید با افراد روی نمونه‌های دیگر ارتباط داشته و دنبالشان کنید؛ انگار که روی یک پایگاه باشید.
 \n
-\nاطّلاعات بیش‌تر می‌تواند در <a href="https://joinmastodon.org">joinmastodon.org</a> پیدا شود. </string>
+\nاطّلاعات بیش‌تر می‌تواند در <a href="https://joinmastodon.org">joinmastodon.org</a> پیدا شود.</string>
     <string name="dialog_title_finishing_media_upload">پایان بارگذاری رسانه</string>
     <string name="dialog_message_uploading_media">در حال بارگذاری…</string>
     <string name="dialog_download_image">بارگیری</string>
@@ -132,7 +130,7 @@
     <string name="visibility_public">عمومی: فرستادن به خط زمانی‌های عمومی</string>
     <string name="visibility_unlisted">فهرست‌نشده: نشان ندادن در خط زمانی‌های عمومی</string>
     <string name="visibility_private">تنها دنبال‌کنندگان:پست فقط به دنبال‌کنندگان</string>
-    <string name="visibility_direct">مستقیم: فرستادن فقط برای کاربران اشاره‌شده</string>
+    <string name="visibility_direct">مستقیم: فرستادن فقط به کاربران اشاره شده</string>
     <string name="pref_title_edit_notification_settings">آگاهی‌ها</string>
     <string name="pref_title_notifications_enabled">آگاهی‌ها</string>
     <string name="pref_title_notification_alerts">هشدارها</string>
@@ -153,9 +151,8 @@
     <string name="app_theme_auto">خودکار در غروب</string>
     <string name="pref_title_browser_settings">مرورگر</string>
     <string name="pref_title_custom_tabs">استفاده از زبانه‌های سفارشی کروم</string>
-    <string name="pref_title_hide_follow_button">نهفتن دکمهٔ ایجاد، هنگام پیمایش</string>
     <string name="pref_title_post_filter">پالایش خط زمانی</string>
-    <string name="pref_title_post_tabs">زبانه‌ها</string>
+    <string name="pref_title_post_tabs">خط زمانی خانه</string>
     <string name="pref_title_show_boosts">نمایش تقویت‌ها</string>
     <string name="pref_title_show_replies">نمایش پاسخ‌ها</string>
     <string name="pref_title_show_media_preview">بارگیری پیش‌نمایش رسانه</string>
@@ -164,10 +161,10 @@
     <string name="pref_title_http_proxy_enable">به کار انداختن پیشکار HTTP</string>
     <string name="pref_title_http_proxy_server">کارساز پیشکار HTTP</string>
     <string name="pref_title_http_proxy_port">درگاه پیشکار HTTP</string>
-    <string name="pref_default_post_privacy">محرمانگی پیش‌گزیدهٔ فرسته</string>
-    <string name="pref_default_media_sensitivity">علامت‌گذاری همیشگی رسانه به عنوان حساس</string>
-    <string name="pref_publishing">در حال انتشار (همگام با کارساز)</string>
-    <string name="pref_failed_to_sync">ناتوانی در هم‌گام‌سازی تنظیمات</string>
+    <string name="pref_default_post_privacy">محرمانگی فرسته (همگام با کارساز)</string>
+    <string name="pref_default_media_sensitivity">علامت‌گذاری همیشگی رسانه به عنوان حساس (همگام با کارساز)</string>
+    <string name="pref_publishing">پیش‌گزیده‌های انتشار</string>
+    <string name="pref_failed_to_sync">شکست در هم‌گام‌سازی ترجیحات</string>
     <string name="post_privacy_public">عمومی</string>
     <string name="post_privacy_unlisted">فهرست‌نشده</string>
     <string name="post_privacy_followers_only">فقط پی‌گیران</string>
@@ -185,13 +182,13 @@
     <string name="notification_boost_description">آگاهی‌ها هنگام تقویت فرسته‌هایتان</string>
     <string name="notification_favourite_name">برگزیدن‌ها</string>
     <string name="notification_favourite_description">آگاهی‌ها هنگام برگزیده شدن فرسته‌هایتان</string>
-    <string name="notification_mention_format">%s به شما اشاره کرد</string>
+    <string name="notification_mention_format">%1$s به شما اشاره کرد</string>
     <string name="notification_summary_large">%1$s، %2$s، %3$s و %4$d دیگر</string>
     <string name="notification_summary_medium">%1$s، %2$s و %3$s</string>
     <string name="notification_summary_small">%1$s و %2$s</string>
     <plurals name="notification_title_summary">
-        <item quantity="one">برهم‌کنشی جدید</item>
-        <item quantity="other">%d برهم‌کنش جدید</item>
+        <item quantity="one">%1$d برهم‌کنش جدید</item>
+        <item quantity="other">%1$d برهم‌کنش جدید</item>
     </plurals>
     <string name="description_account_locked">حساب قفل‌شده</string>
     <string name="about_title_activity">درباره</string>
@@ -202,10 +199,9 @@
            to show we do not mean the software is gratis. Source: https://www.gnu.org/philosophy/free-sw.html
          * the url can be changed to link to the localized version of the license.
     -->
-    <string name="about_project_site">پایگاه وب پروژه :
-\n https://tusky.app</string>
+    <string name="about_project_site">پایگاه وب پروژه: https://tusky.app</string>
     <string name="about_bug_feature_request_site">گزارش مشکلات و درخواست ویژگی‌ها:
-\n https://github.com/tuskyapp/Tusky/issues</string>
+\nhttps://github.com/tuskyapp/Tusky/issues</string>
     <string name="about_tusky_account">نمایهٔ تاسکی</string>
     <string name="post_share_content">هم‌رسانی محتوای فرسته</string>
     <string name="post_share_link">هم‌رسانی پیوند فرسته</string>
@@ -213,24 +209,24 @@
     <string name="post_media_video">ویدیو</string>
     <string name="state_follow_requested">تقاضای پیگیری شد</string>
     <!--These are for timestamps on statuses. For example: "16s" or "2d"-->
-    <string name="abbreviated_in_years">در %d سال</string>
-    <string name="abbreviated_in_days">در %d روز</string>
-    <string name="abbreviated_in_hours">در %d ساعت</string>
-    <string name="abbreviated_in_minutes">در %d دقیقه</string>
-    <string name="abbreviated_in_seconds">در %d ثانیه</string>
+    <string name="abbreviated_in_years">در %1$d سال</string>
+    <string name="abbreviated_in_days">در %1$d روز</string>
+    <string name="abbreviated_in_hours">در %1$d ساعت</string>
+    <string name="abbreviated_in_minutes">در %1$d دقیقه</string>
+    <string name="abbreviated_in_seconds">در %1$d ثانیه</string>
     <string name="follows_you">پیگیرتان است</string>
-    <string name="pref_title_alway_show_sensitive_media">نمایش همیشگی محتوای حساس</string>
+    <string name="pref_title_alway_show_sensitive_media">نمایش همیشگی رسانه‌های حساس</string>
     <string name="title_media">رسانه</string>
-    <string name="replying_to">در حال پاسخ به @%s</string>
+    <string name="replying_to">پاسخ دادن به @%1$s</string>
     <string name="load_more_placeholder_text">بار کردن بیش‌تر</string>
     <string name="add_account_name">افزودن حساب</string>
     <string name="add_account_description">افزودن حساب ماستودون جدید</string>
-    <string name="action_lists">فهرست‌ها</string>
-    <string name="title_lists">فهرست‌ها</string>
+    <string name="action_lists">سیاهه‌ها</string>
+    <string name="title_lists">سیاهه‌ها</string>
     <string name="compose_active_account_description">فرستادن از طرف %1$s</string>
     <plurals name="hint_describe_for_visually_impaired">
-        <item quantity="one">توصیف محتوا برای کم‌بینایان (کران ۱ نویسه)</item>
-        <item quantity="other">توصیف محتوا برای کم‌بینایان (کران %d نویسه)</item>
+        <item quantity="one">توصیف محتوا برای کم‌بینایان (کران %1$d نویسه)</item>
+        <item quantity="other">توصیف محتوا برای کم‌بینایان (کران %1$d نویسه)</item>
     </plurals>
     <string name="action_set_caption">تنظیم عنوان</string>
     <string name="action_remove">برداشتن</string>
@@ -243,7 +239,7 @@
     <string name="send_post_notification_cancel_title">فرستادن لغو شد</string>
     <string name="send_post_notification_saved_content">رونوشتی از فرسته در پیش‌نویس‌هایتان ذخیره شد</string>
     <string name="action_compose_shortcut">ایجاد</string>
-    <string name="error_no_custom_emojis">نمونه‌تان %s هیچ اموجی سفارشی‌ای ندارد</string>
+    <string name="error_no_custom_emojis">نمونه‌تان %1$s هیچ اموجی سفارشی‌ای ندارد</string>
     <string name="emoji_style">سبک اموجی</string>
     <string name="system_default">پیش‌گزیدهٔ سامانه</string>
     <string name="download_fonts">نخست باید این مجموعه‌های اموجی را بارگیری کنید</string>
@@ -277,30 +273,30 @@
     <string name="title_tab_preferences">زبانه‌ها</string>
     <string name="title_posts_pinned">سنجاق شده</string>
     <string name="title_domain_mutes">دامنه‌های نهفته</string>
-    <string name="post_username_format">\@%s</string>
+    <string name="post_username_format">\@%1$s</string>
     <string name="message_empty">این‌جا هیچ‌چیزی نیست.</string>
     <string name="action_unreblog">برداشتن تقویت</string>
     <string name="action_unfavourite">برداشتن برگزیدگی</string>
     <string name="action_delete_and_redraft">حذف و بازنویسی</string>
     <string name="action_view_domain_mutes">دامنه‌های نهفته</string>
     <string name="action_add_poll">افزودن نظرسنجی</string>
-    <string name="action_mute_domain">خموشی %s</string>
+    <string name="action_mute_domain">خموشی %1$s</string>
     <string name="action_add_tab">افزودن زبانه</string>
     <string name="action_links">پیوندها</string>
     <string name="action_mentions">اشاره‌ها</string>
     <string name="action_hashtags">برچسب‌ها</string>
-    <string name="action_open_reblogger">گشودن تقویت‌کنندهٔ بوق</string>
+    <string name="action_open_reblogger">گشودن تقویت‌کننده</string>
     <string name="action_open_reblogged_by">نمایش تقویت‌ها</string>
     <string name="action_open_faved_by">نمایش برگزیده‌ها</string>
     <string name="title_hashtags_dialog">برچسب‌ها</string>
     <string name="title_mentions_dialog">اشاره‌ها</string>
     <string name="title_links_dialog">پیوندها</string>
-    <string name="action_open_media_n">گشودن رسانه #%d</string>
-    <string name="action_open_as">گشودن به عنوان %s</string>
+    <string name="action_open_media_n">گشودن رسانه #%1$d</string>
+    <string name="action_open_as">گشودن به عنوان %1$s</string>
     <string name="action_share_as">هم‌رسانی به عنوان …</string>
     <string name="download_media">بارگیری رسانه</string>
     <string name="downloading_media">در حال بارگیری رسانه</string>
-    <string name="confirmation_domain_unmuted">%s نانهفته</string>
+    <string name="confirmation_domain_unmuted">%1$s نانهفته</string>
     <string name="dialog_redraft_post_warning">حذف و بازنویسی این فرسته؟</string>
     <string name="mute_domain_warning_dialog_ok">نهفتن تمام دامنه</string>
     <string name="pref_title_notification_filter_poll">پایان نظرسنجی‌ها</string>
@@ -311,12 +307,12 @@
     <string name="pref_title_animate_gif_avatars">پویانمایی آواتارهای جیف</string>
     <string name="notification_poll_name">نظرسنجی‌ها</string>
     <string name="notification_poll_description">آگاهی‌ها دربارهٔ نظرسنجی‌های پایان‌یافته</string>
-    <string name="about_tusky_version">تاسکی %s</string>
-    <string name="abbreviated_years_ago">%d سال</string>
-    <string name="abbreviated_days_ago">%d روز</string>
-    <string name="abbreviated_hours_ago">%d ساعت</string>
-    <string name="abbreviated_minutes_ago">%d دقیقه</string>
-    <string name="abbreviated_seconds_ago">%d ثانیه</string>
+    <string name="about_tusky_version">تاسکی %1$s</string>
+    <string name="abbreviated_years_ago">%1$d سال</string>
+    <string name="abbreviated_days_ago">%1$d روز</string>
+    <string name="abbreviated_hours_ago">%1$d ساعت</string>
+    <string name="abbreviated_minutes_ago">%1$d دقیقه</string>
+    <string name="abbreviated_seconds_ago">%1$d ثانیه</string>
     <string name="pref_title_alway_open_spoiler">گسترش همیشگی فرسته‌های علامت‌خورده با هشدار محتوا</string>
     <string name="pref_title_public_filter_keywords">خط زمانی‌های عمومی</string>
     <string name="pref_title_thread_filter_keywords">گفت‌وگوها</string>
@@ -325,16 +321,15 @@
     <string name="filter_dialog_remove_button">برداشتن</string>
     <string name="filter_dialog_update_button">به‌روز رسانی</string>
     <string name="filter_dialog_whole_word">تمام واژه</string>
-    <string name="error_create_list">ناتوانی در ایجاد فهرست</string>
-    <string name="error_rename_list">ناتوانی در تغییر نام فهرست</string>
-    <string name="error_delete_list">ناتوانی در حذف فهرست</string>
-    <string name="action_create_list">ایجاد یک فهرست</string>
-    <string name="action_rename_list">تغییر نام فهرست</string>
-    <string name="action_delete_list">حذف فهرست</string>
-    <string name="action_edit_list">ویرایش فهرست</string>
+    <string name="error_create_list">نتوانست سیاهه را ایجاد کند</string>
+    <string name="error_rename_list">نتوانست سیاهه را به‌روز کند</string>
+    <string name="error_delete_list">نتوانست سیاهه را حذف کند</string>
+    <string name="action_create_list">ایجاد سیاهه</string>
+    <string name="action_rename_list">به‌روز رسانی‌سیاهه</string>
+    <string name="action_delete_list">حذف سیاهه</string>
     <string name="hint_search_people_list">جست‌وجوی افرادی که پی می‌گیرید</string>
-    <string name="action_add_to_list">افزودن حساب به فهرست</string>
-    <string name="action_remove_from_list">برداشتن حساب از فهرست</string>
+    <string name="action_add_to_list">افزودن حساب به سیاهه</string>
+    <string name="action_remove_from_list">برداشتن حساب از سیاهه</string>
     <string name="caption_notoemoji">مجموعه اموجی کنونی گوگل</string>
     <string name="license_cc_by_4">نگارش ۴٫۰ CC-BY</string>
     <string name="license_cc_by_sa_4">نگارش ۴٫۰ CC-BY-SA</string>
@@ -343,20 +338,16 @@
         <item quantity="other"><b>%1$s</b> برگزیدن</item>
     </plurals>
     <plurals name="reblogs">
-        <item quantity="one"><b>%s</b> تقویت</item>
-        <item quantity="other"><b>%s</b> تقویت</item>
+        <item quantity="one"><b>%1$s</b> تقویت</item>
+        <item quantity="other"><b>%1$s</b> تقویت</item>
     </plurals>
     <string name="title_reblogged_by">تقویت‌شده به دست</string>
     <string name="title_favourited_by">برگزیده به دست</string>
     <string name="conversation_1_recipients">%1$s</string>
     <string name="conversation_2_recipients">%1$s و %2$s</string>
     <string name="conversation_more_recipients">%1$s، %2$s و %3$d بیش‌تر</string>
-    <plurals name="max_tab_number_reached">
-        <item quantity="one">رسیده به بیشینهٔ %1$d زبانه</item>
-        <item quantity="other">رسیده به بیشینهٔ %1$d زبانه</item>
-    </plurals>
-    <string name="description_post_media">رسانه: %s</string>
-    <string name="description_post_cw">هشدار محتوا: %s</string>
+    <string name="description_post_media">رسانه: %1$s</string>
+    <string name="description_post_cw">هشدار محتوا: %1$s</string>
     <string name="description_post_media_no_description_placeholder">بدون شرح</string>
     <string name="description_post_reblogged">تقویت شده</string>
     <string name="description_post_favourited">برگزیده</string>
@@ -365,42 +356,41 @@
     <string name="description_visibility_private">پی‌گیران</string>
     <string name="description_visibility_direct">مستقیم</string>
     <string name="description_poll">نظرسنجی با گزینه‌ها: %1$s، %2$s، %3$s، %4$s؛ %5$s</string>
-    <string name="hint_list_name">نام فهرست</string>
-    <string name="edit_hashtag_hint">برچسب بدون #</string>
-    <string name="notifications_clear">پاک‌سازی</string>
+    <string name="hint_list_name">نام سیاهه</string>
+    <string name="pick_hashtag_hint">برچسب بدون #</string>
+    <string name="notifications_clear">حذف</string>
     <string name="notifications_apply_filter">پالایش</string>
     <string name="filter_apply">اعمال</string>
     <string name="compose_shortcut_long_label">ایجاد فرسته</string>
     <string name="compose_shortcut_short_label">ایجاد</string>
     <string name="notification_clear_text">مطمئنید می‌خواهید تمام آگاهی‌هایتان را برای همیشه پاک کنید؟</string>
-    <string name="poll_info_time_absolute">پایان در %s</string>
+    <string name="poll_info_time_absolute">پایان در %1$s</string>
     <string name="poll_info_closed">بسته</string>
     <string name="poll_vote">رأی</string>
     <string name="poll_ended_voted">یک نظرسنجی که در آن رأی دادید، تمام شد</string>
     <string name="poll_ended_created">یک نظرسنجی که ساختید، تمام شد</string>
     <plurals name="poll_timespan_days">
-        <item quantity="one">%d روز مانده</item>
-        <item quantity="other">%d روز مانده</item>
+        <item quantity="one">%1$d روز مانده</item>
+        <item quantity="other">%1$d روز مانده</item>
     </plurals>
     <plurals name="poll_timespan_hours">
-        <item quantity="one">%d ساعت مانده</item>
-        <item quantity="other">%d ساعت مانده</item>
+        <item quantity="one">%1$d ساعت مانده</item>
+        <item quantity="other">%1$d ساعت مانده</item>
     </plurals>
     <plurals name="poll_timespan_minutes">
-        <item quantity="one">%d دقیقه مانده</item>
-        <item quantity="other">%d دقیقه مانده</item>
+        <item quantity="one">%1$d دقیقه مانده</item>
+        <item quantity="other">%1$d دقیقه مانده</item>
     </plurals>
     <string name="button_continue">ادامه</string>
     <string name="button_back">بازگشت</string>
     <string name="button_done">تمام</string>
-    <string name="report_sent_success">‫@%s با موفّقیت گزارش شد</string>
+    <string name="report_sent_success">‫@%1$s با موفّقیت گزارش شد</string>
     <string name="hint_additional_info">نظرهای اضافی</string>
-    <string name="report_remote_instance">هدایت به %s</string>
+    <string name="report_remote_instance">هدایت به %1$s</string>
     <string name="failed_report">شکست در گزارش</string>
     <string name="failed_fetch_posts">شکست در واکشی فرسته‌ها</string>
     <string name="title_accounts">حساب‌ها</string>
     <string name="failed_search">شکست در جست‌وجو</string>
-    <string name="pref_title_show_notifications_filter">نمایش پالایهٔ آگاهی‌ها</string>
     <string name="create_poll_title">نظرسنجی</string>
     <string name="duration_5_min">۵ دقیقه</string>
     <string name="duration_30_min">۳۰ دقیقه</string>
@@ -411,27 +401,27 @@
     <string name="duration_7_days">۷ روز</string>
     <string name="add_poll_choice">افزودن گزینه</string>
     <string name="poll_allow_multiple_choices">گزینه‌های چندگانه</string>
-    <string name="poll_new_choice_hint">گزینهٔ %d</string>
+    <string name="poll_new_choice_hint">گزینهٔ %1$d</string>
     <string name="edit_poll">ویرایش</string>
     <string name="title_scheduled_posts">فرسته‌های زمان‌بسته</string>
     <string name="action_edit">ویرایش</string>
     <string name="action_access_scheduled_posts">فرسته‌های زمان‌بسته</string>
     <string name="action_schedule_post">فرستهٔ زمان‌بسته</string>
     <string name="action_reset_schedule">بازنشانی</string>
-    <string name="mute_domain_warning">مطمئنید می‌خواهید تمام %s را مسدود کنید؟ محتوای آن دامنه را در هیچ‌یک از خط زمانی‌ها یا در آگاهی‌هایتان نخواهید دید. پی‌گیرانتان از آن دامنه، برداشته خواهند شد.</string>
+    <string name="mute_domain_warning">مطمئنید می‌خواهید تمام %1$s را مسدود کنید؟ محتوای آن دامنه را در هیچ‌یک از خط زمانی‌ها یا در آگاهی‌هایتان نخواهید دید. پی‌گیرانتان از آن دامنه، برداشته خواهند شد.</string>
     <string name="filter_dialog_whole_word_description">هنگامی که کلیدواژه یا عبارت، فقط حروف‌عددی باشد، فقط اگر با تمام واژه مطابق باشد، اعمال خواهد شد</string>
     <string name="filter_add_description">عبارت پالایش</string>
-    <string name="poll_info_format"> .<!-- ۱۵ رأی • ۱ ساعت مانده --> %1$s • %2$s</string>
+    <string name="poll_info_format"> \u0020.<!-- ۱۵ رأی • ۱ ساعت مانده --> \u0020%1$s • %2$s</string>
     <string name="report_description_1">گزارش به ناظرهای کارسازتان ارسال خواهد شد. در زیر می‌توانید توضیحی در باب چرایی گزارش این حساب بنویسید:</string>
     <string name="report_description_remote_instance">این حساب از کارسازی دیگر است. رونوشتی ناشناس از گزارش، به آن‌جا نیز ارسال شود؟</string>
-    <string name="post_lookup_error_format">خطا در یافتن فرستهٔ %s</string>
+    <string name="post_lookup_error_format">خطا در یافتن فرستهٔ %1$s</string>
     <string name="about_powered_by_tusky">قدرت‌گرفته از تاسکی</string>
     <string name="title_bookmarks">نشانک‌ها</string>
     <string name="action_bookmark">نشانک</string>
     <string name="action_view_bookmarks">نشانک‌ها</string>
     <string name="description_post_bookmarked">نشان‌شده</string>
-    <string name="select_list_title">گزینش فهرست</string>
-    <string name="list">فهرست</string>
+    <string name="select_list_title">گزینش سیاهه</string>
+    <string name="list">سیاهه</string>
     <string name="no_drafts">هیچ پیش‌نویسی ندارید.</string>
     <string name="no_scheduled_posts">هیچ فرستهٔ زمان‌بسته‌ای ندارید.</string>
     <string name="warning_scheduling_interval">ماستودون، بازهٔ زمان‌بندی‌ای با کمینهٔ ۵ دقیقه دارد.</string>
@@ -439,36 +429,36 @@
     <string name="pref_title_show_cards_in_timelines">پیش‌نمایش پیوندها در خط‌زمانی‌ها</string>
     <string name="pref_title_enable_swipe_for_tabs">به کار انداختن اشارهٔ کشیدنی برای تعویض بین زبانه‌ها</string>
     <plurals name="poll_info_people">
-        <item quantity="one">%s نفر</item>
-        <item quantity="other">%s نفر</item>
+        <item quantity="one">%1$s نفر</item>
+        <item quantity="other">%1$s نفر</item>
     </plurals>
     <string name="hashtags">برچسب‌ها</string>
     <string name="add_hashtag_title">افزودن برچسب</string>
     <string name="notification_follow_request_description">آگاهی‌ها دربارهٔ درخواست‌های پی‌گیری</string>
     <string name="notification_follow_request_name">درخواست‌های پی‌گیری</string>
     <string name="pref_title_notification_filter_follow_requests">درخواست پی‌گیری</string>
-    <string name="dialog_mute_warning">خموشی @%s؟</string>
-    <string name="dialog_block_warning">انسداد @%s؟</string>
+    <string name="dialog_mute_warning">خموشی @%1$s؟</string>
+    <string name="dialog_block_warning">انسداد @%1$s؟</string>
     <string name="action_unmute_conversation">ناخموشی گفت‌وگو</string>
     <string name="action_mute_conversation">خموشی گفت‌وگو</string>
-    <string name="notification_follow_request_format">%s می‌خواهد پی‌گیرتان شود</string>
+    <string name="notification_follow_request_format">%1$s می‌خواهد پی‌گیرتان شود</string>
     <plurals name="poll_timespan_seconds">
-        <item quantity="one">%d ثانیه مانده</item>
-        <item quantity="other">%d ثانیه مانده</item>
+        <item quantity="one">%1$d ثانیه مانده</item>
+        <item quantity="other">%1$d ثانیه مانده</item>
     </plurals>
     <string name="pref_main_nav_position_option_bottom">پایین</string>
     <string name="pref_main_nav_position_option_top">بالا</string>
     <string name="pref_main_nav_position">موقعیت ناوبری اصلی</string>
     <string name="pref_title_gradient_for_media">نمایش گرادیان‌های رنگی برای رسانه‌های نهفته</string>
     <string name="dialog_mute_hide_notifications">نهفتن آگاهی‌ها</string>
-    <string name="action_unmute_domain">ناخموشی %s</string>
-    <string name="action_unmute_desc">ناخموشی %s</string>
+    <string name="action_unmute_domain">ناخموشی %1$s</string>
+    <string name="action_unmute_desc">ناخموشی %1$s</string>
     <plurals name="poll_info_votes">
-        <item quantity="one">%s رأی</item>
-        <item quantity="other">%s رأی</item>
+        <item quantity="one">%1$s رأی</item>
+        <item quantity="other">%1$s رأی</item>
     </plurals>
     <string name="pref_title_hide_top_toolbar">نهفتن عنوان نوارابزار بالایی</string>
-    <string name="compose_preview_image_description">کنش‌ها برای تصویر %s</string>
+    <string name="compose_preview_image_description">کنش‌ها برای تصویر %1$s</string>
     <string name="account_note_saved">ذخیره شد!</string>
     <string name="account_note_hint">یادداشت خصوصیتان دربارهٔ این حساب</string>
     <string name="no_announcements">هیچ اعلامیه‌ای وجود ندارد.</string>
@@ -489,17 +479,17 @@
     <string name="notification_subscription_name">فرسته‌های جدید</string>
     <string name="pref_title_animate_custom_emojis">اموجی‌های شخصی متحرّک</string>
     <string name="pref_title_notification_filter_subscriptions">کسی که پی‌می‌گیرم، فرسته‌ای جدید منتشر کرد</string>
-    <string name="notification_subscription_format">%s چیزی فرستاد</string>
+    <string name="notification_subscription_format">%1$s چیزی فرستاد</string>
     <string name="drafts_post_reply_removed">فرسته‌ای که پاسخی به آن را پیش‌نویس کردید، برداشته شده</string>
     <string name="drafts_failed_loading_reply">شکست در بار کردن اطّلاعات پاسخ</string>
     <string name="wellbeing_mode_notice">برخی اطّلاعات که ممکن است روی سلامتی ذهنیتان تأثیر بگذارد، پنهان خواهند شد. همچون:
 \n
-\n - آگاهی‌های برگزیدن، تقویت و پی‌گیری
-\n - شمار برگزیدن و تقویت فرسته‌ها
-\n - آمار پی‌گیر و فرسته روی نمایه‌ها
+\n- آگاهی‌های برگزیدن، تقویت و پی‌گیری
+\n- شمار برگزیدن و تقویت فرسته‌ها
+\n- آمار پی‌گیر و فرسته روی نمایه‌ها
 \n
-\n فرستادن آگاهی‌ها تأثیر نمی‌پذیرد، ولی می‌توانید ترجیحات آگاهیتان را به صورت دستی بازبینی کنید.</string>
-    <string name="dialog_delete_list_warning">واقعاً می‌خواهید فهرست %s را حذف کنید؟</string>
+\nفرستادن آگاهی‌ها تأثیر نمی‌پذیرد، ولی می‌توانید ترجیحات آگاهیتان را به صورت دستی بازبینی کنید.</string>
+    <string name="dialog_delete_list_warning">واقعاً می‌خواهید سیاههٔ %1$s را حذف کنید؟</string>
     <plurals name="error_upload_max_media_reached">
         <item quantity="one">نمی‌توانید بیش از %1$d رسانه بارگذارید.</item>
         <item quantity="other">نمی‌توانید بیش از %1$d رسانه بارگذارید.</item>
@@ -510,14 +500,12 @@
     <string name="action_delete_conversation">حذف گفت‌وگو</string>
     <string name="account_date_joined">در %1$s پیوست</string>
     <string name="title_login">ورود</string>
-    <string name="notification_sign_up_format">%s ثبت‌نام کرد</string>
+    <string name="notification_sign_up_format">%1$s ثبت‌نام کرد</string>
     <string name="pref_title_confirm_favourites">نمایش تأیید پیش از برگزیدن</string>
     <string name="tusky_compose_post_quicksetting_label">ایجاد فرسته</string>
-    <string name="tips_push_notification_migration">ورود دوباره به تمامی حساب‌ها برای به کار انداختن پشتیبانی آگاهی‌های ارسالی.</string>
     <string name="notification_update_description">آگاهی‌ها هنگام ویرایش فرسته‌هایی که با آن‌ها تعامل داشته‌اید</string>
     <string name="action_unbookmark">برداشن نشانک</string>
-    <string name="dialog_push_notification_migration_other_accounts">برای اعطای اجازهٔ اشتراک آگاهی‌های ارسالی به تاسکی، دوباره به حسابتان وارد شدید. با این حال هنوز حساب‌هایی دیگر دارید که این‌گونه مهاجرت داده نشده‌اند. به آن‌ها رفته و برای به کار انداختن پشتیبانی آگاهی‌های UnifiedPush یکی‌یکی دوباره وارد شوید.</string>
-    <string name="action_logout_confirm">مطمئنید که می‌خواهید از حساب %1$s خارج شوید؟</string>
+    <string name="action_logout_confirm">مطمئنید که می‌خواهید از %1$s خارج شوید؟ این کار تمامی داده‌های محلی از جمله پیش‌نویس‌ها و ترجیحات را حذف خواهد کرد.</string>
     <string name="duration_14_days">۱۴ روز</string>
     <string name="duration_30_days">۳۰ روز</string>
     <string name="duration_60_days">۶۰ روز</string>
@@ -525,35 +513,32 @@
     <string name="duration_365_days">۳۶۵ روز</string>
     <string name="duration_180_days">۱۸۰ روز</string>
     <string name="status_count_one_plus">۱+</string>
-    <string name="dialog_push_notification_migration">تاسکی برای استفاده از آگاهی‌های ارسالی با UnifiedPush نیاز به اجازهٔ اشتراک آگاهی‌ها روی کارساز ماستودنتان دارد. این کار نیازمند ورود دوباره برای تغییر حوزه‌های OAuth اعطایی به تاسکی است. استفاده از گزینهٔ ورود دوباره در این‌جا یا در ترجیحات حساب، تمامی انباره‌ها و پیش‌نویس‌های محلیتان را نگه خواهد داشت.</string>
     <string name="error_could_not_load_login_page">نتوانست صفحهٔ ورود را بار کند.</string>
     <string name="pref_title_notification_filter_sign_ups">کسی ثبت‌نام کرد</string>
     <string name="notification_update_name">ویرایش‌های فرسته</string>
     <string name="action_edit_image">ویرایش تصویر</string>
-    <string name="notification_update_format">%s فرسته‌اش را ویراست</string>
+    <string name="notification_update_format">%1$s فرسته‌اش را ویراست</string>
     <string name="pref_title_notification_filter_updates">فرسته‌ای که با آن تعامل داشته‌ام ویرایش شده</string>
     <string name="notification_sign_up_name">ثبت‌نام‌ها</string>
     <string name="notification_sign_up_description">آگاهی‌ها دربارهٔ کاربران جدید</string>
-    <string name="title_migration_relogin">ورود دوباره برای آگاهی‌های ارسالی</string>
     <string name="action_dismiss">رد کردن</string>
     <string name="action_details">جزییات</string>
     <string name="saving_draft">ذخیرهٔ پیش‌نویس…</string>
-    <string name="error_following_hashtag_format">خطا در پی‌گیری #%s</string>
-    <string name="error_unfollowing_hashtag_format">خطا در ناپی‌گیری #%s</string>
+    <string name="error_following_hashtag_format">خطا در پی‌گیری #%1$s</string>
+    <string name="error_unfollowing_hashtag_format">خطا در ناپی‌گیری #%1$s</string>
     <string name="delete_scheduled_post_warning">حذف این فرستهٔ زمان‌بسته؟</string>
-    <string name="instance_rule_title">قواعد %s</string>
-    <string name="instance_rule_info">با ورودتان، قواعد %s را می‌پذیرید.</string>
-    <string name="filter_expiration_format">%s (%s)</string>
+    <string name="instance_rule_title">قواعد %1$s</string>
+    <string name="instance_rule_info">با ورودتان، قواعد %1$s را می‌پذیرید.</string>
+    <string name="filter_expiration_format">%1$s (%2$s)</string>
     <string name="failed_to_pin">شکست در سنجاق کردن</string>
     <string name="failed_to_unpin">شکست در برداشتن سنجاق</string>
-    <string name="error_multimedia_size_limit">پرونده‌های صوتی و ویدیویی نمی‌توانند بیش از %sم‌ب باشند.</string>
+    <string name="error_multimedia_size_limit">پرونده‌های صوتی و ویدیویی نمی‌توانند بیش از %1$sم‌ب باشند.</string>
     <string name="error_image_edit_failed">تصویر نتوانست ویرایش شود.</string>
     <string name="description_post_language">زبان فرسته</string>
     <string name="pref_show_self_username_always">همیشه</string>
     <string name="pref_show_self_username_disambiguate">هنگام ورود چندین حساب</string>
     <string name="pref_show_self_username_never">هرگز</string>
     <string name="pref_title_show_self_username">نمایش نام کاربری در نوارابزارها</string>
-    <string name="url_domain_notifier">%s (🔗 %s)</string>
     <string name="action_add_reaction">افزودن واکنش</string>
     <string name="action_set_focus">تنظیم نقطهٔ تمرکز</string>
     <string name="duration_no_change">(بدون تغییر)</string>
@@ -564,29 +549,29 @@
     <string name="failed_to_add_to_list">شکست در افزودن حساب به سیاهه</string>
     <string name="failed_to_remove_from_list">شکست در برداشتن حساب از سیاهه</string>
     <string name="no_lists">هیچ سیاهه‌ای ندارید.</string>
-    <string name="notification_report_format">گزارش جدید روی %s</string>
-    <string name="notification_header_report_format">%s، %s را گزارش داد</string>
-    <string name="notification_summary_report_format">%s · %d فرسته پیوسته</string>
+    <string name="notification_report_format">گزارش جدید روی %1$s</string>
+    <string name="notification_header_report_format">%1$s، %2$s را گزارش داد</string>
+    <string name="notification_summary_report_format">%1$s · %2$d فرسته پیوسته</string>
     <string name="error_following_hashtags_unsupported">این نمونه از پی‌گیری برچسب‌ها پشتیبانی نمی‌کند.</string>
     <string name="title_followed_hashtags">برچسب‌های دنبالی</string>
-    <string name="confirmation_hashtag_unfollowed">پی‌گیری #%s لغو شد</string>
+    <string name="confirmation_hashtag_unfollowed">پی‌گیری #%1$s لغو شد</string>
     <string name="pref_title_notification_filter_reports">گزارشی جدید موجود است</string>
     <string name="notification_report_name">گزارش‌ها</string>
     <string name="notification_report_description">آگاهی‌ها دربارهٔ گزارش‌های مدیریتی</string>
     <string name="report_category_violation">نقض قانون</string>
     <string name="report_category_spam">هرزنامه</string>
     <string name="report_category_other">دیگر</string>
-    <string name="action_unfollow_hashtag_format">لغو پی‌گیری #%s؟</string>
+    <string name="action_unfollow_hashtag_format">لغو پی‌گیری #%1$s؟</string>
     <string name="status_created_at_now">اکنون</string>
     <string name="hint_media_description_missing">رسانه باید شرحی داشته باشد.</string>
-    <string name="pref_default_post_language">زبان فرستهٔ پیش‌گزیده</string>
-    <string name="language_display_name_format">%s (%s)</string>
-    <string name="pref_title_http_proxy_port_message">درگاه باید بین %d و %d باشد</string>
+    <string name="pref_default_post_language">زبان فرسته (همگام با کارساز)</string>
+    <string name="language_display_name_format">%1$s (%2$s)</string>
+    <string name="pref_title_http_proxy_port_message">درگاه باید بین %2$d و %1$d باشد</string>
     <string name="description_post_edited">ویراسته</string>
-    <string name="error_muting_hashtag_format">خطا در خموش کردن #%s</string>
-    <string name="error_unmuting_hashtag_format">خطا در ناخموش کردن #%s</string>
+    <string name="error_muting_hashtag_format">خطا در خموش کردن #%1$s</string>
+    <string name="error_unmuting_hashtag_format">خطا در ناخموش کردن #%1$s</string>
     <string name="post_media_alt">متن جایگزین</string>
-    <string name="post_edited">%s را ویراست</string>
+    <string name="post_edited">%1$s را ویراست</string>
     <string name="error_status_source_load">شکست در بار کردن مبدأ وضعیت از کارساز.</string>
     <string name="a11y_label_loading_thread">بار کردن رشته</string>
     <string name="title_edits">ویرایش‌ها</string>
@@ -600,12 +585,14 @@
     <string name="action_post_failed">بارگذاری شکست خورد</string>
     <string name="action_post_failed_show_drafts">نمایش پیش‌نویس‌ها</string>
     <string name="action_post_failed_do_nothing">رد کردن</string>
-    <string name="action_post_failed_detail">بارگذاری فرسته‌تان شکست خورد و در پیش‌نویس‌ها ذخیره شد.
+    <plurals name="action_post_failed_detail">
+        <item quantity="one">بارگذاری فرسته‌تان شکست خورد و در پیش‌نویس‌ها ذخیره شد.
 \n
-\nارتباط با کارساز برقرار نشد یا فرسته را رد کرد.</string>
-    <string name="action_post_failed_detail_plural">بارگذاری فرسته‌هایتان شکست خورد و در پیش‌نویس‌ها ذخیره شد.
+\nارتباط با کارساز برقرار نشد یا فرسته را رد کرد.</item>
+        <item quantity="other">بارگذاری فرسته‌هایتان شکست خورد و در پیش‌نویس‌ها ذخیره شد.
 \n
-\nارتباط با کارساز برقرار نشد یا فرسته‌ها را رد کرد.</string>
+\nارتباط با کارساز برقرار نشد یا فرسته‌ها را رد کرد.</item>
+    </plurals>
     <string name="description_login">در بیش‌تر حالت‌ها کار می‌کند. هیچ داده‌ای به دیگر کاره‌ها نشت نمی‌کند.</string>
     <string name="pref_reading_order_oldest_first">نخست قدیمی‌ترین</string>
     <string name="description_browser_login">ممکن است از روش‌های تأیید خویت اضافی پشتیبانی کند؛ ولی نیازمند مرورگری پشتیبانی شده است.</string>
@@ -624,22 +611,21 @@
     <string name="total_usage">استفادهٔ کل</string>
     <string name="total_accounts">مجموع حساب‌ها</string>
     <string name="dialog_follow_hashtag_title">پی‌گیری برچسب</string>
-    <string name="dialog_follow_hashtag_hint">#برچسب</string>
     <string name="action_refresh">نوسازی</string>
     <string name="notification_unknown_name">ناشناخته</string>
     <string name="socket_timeout_exception">تماس با کارسازتان بیش از حد طول کشید</string>
     <string name="ui_error_unknown">دلیل نامعلوم</string>
-    <string name="ui_error_bookmark">نشانک گذاری فرسته شکست خورد: %s</string>
-    <string name="ui_error_clear_notifications">پاک سازی آگاهی‌ها شکست خورد: %s</string>
-    <string name="ui_error_favourite">برگزیدن فرسته شکست خورد: %s</string>
-    <string name="ui_error_vote">رأی دادن در نظرسنجی شکست خورد: %s</string>
-    <string name="ui_error_accept_follow_request">پذیرش درخواست پی‌گیری شکست خورد: %s</string>
+    <string name="ui_error_bookmark">نشانک گذاری فرسته شکست خورد: %1$s</string>
+    <string name="ui_error_clear_notifications">پاک سازی آگاهی‌ها شکست خورد: %1$s</string>
+    <string name="ui_error_favourite">برگزیدن فرسته شکست خورد: %1$s</string>
+    <string name="ui_error_vote">رأی دادن در نظرسنجی شکست خورد: %1$s</string>
+    <string name="ui_error_accept_follow_request">پذیرش درخواست پی‌گیری شکست خورد: %1$s</string>
     <string name="ui_success_accepted_follow_request">درخواست پی‌گیری پذیرفته شد</string>
     <string name="ui_success_rejected_follow_request">درخواست پی‌گیری مسدود شد</string>
-    <string name="ui_error_reblog">تقویت فرسته شکست خورد: %s</string>
-    <string name="ui_error_reject_follow_request">رد کردن درخواست پی‌گیری شکست خورد: %s</string>
+    <string name="ui_error_reblog">تقویت فرسته شکست خورد: %1$s</string>
+    <string name="ui_error_reject_follow_request">رد کردن درخواست پی‌گیری شکست خورد: %1$s</string>
     <string name="status_filtered_show_anyway">نمایش به هر روی</string>
-    <string name="status_filter_placeholder_label_format">پالوده: %s</string>
+    <string name="status_filter_placeholder_label_format">پالوده: %1$s</string>
     <string name="pref_title_account_filter_keywords">نمایه‌ها</string>
     <string name="hint_filter_title">پالایه‌ام</string>
     <string name="label_filter_title">عنوان</string>
@@ -651,27 +637,119 @@
     <string name="label_filter_context">بافتارهای پالایه</string>
     <string name="label_filter_keywords">کلیدواژگان یا عبارت‌ها برای پالایش</string>
     <string name="action_add">افزودن</string>
-    <string name="filter_keyword_display_format">%s (واژهٔ کامل)</string>
+    <string name="filter_keyword_display_format">%1$s (واژهٔ کامل)</string>
     <string name="filter_keyword_addition_title">افزودن کلیدواژه</string>
     <string name="filter_edit_keyword_title">ویرایش کلیدواژه</string>
-    <string name="filter_description_format">%s: %s</string>
+    <string name="filter_description_format">%1$s: %2$s</string>
     <string name="pref_title_show_stat_inline">نمایش آمار فرسته‌ها در خط زمانی</string>
     <string name="help_empty_home">این <b>خط زمانی خانگیتان</b> است. فرسته‌های جدید را از حساب‌هایی که پی‌می‌گیرید نشان می‌دهد.
 \n
 \nبرای کاوش حساب‌ها می‌توانید آن‌ها را در دیگر خط‌های زمانی (برای نمونه خط زمانی محلّی نمونه‌تان [iconics gmd_group]) یافته یا با نام (برای نمونه Tusky برای حساب ماستودونمان) بجوییدشان [iconics gmd_search].</string>
-    <string name="hint_description">شرح</string>
     <string name="post_media_image">تصویر</string>
-    <string name="select_list_empty">هنوز هیچ سیاهه‌ای ندارید</string>
     <string name="select_list_manage">مدیریت سیاهه‌ها</string>
-    <string name="error_list_load">خطا در بار کردن سیاهه‌ها</string>
     <string name="load_newest_notifications">بار کردن جدیدترین آگاهی‌ها</string>
     <string name="compose_delete_draft">حذف پیش‌نویس؟</string>
     <string name="error_missing_edits">کارسازتان می‌داند که این فرسته ویرایش شده؛ ولی رونوشتی از ویرایش‌ها ندارد. پس نمی‌توانند نشانتان داده شوند.
 \n
-\nاین <a href="https://github.com/mastodon/mastodon/issues/25398">نکتهٔ ماستودون</a> را ببینید.</string>
+\nاین <a href="https://github.com/mastodon/mastodon/issues/25398">مسئلهٔ ماستودون</a> را ببینید.</string>
     <string name="pref_ui_text_size">اندازهٔ متن میانای کاربری</string>
     <string name="notification_listenable_worker_name">فعّالیت پس‌زمینه</string>
     <string name="notification_listenable_worker_description">آگاهی‌ها هنگامی که تاسکی در پس‌زمینه کار می‌کند</string>
     <string name="notification_notification_worker">واکشی آگاهی‌ها…</string>
     <string name="notification_prune_cache">نگه‌داری انباره…</string>
+    <string name="error_media_upload_sending_fmt">بارگذاری شکست خورد: %1$s</string>
+    <string name="about_account_info_title">حسابتان</string>
+    <string name="about_device_info_title">افزاره‌تان</string>
+    <string name="about_device_info">%1$s %2$s
+\nنگارش اندروید: %3$s
+\nنگارش SDK‏: %4$d</string>
+    <string name="about_account_info">‪@%1$s@%2$s
+\nنگارش: %3$s</string>
+    <string name="about_copy">رونوشت از اطّلاعات افزاره و نگارش</string>
+    <string name="about_copied">اطّلاعات افزاره و نگارش رونوشت شد</string>
+    <string name="list_exclusive_label">نهفتن از خط زمانی خانگی</string>
+    <string name="error_media_playback">پخش شکست خورد: %1$s</string>
+    <string name="dialog_delete_filter_positive_action">حذف</string>
+    <string name="dialog_delete_filter_text">حذف پالایهٔ «%1$s»؟</string>
+    <string name="dialog_save_profile_changes_message">می‌خواهید تغییرات نمایه‌تان را ذخیره کنید؟</string>
+    <string name="action_view_filter">دیدن پالایه</string>
+    <string name="muting_hashtag_success_format">خموش کردن برچسب #%1$s به عنوان هشدار</string>
+    <string name="unmuting_hashtag_success_format">ناخموش کردن برچسب #%1$s</string>
+    <string name="following_hashtag_success_format">اکنون برچسب #%1$s دنبال می‌شود</string>
+    <string name="unfollowing_hashtag_success_format">دیگر برچسب #%1$s دنبال نمی‌شود</string>
+    <string name="help_empty_conversations"><b>پیام‌های خصوصیتان</b> که گاهی گفت‌وگوها یا پیام‌های مستقیم نامیده می‌شوند این‌جایند.
+\n
+\nپیام‌های خصوصی با تنظیم نمایانی [iconics gmd_public] فرسته به [iconics gmd_mail] <i>مستقیم</i> و اشاره به کاربر یا کاربرانی در متن ایجاد می‌شود.
+\n
+\nبرای نمونه می‌توانید در نمای نمایهٔ حسابی روی دکمهٔ ایجاد [iconics gmd_edit] زده و نمایانی را تغییر دهید.</string>
+    <string name="help_empty_lists">این <b>نمایهٔ سیاهه‌تان</b> است. می‌توانید تعدادی سیاههٔ خصوصی ایحاد کرده و حساب‌ها را بدان بیفزایید.
+\n
+\nبه خاطر داشته باشید که تنها می‌توانید افرادی را که پی می‌گیرید به سیاهه‌هایتان بیفزایید.
+\n
+\nین سیاهه‌ها می‌توانند به عنوان زبانه‌ای در زبانه‌های ترجیحات حساب [iconics gmd_account_circle] [iconics gmd_navigate_next] استفاده شوند.</string>
+    <string name="error_blocking_domain">شکست در خموش کردن %1$s: %2$s</string>
+    <string name="error_unblocking_domain">شکست در ناخموش کردن %1$s: %2$s</string>
+    <string name="label_image">تصویر</string>
+    <string name="app_theme_system_black">استفاده از طرّاحی سامانه (سیاه)</string>
+    <string name="title_public_trending_statuses">فرسته‌های داغ</string>
+    <string name="list_reply_policy_none">هیچ‌کس</string>
+    <string name="list_reply_policy_list">اعضای سیاهه</string>
+    <string name="list_reply_policy_followed">هر کاربر پی‌گرفته</string>
+    <string name="list_reply_policy_label">نمایش پاسخ‌ها به</string>
+    <string name="pref_title_show_self_boosts">نمایش خودتقویت‌ها</string>
+    <string name="pref_title_show_self_boosts_description">کسی فرستهٔ خودش را تقویت می‌کند</string>
+    <string name="reply_sending">فرستادن…</string>
+    <string name="reply_sending_long">پاسختان دارد فرستاده می‌شود.</string>
+    <string name="action_translate">ترجمه</string>
+    <string name="action_show_original">نمایش اصلی</string>
+    <string name="report_category_legal">حقوقی</string>
+    <string name="unknown_notification_type">گونهٔ آگاهی ناشناخته</string>
+    <string name="label_translating">ترجمه کردن…</string>
+    <string name="label_translated">ترجمه شده از %1$s با %2$s</string>
+    <string name="ui_error_translate">نتوانست ترجمه کند: %1$s</string>
+    <string name="pref_title_per_timeline_preferences">ترجیحات بر مبنای خط زمانی</string>
+    <string name="pref_title_show_notifications_filter">نمایش پالایهٔ آگاهی‌ها</string>
+    <string name="dialog_follow_warning">پیگیری این حساب؟</string>
+    <string name="pref_title_confirm_follows">نمایش تأیید پیش از پیگیری</string>
+    <string name="url_copied">نشانی رونوشت شد</string>
+    <string name="confirmation_hashtag_copied">«%1$s» رونوشت شد</string>
+    <string name="pref_default_reply_privacy">محرمانگی پاسخ (همگام نشده با کارساز)</string>
+    <string name="error_deleting_filter">خطا در حذف پالایهٔ «%1$s»</string>
+    <string name="error_saving_filter">خطا در ذخیرهٔ پالایهٔ «%1$s»</string>
+    <string name="action_follow_hashtag">پی‌گیری برچسبی جدید</string>
+    <string name="pref_default_reply_privacy_explanation">محرمانگی پیش‌گزیده به فرسته‌ای که به آن پاسخ می‌دهید بستگی خواهد داشت.</string>
+    <string name="post_privacy_direct">مستقیم</string>
+    <string name="pref_match_default_post_privacy">تطبیق با محرمانگی پیش‌گزیدهٔ فرسته</string>
+    <string name="label_expires_after">انقضا پس از</string>
+    <string name="notification_policies_filter_out">مدیریت آگاهی‌ها از…</string>
+    <string name="notification_policies_filter_dont_follow_description">تا به طور دستی تأییدشان کنید</string>
+    <string name="notification_policies_filter_not_following_title">افرادی که پیتان نمی‌گیرند</string>
+    <string name="unknown_notification_filter_new_accounts_title">حساب‌های جدید</string>
+    <string name="unknown_notification_filter_new_accounts_description">ساخته شده در ۳۰ روز اخیر</string>
+    <string name="unknown_notification_filter_moderated_accounts">حساب‌های نظارت شده</string>
+    <string name="unknown_notification_filter_moderated_accounts_description">محدود شده به دست ناظران کارساز</string>
+    <string name="filtered_notifications">آگاهی‌های پالوده</string>
+    <string name="unknown_notification_filter_unsolicited_private_mentions_title">اشاره‌های خصوصی ناخواسته</string>
+    <string name="notifications_from_people_you_may_know">آگاهی‌ها از %1$d نفری که ممکن است بشناسید‬</string>
+    <string name="notification_policy_accept">پذیرش</string>
+    <string name="notification_policy_filter">پالایش</string>
+    <string name="notification_policy_ignore">چشم‌پوشی</string>
+    <string name="accept_notification_request">پذیرش درخواست آگاهی</string>
+    <string name="dismiss_notification_request">رد درخواست آگاهی</string>
+    <string name="open_settings">گشودن ترجیحات</string>
+    <string name="notifications_from">آگاهی‌ها از %1$s</string>
+    <string name="action_accept_notification_request">پذیرش</string>
+    <string name="action_dismiss_notification_request">رد کردن</string>
+    <string name="notification_policies_title">سیاست‌های آگاهی</string>
+    <string name="notification_policies_filter_dont_follow_title">افرادی که پی نمی‌گیرید</string>
+    <string name="notification_policies_not_supported">این ویژگی تنها روی کارسازهای ماستودونی که نگارش ۴٫۳ یا بالاتر را اجرا می‌کنند پشتیبانی می‌شود.</string>
+    <string name="filtered_notifications_title">آگاهی‌های پالوده</string>
+    <string name="notification_policies_filter_not_following_description">شامل افرادی که کم‌تر از ۳ روز است پیتان می‌گیرند</string>
+    <string name="unknown_notification_filter_unsolicited_private_mentions_description">پالوده مگر در پاسخ به اشارهٔ خودتان بوده یا فرستنده را پی گرفته باشید</string>
+    <string name="post_replied">پاسخ داده</string>
+    <string name="post_replied_format">در پاسخ به %1$s</string>
+    <string name="post_replied_self">رشتهٔ دنباله‌دار</string>
+    <string name="follow_hashtag_success">برچسب دنبال شدهٔ %1$s</string>
+    <string name="preview_card_by_author">از %1$s</string>
+    <string name="preview_card_more_by_author">بیش‌تر از %1$s</string>
 </resources>

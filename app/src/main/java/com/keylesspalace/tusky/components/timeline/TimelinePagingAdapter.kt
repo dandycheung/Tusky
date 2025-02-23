@@ -21,9 +21,12 @@ import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.keylesspalace.tusky.R
+import com.keylesspalace.tusky.adapter.FilteredStatusViewHolder
 import com.keylesspalace.tusky.adapter.PlaceholderViewHolder
 import com.keylesspalace.tusky.adapter.StatusBaseViewHolder
 import com.keylesspalace.tusky.adapter.StatusViewHolder
+import com.keylesspalace.tusky.databinding.ItemStatusFilteredBinding
+import com.keylesspalace.tusky.databinding.ItemStatusPlaceholderBinding
 import com.keylesspalace.tusky.entity.Filter
 import com.keylesspalace.tusky.interfaces.StatusActionListener
 import com.keylesspalace.tusky.util.StatusDisplayOptions
@@ -50,10 +53,16 @@ class TimelinePagingAdapter(
         val inflater = LayoutInflater.from(viewGroup.context)
         return when (viewType) {
             VIEW_TYPE_STATUS_FILTERED -> {
-                StatusViewHolder(inflater.inflate(R.layout.item_status_wrapper, viewGroup, false))
+                FilteredStatusViewHolder(
+                    ItemStatusFilteredBinding.inflate(inflater, viewGroup, false),
+                    statusListener
+                )
             }
             VIEW_TYPE_PLACEHOLDER -> {
-                PlaceholderViewHolder(inflater.inflate(R.layout.item_status_placeholder, viewGroup, false))
+                PlaceholderViewHolder(
+                    ItemStatusPlaceholderBinding.inflate(inflater, viewGroup, false),
+                    statusListener
+                )
             }
             else -> {
                 StatusViewHolder(inflater.inflate(R.layout.item_status, viewGroup, false))
@@ -62,34 +71,32 @@ class TimelinePagingAdapter(
     }
 
     override fun onBindViewHolder(viewHolder: RecyclerView.ViewHolder, position: Int) {
-        bindViewHolder(viewHolder, position, null)
+        onBindViewHolder(viewHolder, position, emptyList())
     }
 
     override fun onBindViewHolder(
         viewHolder: RecyclerView.ViewHolder,
         position: Int,
-        payloads: List<*>
+        payloads: List<Any>
     ) {
-        bindViewHolder(viewHolder, position, payloads)
-    }
-
-    private fun bindViewHolder(
-        viewHolder: RecyclerView.ViewHolder,
-        position: Int,
-        payloads: List<*>?
-    ) {
-        val status = getItem(position)
-        if (status is StatusViewData.Placeholder) {
+        val viewData = getItem(position)
+        if (viewData is StatusViewData.Placeholder) {
             val holder = viewHolder as PlaceholderViewHolder
-            holder.setup(statusListener, status.isLoading)
-        } else if (status is StatusViewData.Concrete) {
-            val holder = viewHolder as StatusViewHolder
-            holder.setupWithStatus(
-                status,
-                statusListener,
-                statusDisplayOptions,
-                if (payloads != null && payloads.isNotEmpty()) payloads[0] else null
-            )
+            holder.setup(viewData.isLoading)
+        } else if (viewData is StatusViewData.Concrete) {
+            if (viewData.filterAction == Filter.Action.WARN) {
+                val holder = viewHolder as FilteredStatusViewHolder
+                holder.bind(viewData)
+            } else {
+                val holder = viewHolder as StatusViewHolder
+                holder.setupWithStatus(
+                    viewData,
+                    statusListener,
+                    statusDisplayOptions,
+                    payloads,
+                    true
+                )
+            }
         }
     }
 
@@ -124,13 +131,10 @@ class TimelinePagingAdapter(
                 return false // Items are different always. It allows to refresh timestamp on every view holder update
             }
 
-            override fun getChangePayload(
-                oldItem: StatusViewData,
-                newItem: StatusViewData
-            ): Any? {
+            override fun getChangePayload(oldItem: StatusViewData, newItem: StatusViewData): Any? {
                 return if (oldItem == newItem) {
                     // If items are equal - update timestamp only
-                    listOf(StatusBaseViewHolder.Key.KEY_CREATED)
+                    StatusBaseViewHolder.Key.KEY_CREATED
                 } else {
                     // If items are different - update the whole view holder
                     null

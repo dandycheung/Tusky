@@ -16,12 +16,12 @@
 package com.keylesspalace.tusky.adapter
 
 import android.graphics.Typeface
-import android.text.SpannableStringBuilder
+import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.StyleSpan
 import androidx.recyclerview.widget.RecyclerView
 import com.keylesspalace.tusky.R
-import com.keylesspalace.tusky.components.notifications.NotificationsPagingAdapter
+import com.keylesspalace.tusky.components.notifications.NotificationsViewHolder
 import com.keylesspalace.tusky.databinding.ItemFollowRequestBinding
 import com.keylesspalace.tusky.entity.TimelineAccount
 import com.keylesspalace.tusky.interfaces.AccountActionListener
@@ -39,28 +39,26 @@ import com.keylesspalace.tusky.viewdata.NotificationViewData
 
 class FollowRequestViewHolder(
     private val binding: ItemFollowRequestBinding,
-    private val accountActionListener: AccountActionListener,
+    private val accountListener: AccountActionListener,
     private val linkListener: LinkListener,
     private val showHeader: Boolean
-) : NotificationsPagingAdapter.ViewHolder, RecyclerView.ViewHolder(binding.root) {
+) : RecyclerView.ViewHolder(binding.root), NotificationsViewHolder {
 
     override fun bind(
-        viewData: NotificationViewData,
-        payloads: List<*>?,
+        viewData: NotificationViewData.Concrete,
+        payloads: List<*>,
         statusDisplayOptions: StatusDisplayOptions
     ) {
-        // Skip updates with payloads. That indicates a timestamp update, and
-        // this view does not have timestamps.
-        if (!payloads.isNullOrEmpty()) return
-
+        if (payloads.isNotEmpty()) {
+            return
+        }
         setupWithAccount(
             viewData.account,
             statusDisplayOptions.animateAvatars,
             statusDisplayOptions.animateEmojis,
             statusDisplayOptions.showBotOverlay
         )
-
-        setupActionListener(accountActionListener, viewData.account.id)
+        setupActionListener(accountListener, viewData.account.id)
     }
 
     fun setupWithAccount(
@@ -72,7 +70,7 @@ class FollowRequestViewHolder(
         val wrappedName = account.name.unicodeWrap()
         val emojifiedName: CharSequence = wrappedName.emojify(
             account.emojis,
-            itemView,
+            binding.displayNameTextView,
             animateEmojis
         )
         binding.displayNameTextView.text = emojifiedName
@@ -81,17 +79,15 @@ class FollowRequestViewHolder(
                 R.string.notification_follow_request_format,
                 wrappedName
             )
-            binding.notificationTextView.text = SpannableStringBuilder(wholeMessage).apply {
-                setSpan(
-                    StyleSpan(Typeface.BOLD),
-                    0,
-                    wrappedName.length,
-                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
-            }.emojify(account.emojis, itemView, animateEmojis)
+            binding.notificationTextView.text = SpannableString(wholeMessage).apply {
+                setSpan(StyleSpan(Typeface.BOLD), 0, wrappedName.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }.emojify(account.emojis, binding.notificationTextView, animateEmojis)
         }
         binding.notificationTextView.visible(showHeader)
-        val formattedUsername = itemView.context.getString(R.string.post_username_format, account.username)
+        val formattedUsername = itemView.context.getString(
+            R.string.post_username_format,
+            account.username
+        )
         binding.usernameTextView.text = formattedUsername
         if (account.note.isEmpty()) {
             binding.accountNote.hide()
@@ -102,7 +98,9 @@ class FollowRequestViewHolder(
                 .emojify(account.emojis, binding.accountNote, animateEmojis)
             setClickableText(binding.accountNote, emojifiedNote, emptyList(), null, linkListener)
         }
-        val avatarRadius = binding.avatar.context.resources.getDimensionPixelSize(R.dimen.avatar_radius_48dp)
+        val avatarRadius = binding.avatar.context.resources.getDimensionPixelSize(
+            R.dimen.avatar_radius_48dp
+        )
         loadAvatar(account.avatar, binding.avatar, avatarRadius, animateAvatar)
         binding.avatarBadge.visible(showBotOverlay && account.bot)
     }

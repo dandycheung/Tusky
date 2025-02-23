@@ -17,64 +17,78 @@ package com.keylesspalace.tusky.components.compose.dialog
 
 import android.app.Dialog
 import android.content.Context
+import android.graphics.drawable.Animatable
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Bundle
 import android.text.InputFilter
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.view.WindowManager
-import android.widget.EditText
-import androidx.appcompat.app.AlertDialog
-import androidx.core.os.BundleCompat
+import android.widget.LinearLayout
 import androidx.core.os.bundleOf
 import androidx.fragment.app.DialogFragment
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.DownsampleStrategy
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.keylesspalace.tusky.R
 import com.keylesspalace.tusky.databinding.DialogImageDescriptionBinding
+import com.keylesspalace.tusky.util.getParcelableCompat
+import com.keylesspalace.tusky.util.hide
 
 // https://github.com/tootsuite/mastodon/blob/c6904c0d3766a2ea8a81ab025c127169ecb51373/app/models/media_attachment.rb#L32
 private const val MEDIA_DESCRIPTION_CHARACTER_LIMIT = 1500
 
 class CaptionDialog : DialogFragment() {
     private lateinit var listener: Listener
-    private lateinit var input: EditText
+
+    private lateinit var binding: DialogImageDescriptionBinding
+
+    private var animatable: Animatable? = null
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val context = requireContext()
+        val localId = arguments?.getInt(LOCAL_ID_ARG) ?: error("Missing localId")
+        val inset = requireContext().resources.getDimensionPixelSize(R.dimen.dialog_inset)
+        return MaterialAlertDialogBuilder(requireContext())
+            .setView(createView(savedInstanceState))
+            .setBackgroundInsetTop(inset)
+            .setBackgroundInsetEnd(inset)
+            .setBackgroundInsetBottom(inset)
+            .setBackgroundInsetStart(inset)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                listener.onUpdateDescription(localId, binding.imageDescriptionText.text.toString())
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .create()
+    }
 
-        val binding = DialogImageDescriptionBinding.inflate(layoutInflater)
-
-        input = binding.imageDescriptionText
+    private fun createView(savedInstanceState: Bundle?): View {
+        binding = DialogImageDescriptionBinding.inflate(layoutInflater)
         val imageView = binding.imageDescriptionView
-        imageView.maximumScale = 6f
+        imageView.maxZoom = 6f
+        val imageDescriptionText = binding.imageDescriptionText
+        imageDescriptionText.post {
+            imageDescriptionText.requestFocus()
+            imageDescriptionText.setSelection(imageDescriptionText.length())
+        }
 
-        input.hint = resources.getQuantityString(
+        binding.imageDescriptionText.hint = resources.getQuantityString(
             R.plurals.hint_describe_for_visually_impaired,
             MEDIA_DESCRIPTION_CHARACTER_LIMIT,
             MEDIA_DESCRIPTION_CHARACTER_LIMIT
         )
-        input.filters = arrayOf(InputFilter.LengthFilter(MEDIA_DESCRIPTION_CHARACTER_LIMIT))
-        input.setText(arguments?.getString(EXISTING_DESCRIPTION_ARG))
-
-        val localId = arguments?.getInt(LOCAL_ID_ARG) ?: error("Missing localId")
-        val dialog = AlertDialog.Builder(context)
-            .setView(binding.root)
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                listener.onUpdateDescription(localId, input.text.toString())
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .create()
+        binding.imageDescriptionText.filters = arrayOf(InputFilter.LengthFilter(MEDIA_DESCRIPTION_CHARACTER_LIMIT))
+        binding.imageDescriptionText.setText(arguments?.getString(EXISTING_DESCRIPTION_ARG))
+        savedInstanceState?.getCharSequence(DESCRIPTION_KEY)?.let {
+            binding.imageDescriptionText.setText(it)
+        }
 
         isCancelable = true
-        val window = dialog.window
-        window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        dialog?.setCanceledOnTouchOutside(false) // Dialog is full screen anyway. But without this, taps in navbar while keyboard is up can dismiss the dialog.
 
-        val previewUri = BundleCompat.getParcelable(requireArguments(), PREVIEW_URI_ARG, Uri::class.java) ?: error("Preview Uri is null")
+        val previewUri = arguments?.getParcelableCompat<Uri>(PREVIEW_URI_ARG) ?: error("Preview Uri is null")
+
         // Load the image and manually set it into the ImageView because it doesn't have a fixed size.
         Glide.with(this)
             .load(previewUri)
@@ -88,27 +102,48 @@ class CaptionDialog : DialogFragment() {
                     resource: Drawable,
                     transition: Transition<in Drawable>?
                 ) {
+                    if (resource is Animatable) {
+                        resource.callback = object : Drawable.Callback {
+                            override fun invalidateDrawable(who: Drawable) {
+                                imageView.invalidate()
+                            }
+
+                            override fun scheduleDrawable(who: Drawable, what: Runnable, `when`: Long) {
+                                imageView.postDelayed(what, `when`)
+                            }
+
+                            override fun unscheduleDrawable(who: Drawable, what: Runnable) {
+                                imageView.removeCallbacks(what)
+                            }
+                        }
+                        resource.start()
+                        animatable = resource
+                    }
                     imageView.setImageDrawable(resource)
                 }
-            })
 
-        return dialog
+                override fun onLoadFailed(errorDrawable: Drawable?) {
+                    super.onLoadFailed(errorDrawable)
+                    imageView.hide()
+                }
+            })
+        return binding.root
+    }
+
+    override fun onStart() {
+        super.onStart()
+        dialog?.apply {
+            window?.setLayout(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
-        outState.putString(DESCRIPTION_KEY, input.text.toString())
+        outState.putCharSequence(DESCRIPTION_KEY, binding.imageDescriptionText.text)
         super.onSaveInstanceState(outState)
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        savedInstanceState?.getString(DESCRIPTION_KEY)?.let {
-            input.setText(it)
-        }
-        return super.onCreateView(inflater, container, savedInstanceState)
     }
 
     override fun onAttach(context: Context) {
@@ -116,22 +151,25 @@ class CaptionDialog : DialogFragment() {
         listener = context as? Listener ?: error("Activity is not ComposeCaptionDialog.Listener")
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        animatable?.stop()
+        (animatable as? Drawable?)?.callback = null
+    }
+
     interface Listener {
         fun onUpdateDescription(localId: Int, description: String)
     }
 
     companion object {
-        fun newInstance(
-            localId: Int,
-            existingDescription: String?,
-            previewUri: Uri
-        ) = CaptionDialog().apply {
-            arguments = bundleOf(
-                LOCAL_ID_ARG to localId,
-                EXISTING_DESCRIPTION_ARG to existingDescription,
-                PREVIEW_URI_ARG to previewUri
-            )
-        }
+        fun newInstance(localId: Int, existingDescription: String?, previewUri: Uri) =
+            CaptionDialog().apply {
+                arguments = bundleOf(
+                    LOCAL_ID_ARG to localId,
+                    EXISTING_DESCRIPTION_ARG to existingDescription,
+                    PREVIEW_URI_ARG to previewUri
+                )
+            }
 
         private const val DESCRIPTION_KEY = "description"
         private const val EXISTING_DESCRIPTION_ARG = "existing_description"

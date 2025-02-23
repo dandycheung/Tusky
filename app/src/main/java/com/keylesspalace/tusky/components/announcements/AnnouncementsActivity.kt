@@ -17,7 +17,6 @@ package com.keylesspalace.tusky.components.announcements
 
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuInflater
@@ -26,44 +25,37 @@ import android.view.View
 import android.widget.PopupWindow
 import androidx.activity.viewModels
 import androidx.core.view.MenuProvider
-import androidx.preference.PreferenceManager
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.android.material.color.MaterialColors
 import com.keylesspalace.tusky.BottomSheetActivity
 import com.keylesspalace.tusky.R
 import com.keylesspalace.tusky.StatusListActivity
 import com.keylesspalace.tusky.adapter.EmojiAdapter
 import com.keylesspalace.tusky.adapter.OnEmojiSelectedListener
 import com.keylesspalace.tusky.databinding.ActivityAnnouncementsBinding
-import com.keylesspalace.tusky.di.Injectable
-import com.keylesspalace.tusky.di.ViewModelFactory
 import com.keylesspalace.tusky.settings.PrefKeys
 import com.keylesspalace.tusky.util.Error
 import com.keylesspalace.tusky.util.Loading
 import com.keylesspalace.tusky.util.Success
+import com.keylesspalace.tusky.util.ensureBottomPadding
 import com.keylesspalace.tusky.util.hide
 import com.keylesspalace.tusky.util.show
+import com.keylesspalace.tusky.util.startActivityWithSlideInAnimation
 import com.keylesspalace.tusky.util.unsafeLazy
 import com.keylesspalace.tusky.util.viewBinding
 import com.keylesspalace.tusky.view.EmojiPicker
-import com.mikepenz.iconics.IconicsDrawable
-import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
-import com.mikepenz.iconics.utils.colorInt
-import com.mikepenz.iconics.utils.sizeDp
-import javax.inject.Inject
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class AnnouncementsActivity :
     BottomSheetActivity(),
     AnnouncementActionListener,
     OnEmojiSelectedListener,
-    MenuProvider,
-    Injectable {
+    MenuProvider {
 
-    @Inject
-    lateinit var viewModelFactory: ViewModelFactory
-
-    private val viewModel: AnnouncementsViewModel by viewModels { viewModelFactory }
+    private val viewModel: AnnouncementsViewModel by viewModels()
 
     private val binding by viewBinding(ActivityAnnouncementsBinding::inflate)
 
@@ -95,14 +87,13 @@ class AnnouncementsActivity :
         }
 
         binding.swipeRefreshLayout.setOnRefreshListener(this::refreshAnnouncements)
-        binding.swipeRefreshLayout.setColorSchemeResources(R.color.tusky_blue)
 
+        binding.announcementsList.ensureBottomPadding()
         binding.announcementsList.setHasFixedSize(true)
         binding.announcementsList.layoutManager = LinearLayoutManager(this)
         val divider = DividerItemDecoration(this, DividerItemDecoration.VERTICAL)
         binding.announcementsList.addItemDecoration(divider)
 
-        val preferences: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
         val wellbeingEnabled = preferences.getBoolean(PrefKeys.WELLBEING_HIDE_STATS_POSTS, false)
         val animateEmojis = preferences.getBoolean(PrefKeys.ANIMATE_CUSTOM_EMOJIS, false)
 
@@ -110,35 +101,46 @@ class AnnouncementsActivity :
 
         binding.announcementsList.adapter = adapter
 
-        viewModel.announcements.observe(this) {
-            when (it) {
-                is Success -> {
-                    binding.progressBar.hide()
-                    binding.swipeRefreshLayout.isRefreshing = false
-                    if (it.data.isNullOrEmpty()) {
-                        binding.errorMessageView.setup(R.drawable.elephant_friend_empty, R.string.no_announcements)
-                        binding.errorMessageView.show()
-                    } else {
+        lifecycleScope.launch {
+            viewModel.announcements.collect {
+                if (it == null) return@collect
+                when (it) {
+                    is Success -> {
+                        binding.progressBar.hide()
+                        binding.swipeRefreshLayout.isRefreshing = false
+                        if (it.data.isNullOrEmpty()) {
+                            binding.errorMessageView.setup(
+                                R.drawable.elephant_friend_empty,
+                                R.string.no_announcements
+                            )
+                            binding.errorMessageView.show()
+                        } else {
+                            binding.errorMessageView.hide()
+                        }
+                        adapter.updateList(it.data ?: listOf())
+                    }
+                    is Loading -> {
                         binding.errorMessageView.hide()
                     }
-                    adapter.updateList(it.data ?: listOf())
-                }
-                is Loading -> {
-                    binding.errorMessageView.hide()
-                }
-                is Error -> {
-                    binding.progressBar.hide()
-                    binding.swipeRefreshLayout.isRefreshing = false
-                    binding.errorMessageView.setup(R.drawable.elephant_error, R.string.error_generic) {
-                        refreshAnnouncements()
+                    is Error -> {
+                        binding.progressBar.hide()
+                        binding.swipeRefreshLayout.isRefreshing = false
+                        binding.errorMessageView.setup(
+                            R.drawable.errorphant_error,
+                            R.string.error_generic
+                        ) {
+                            refreshAnnouncements()
+                        }
+                        binding.errorMessageView.show()
                     }
-                    binding.errorMessageView.show()
                 }
             }
         }
 
-        viewModel.emojis.observe(this) {
-            picker.adapter = EmojiAdapter(it, this, animateEmojis)
+        lifecycleScope.launch {
+            viewModel.emoji.collect {
+                picker.adapter = EmojiAdapter(it, this@AnnouncementsActivity, animateEmojis)
+            }
         }
 
         viewModel.load()
@@ -147,12 +149,6 @@ class AnnouncementsActivity :
 
     override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
         menuInflater.inflate(R.menu.activity_announcements, menu)
-        menu.findItem(R.id.action_search)?.apply {
-            icon = IconicsDrawable(this@AnnouncementsActivity, GoogleMaterial.Icon.gmd_search).apply {
-                sizeDp = 20
-                colorInt = MaterialColors.getColor(binding.includedToolbar.toolbar, android.R.attr.textColorPrimary)
-            }
-        }
     }
 
     override fun onMenuItemSelected(menuItem: MenuItem): Boolean {

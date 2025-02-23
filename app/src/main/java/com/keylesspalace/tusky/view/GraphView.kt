@@ -21,12 +21,16 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PathMeasure
 import android.graphics.Rect
+import android.text.TextUtils
 import android.util.AttributeSet
 import android.view.View
 import androidx.annotation.ColorInt
 import androidx.annotation.Dimension
 import androidx.core.content.res.use
+import com.google.android.material.R as materialR
+import com.google.android.material.color.MaterialColors
 import com.keylesspalace.tusky.R
+import java.util.Locale
 import kotlin.math.max
 
 class GraphView @JvmOverloads constructor(
@@ -66,98 +70,67 @@ class GraphView @JvmOverloads constructor(
     private var primaryLinePath: Path = Path()
     private var secondaryLinePath: Path = Path()
 
+    private var isRtlLayout: Boolean = false
+
     var maxTrendingValue: Long = 300
     var primaryLineData: List<Long> = if (isInEditMode) {
-        listOf(
-            30,
-            60,
-            70,
-            80,
-            130,
-            190,
-            80
-        )
+        listOf(30, 60, 70, 80, 130, 190, 80)
     } else {
-        listOf(
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1
-        )
+        listOf(1, 1, 1, 1, 1, 1, 1)
     }
         set(value) {
             field = value.map { max(1, it) }
+            if (isRtlLayout) {
+                field = field.reversed()
+            }
             primaryLinePath.reset()
             invalidate()
         }
 
     var secondaryLineData: List<Long> = if (isInEditMode) {
-        listOf(
-            10,
-            20,
-            40,
-            60,
-            100,
-            132,
-            20
-        )
+        listOf(10, 20, 40, 60, 100, 132, 20)
     } else {
-        listOf(
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1
-        )
+        listOf(1, 1, 1, 1, 1, 1, 1)
     }
         set(value) {
             field = value.map { max(1, it) }
+            if (isRtlLayout) {
+                field = field.reversed()
+            }
             secondaryLinePath.reset()
             invalidate()
         }
 
     init {
         initFromXML(attrs)
+        isRtlLayout = TextUtils.getLayoutDirectionFromLocale(Locale.getDefault()) == LAYOUT_DIRECTION_RTL
     }
 
     private fun initFromXML(attr: AttributeSet?) {
         context.obtainStyledAttributes(attr, R.styleable.GraphView).use { a ->
-            primaryLineColor = context.getColor(
-                a.getResourceId(
-                    R.styleable.GraphView_primaryLineColor,
-                    R.color.tusky_blue
-                )
+            primaryLineColor = a.getColor(
+                R.styleable.GraphView_primaryLineColor,
+                MaterialColors.getColor(this, materialR.attr.colorPrimary)
             )
 
-            secondaryLineColor = context.getColor(
-                a.getResourceId(
-                    R.styleable.GraphView_secondaryLineColor,
-                    R.color.tusky_red
-                )
+            secondaryLineColor = a.getColor(
+                R.styleable.GraphView_secondaryLineColor,
+                context.getColor(R.color.warning_color)
             )
 
-            lineWidth = a.getDimensionPixelSize(
+            lineWidth = a.getDimension(
                 R.styleable.GraphView_lineWidth,
-                R.dimen.graph_line_thickness
-            ).toFloat()
-
-            graphColor = context.getColor(
-                a.getResourceId(
-                    R.styleable.GraphView_graphColor,
-                    R.color.colorBackground
-                )
+                context.resources.getDimension(R.dimen.graph_line_thickness)
             )
 
-            metaColor = context.getColor(
-                a.getResourceId(
-                    R.styleable.GraphView_metaColor,
-                    R.color.dividerColor
-                )
+            graphColor = a.getColor(
+                R.styleable.GraphView_graphColor,
+                context.getColor(R.color.colorBackground)
+            )
+
+            metaColor = a.getColor(
+                R.styleable.GraphView_metaColor,
+                context.getColor(R.color.dividerColor)
             )
 
             proportionalTrending = a.getBoolean(
@@ -265,14 +238,14 @@ class GraphView @JvmOverloads constructor(
 
     private fun dataSpacing(data: List<Any>) = width.toFloat() / max(data.size - 1, 1).toFloat()
 
-    override fun onDraw(canvas: Canvas?) {
+    override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
         if (primaryLinePath.isEmpty && width > 0) {
             initializeVertices()
         }
 
-        canvas?.apply {
+        canvas.apply {
             drawRect(sizeRect, graphPaint)
 
             val pointDistance = dataSpacing(primaryLineData)
@@ -297,7 +270,7 @@ class GraphView @JvmOverloads constructor(
                 linePath = secondaryLinePath,
                 linePaint = secondaryLinePaint,
                 circlePaint = secondaryCirclePaint,
-                lineThickness = lineWidth
+                lineThickness = lineWidth,
             )
             drawLine(
                 canvas = canvas,
@@ -323,8 +296,11 @@ class GraphView @JvmOverloads constructor(
             )
 
             val pm = PathMeasure(linePath, false)
+
+            val dotPosition = if (isRtlLayout) 0f else pm.length
+
             val coord = floatArrayOf(0f, 0f)
-            pm.getPosTan(pm.length * 1f, coord, null)
+            pm.getPosTan(dotPosition, coord, null)
 
             drawCircle(coord[0], coord[1], lineThickness * 2f, circlePaint)
         }

@@ -18,7 +18,7 @@ package com.keylesspalace.tusky.util
 import android.util.Log
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
-import com.keylesspalace.tusky.db.AccountEntity
+import com.keylesspalace.tusky.db.entity.AccountEntity
 import java.util.Locale
 
 private const val TAG: String = "LocaleUtils"
@@ -59,7 +59,10 @@ private fun ensureLanguagesAreFirst(locales: MutableList<Locale>, languages: Lis
     }
 }
 
-fun getInitialLanguages(language: String? = null, activeAccount: AccountEntity? = null): List<String> {
+fun getInitialLanguages(
+    language: String? = null,
+    activeAccount: AccountEntity? = null
+): List<String> {
     val selected = listOfNotNull(language, activeAccount?.defaultPostLanguage)
     val system = AppCompatDelegate.getApplicationLocales().toList() +
         LocaleListCompat.getDefault().toList()
@@ -76,4 +79,9 @@ fun getLocaleList(initialLanguages: List<String>): List<Locale> {
     }.sortedBy { it.displayName }.toMutableList()
     ensureLanguagesAreFirst(locales, initialLanguages)
     return locales
+}
+
+fun localeNameForUntrustedISO639LangCode(code: String): String {
+    // It seems like it never throws?
+    return Locale(code).displayName
 }

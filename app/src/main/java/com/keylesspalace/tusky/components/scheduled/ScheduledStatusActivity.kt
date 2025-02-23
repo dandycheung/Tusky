@@ -22,22 +22,21 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import androidx.activity.viewModels
-import androidx.appcompat.app.AlertDialog
 import androidx.core.view.MenuProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.LoadState
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.color.MaterialColors
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.keylesspalace.tusky.BaseActivity
 import com.keylesspalace.tusky.R
 import com.keylesspalace.tusky.appstore.EventHub
 import com.keylesspalace.tusky.appstore.StatusScheduledEvent
 import com.keylesspalace.tusky.components.compose.ComposeActivity
 import com.keylesspalace.tusky.databinding.ActivityScheduledStatusBinding
-import com.keylesspalace.tusky.di.Injectable
-import com.keylesspalace.tusky.di.ViewModelFactory
 import com.keylesspalace.tusky.entity.ScheduledStatus
+import com.keylesspalace.tusky.util.ensureBottomPadding
 import com.keylesspalace.tusky.util.hide
 import com.keylesspalace.tusky.util.show
 import com.keylesspalace.tusky.util.viewBinding
@@ -45,23 +44,21 @@ import com.mikepenz.iconics.IconicsDrawable
 import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
 import com.mikepenz.iconics.utils.colorInt
 import com.mikepenz.iconics.utils.sizeDp
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
+@AndroidEntryPoint
 class ScheduledStatusActivity :
     BaseActivity(),
     ScheduledStatusActionListener,
-    MenuProvider,
-    Injectable {
-
-    @Inject
-    lateinit var viewModelFactory: ViewModelFactory
+    MenuProvider {
 
     @Inject
     lateinit var eventHub: EventHub
 
-    private val viewModel: ScheduledStatusViewModel by viewModels { viewModelFactory }
+    private val viewModel: ScheduledStatusViewModel by viewModels()
 
     private val binding by viewBinding(ActivityScheduledStatusBinding::inflate)
 
@@ -80,8 +77,9 @@ class ScheduledStatusActivity :
             setDisplayShowHomeEnabled(true)
         }
 
+        binding.scheduledTootList.ensureBottomPadding()
+
         binding.swipeRefreshLayout.setOnRefreshListener(this::refreshStatuses)
-        binding.swipeRefreshLayout.setColorSchemeResources(R.color.tusky_blue)
 
         binding.scheduledTootList.setHasFixedSize(true)
         binding.scheduledTootList.layoutManager = LinearLayoutManager(this)
@@ -109,7 +107,10 @@ class ScheduledStatusActivity :
             if (loadState.refresh is LoadState.NotLoading) {
                 binding.progressBar.hide()
                 if (adapter.itemCount == 0) {
-                    binding.errorMessageView.setup(R.drawable.elephant_friend_empty, R.string.no_scheduled_posts)
+                    binding.errorMessageView.setup(
+                        R.drawable.elephant_friend_empty,
+                        R.string.no_scheduled_posts
+                    )
                     binding.errorMessageView.show()
                 } else {
                     binding.errorMessageView.hide()
@@ -127,7 +128,7 @@ class ScheduledStatusActivity :
     }
 
     override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
-        menuInflater.inflate(R.menu.activity_announcements, menu)
+        menuInflater.inflate(R.menu.activity_scheduled_status, menu)
         menu.findItem(R.id.action_search)?.apply {
             icon = IconicsDrawable(this@ScheduledStatusActivity, GoogleMaterial.Icon.gmd_search).apply {
                 sizeDp = 20
@@ -170,7 +171,7 @@ class ScheduledStatusActivity :
     }
 
     override fun delete(item: ScheduledStatus) {
-        AlertDialog.Builder(this)
+        MaterialAlertDialogBuilder(this)
             .setMessage(R.string.delete_scheduled_post_warning)
             .setNegativeButton(android.R.string.cancel, null)
             .setPositiveButton(android.R.string.ok) { _, _ ->

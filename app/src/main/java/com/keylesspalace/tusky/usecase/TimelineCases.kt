@@ -21,22 +21,18 @@ import at.connyduck.calladapter.networkresult.fold
 import at.connyduck.calladapter.networkresult.onFailure
 import at.connyduck.calladapter.networkresult.onSuccess
 import com.keylesspalace.tusky.appstore.BlockEvent
-import com.keylesspalace.tusky.appstore.BookmarkEvent
 import com.keylesspalace.tusky.appstore.EventHub
-import com.keylesspalace.tusky.appstore.FavoriteEvent
-import com.keylesspalace.tusky.appstore.MuteConversationEvent
 import com.keylesspalace.tusky.appstore.MuteEvent
-import com.keylesspalace.tusky.appstore.PinEvent
 import com.keylesspalace.tusky.appstore.PollVoteEvent
-import com.keylesspalace.tusky.appstore.ReblogEvent
+import com.keylesspalace.tusky.appstore.StatusChangedEvent
 import com.keylesspalace.tusky.appstore.StatusDeletedEvent
 import com.keylesspalace.tusky.entity.DeletedStatus
 import com.keylesspalace.tusky.entity.Poll
-import com.keylesspalace.tusky.entity.Relationship
 import com.keylesspalace.tusky.entity.Status
+import com.keylesspalace.tusky.entity.Translation
 import com.keylesspalace.tusky.network.MastodonApi
 import com.keylesspalace.tusky.util.getServerErrorMessage
-import io.reactivex.rxjava3.core.Single
+import java.util.Locale
 import javax.inject.Inject
 
 /**
@@ -53,8 +49,14 @@ class TimelineCases @Inject constructor(
             mastodonApi.reblogStatus(statusId)
         } else {
             mastodonApi.unreblogStatus(statusId)
-        }.onSuccess {
-            eventHub.dispatch(ReblogEvent(statusId, reblog))
+        }.onSuccess { status ->
+            if (status.reblog != null) {
+                // when reblogging, the Mastodon Api does not return the reblogged status directly
+                // but the newly created status with reblog set to the reblogged status
+                eventHub.dispatch(StatusChangedEvent(status.reblog))
+            } else {
+                eventHub.dispatch(StatusChangedEvent(status))
+            }
         }
     }
 
@@ -63,8 +65,8 @@ class TimelineCases @Inject constructor(
             mastodonApi.favouriteStatus(statusId)
         } else {
             mastodonApi.unfavouriteStatus(statusId)
-        }.onSuccess {
-            eventHub.dispatch(FavoriteEvent(statusId, favourite))
+        }.onSuccess { status ->
+            eventHub.dispatch(StatusChangedEvent(status))
         }
     }
 
@@ -73,8 +75,8 @@ class TimelineCases @Inject constructor(
             mastodonApi.bookmarkStatus(statusId)
         } else {
             mastodonApi.unbookmarkStatus(statusId)
-        }.onSuccess {
-            eventHub.dispatch(BookmarkEvent(statusId, bookmark))
+        }.onSuccess { status ->
+            eventHub.dispatch(StatusChangedEvent(status))
         }
     }
 
@@ -83,8 +85,8 @@ class TimelineCases @Inject constructor(
             mastodonApi.muteConversation(statusId)
         } else {
             mastodonApi.unmuteConversation(statusId)
-        }.onSuccess {
-            eventHub.dispatch(MuteConversationEvent(statusId, mute))
+        }.onSuccess { status ->
+            eventHub.dispatch(StatusChangedEvent(status))
         }
     }
 
@@ -118,7 +120,7 @@ class TimelineCases @Inject constructor(
         } else {
             mastodonApi.unpinStatus(statusId)
         }.fold({ status ->
-            eventHub.dispatch(PinEvent(statusId, pin))
+            eventHub.dispatch(StatusChangedEvent(status))
             NetworkResult.success(status)
         }, { e ->
             Log.w(TAG, "Failed to change pin state", e)
@@ -126,7 +128,11 @@ class TimelineCases @Inject constructor(
         })
     }
 
-    suspend fun voteInPoll(statusId: String, pollId: String, choices: List<Int>): NetworkResult<Poll> {
+    suspend fun voteInPoll(
+        statusId: String,
+        pollId: String,
+        choices: List<Int>
+    ): NetworkResult<Poll> {
         if (choices.isEmpty()) {
             return NetworkResult.failure(IllegalStateException())
         }
@@ -136,12 +142,10 @@ class TimelineCases @Inject constructor(
         }
     }
 
-    fun acceptFollowRequest(accountId: String): Single<Relationship> {
-        return mastodonApi.authorizeFollowRequest(accountId)
-    }
-
-    fun rejectFollowRequest(accountId: String): Single<Relationship> {
-        return mastodonApi.rejectFollowRequest(accountId)
+    suspend fun translate(
+        statusId: String
+    ): NetworkResult<Translation> {
+        return mastodonApi.translate(statusId, Locale.getDefault().language)
     }
 
     companion object {

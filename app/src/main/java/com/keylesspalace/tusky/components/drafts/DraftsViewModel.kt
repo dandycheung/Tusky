@@ -23,12 +23,14 @@ import androidx.paging.cachedIn
 import at.connyduck.calladapter.networkresult.NetworkResult
 import com.keylesspalace.tusky.db.AccountManager
 import com.keylesspalace.tusky.db.AppDatabase
-import com.keylesspalace.tusky.db.DraftEntity
+import com.keylesspalace.tusky.db.entity.DraftEntity
 import com.keylesspalace.tusky.entity.Status
 import com.keylesspalace.tusky.network.MastodonApi
-import kotlinx.coroutines.launch
+import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 
+@HiltViewModel
 class DraftsViewModel @Inject constructor(
     val database: AppDatabase,
     val accountManager: AccountManager,
@@ -37,8 +39,14 @@ class DraftsViewModel @Inject constructor(
 ) : ViewModel() {
 
     val drafts = Pager(
-        config = PagingConfig(pageSize = 20),
-        pagingSourceFactory = { database.draftDao().draftsPagingSource(accountManager.activeAccount?.id!!) }
+        config = PagingConfig(
+            pageSize = 20
+        ),
+        pagingSourceFactory = {
+            database.draftDao().draftsPagingSource(
+                accountManager.activeAccount?.id!!
+            )
+        }
     ).flow
         .cachedIn(viewModelScope)
 

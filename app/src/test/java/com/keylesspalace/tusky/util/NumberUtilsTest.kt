@@ -1,13 +1,13 @@
 package com.keylesspalace.tusky.util
 
+import java.util.Locale
+import kotlin.math.pow
 import org.junit.AfterClass
-import org.junit.Assert
+import org.junit.Assert.assertEquals
 import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
-import java.util.Locale
-import kotlin.math.pow
 
 @RunWith(Parameterized::class)
 class NumberUtilsTest(private val input: Long, private val want: String) {
@@ -35,7 +35,7 @@ class NumberUtilsTest(private val input: Long, private val want: String) {
 
         @Parameterized.Parameters(name = "formatNumber_{0}")
         @JvmStatic
-        fun data(): Iterable<Any> {
+        fun data(): Iterable<Array<Any>> {
             return listOf(
                 arrayOf(0, "0"),
                 arrayOf(1, "1"),
@@ -65,6 +65,6 @@ class NumberUtilsTest(private val input: Long, private val want: String) {
 
     @Test
     fun test() {
-        Assert.assertEquals(want, formatNumber(input, 1000))
+        assertEquals(want, formatNumber(input, 1000))
     }
 }

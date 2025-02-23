@@ -24,35 +24,31 @@ import com.keylesspalace.tusky.StatusListActivity
 import com.keylesspalace.tusky.components.account.AccountActivity
 import com.keylesspalace.tusky.components.search.SearchViewModel
 import com.keylesspalace.tusky.databinding.FragmentSearchBinding
-import com.keylesspalace.tusky.di.Injectable
-import com.keylesspalace.tusky.di.ViewModelFactory
 import com.keylesspalace.tusky.interfaces.LinkListener
 import com.keylesspalace.tusky.network.MastodonApi
+import com.keylesspalace.tusky.util.ensureBottomPadding
+import com.keylesspalace.tusky.util.startActivityWithSlideInAnimation
 import com.keylesspalace.tusky.util.viewBinding
 import com.keylesspalace.tusky.util.visible
 import com.mikepenz.iconics.IconicsDrawable
 import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
 import com.mikepenz.iconics.utils.colorInt
 import com.mikepenz.iconics.utils.sizeDp
+import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 abstract class SearchFragment<T : Any> :
     Fragment(R.layout.fragment_search),
     LinkListener,
-    Injectable,
     SwipeRefreshLayout.OnRefreshListener,
     MenuProvider {
 
     @Inject
-    lateinit var viewModelFactory: ViewModelFactory
-
-    @Inject
     lateinit var mastodonApi: MastodonApi
 
-    protected val viewModel: SearchViewModel by activityViewModels { viewModelFactory }
+    protected val viewModel: SearchViewModel by activityViewModels()
 
     protected val binding by viewBinding(FragmentSearchBinding::bind)
 
@@ -61,23 +57,26 @@ abstract class SearchFragment<T : Any> :
     abstract fun createAdapter(): PagingDataAdapter<T, *>
 
     abstract val data: Flow<PagingData<T>>
-    protected lateinit var adapter: PagingDataAdapter<T, *>
+    protected var adapter: PagingDataAdapter<T, *>? = null
 
     private var currentQuery: String = ""
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        initAdapter()
-        setupSwipeRefreshLayout()
-        requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
-        subscribeObservables()
-    }
-
-    private fun setupSwipeRefreshLayout() {
+        val adapter = initAdapter()
         binding.swipeRefreshLayout.setOnRefreshListener(this)
-        binding.swipeRefreshLayout.setColorSchemeResources(R.color.tusky_blue)
+        binding.searchRecyclerView.ensureBottomPadding()
+        requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
+        subscribeObservables(adapter)
     }
 
-    private fun subscribeObservables() {
+    override fun onDestroyView() {
+        // Clear the adapter to prevent leaking the View
+        adapter = null
+        snackbarErrorRetry = null
+        super.onDestroyView()
+    }
+
+    private fun subscribeObservables(adapter: PagingDataAdapter<T, *>) {
         viewLifecycleOwner.lifecycleScope.launch {
             data.collectLatest { pagingData ->
                 adapter.submitData(pagingData)
@@ -87,13 +86,17 @@ abstract class SearchFragment<T : Any> :
         adapter.addLoadStateListener { loadState ->
 
             if (loadState.refresh is LoadState.Error) {
-                showError()
+                showError(adapter)
             }
 
             val isNewSearch = currentQuery != viewModel.currentQuery
 
-            binding.searchProgressBar.visible(loadState.refresh == LoadState.Loading && isNewSearch && !binding.swipeRefreshLayout.isRefreshing)
-            binding.searchRecyclerView.visible(loadState.refresh is LoadState.NotLoading || !isNewSearch || binding.swipeRefreshLayout.isRefreshing)
+            binding.searchProgressBar.visible(
+                loadState.refresh == LoadState.Loading && isNewSearch && !binding.swipeRefreshLayout.isRefreshing
+            )
+            binding.searchRecyclerView.visible(
+                loadState.refresh is LoadState.NotLoading || !isNewSearch || binding.swipeRefreshLayout.isRefreshing
+            )
 
             if (loadState.refresh != LoadState.Loading) {
                 binding.swipeRefreshLayout.isRefreshing = false
@@ -102,12 +105,14 @@ abstract class SearchFragment<T : Any> :
 
             binding.progressBarBottom.visible(loadState.append == LoadState.Loading)
 
-            binding.searchNoResultsText.visible(loadState.refresh is LoadState.NotLoading && adapter.itemCount == 0 && viewModel.currentQuery.isNotEmpty())
+            binding.searchNoResultsText.visible(
+                loadState.refresh is LoadState.NotLoading && adapter.itemCount == 0 && viewModel.currentQuery.isNotEmpty()
+            )
         }
     }
 
     override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
-        menuInflater.inflate(R.menu.fragment_timeline, menu)
+        menuInflater.inflate(R.menu.fragment_search, menu)
         menu.findItem(R.id.action_refresh)?.apply {
             icon = IconicsDrawable(requireContext(), GoogleMaterial.Icon.gmd_refresh).apply {
                 sizeDp = 20
@@ -123,35 +128,44 @@ abstract class SearchFragment<T : Any> :
                 onRefresh()
                 true
             }
+
             else -> false
         }
     }
 
-    private fun initAdapter() {
+    private fun initAdapter(): PagingDataAdapter<T, *> {
         binding.searchRecyclerView.layoutManager = LinearLayoutManager(binding.searchRecyclerView.context)
-        adapter = createAdapter()
+        val adapter = createAdapter()
+        this.adapter = adapter
         binding.searchRecyclerView.adapter = adapter
         binding.searchRecyclerView.setHasFixedSize(true)
         (binding.searchRecyclerView.itemAnimator as SimpleItemAnimator).supportsChangeAnimations = false
+        return adapter
     }
 
-    private fun showError() {
+    private fun showError(adapter: PagingDataAdapter<T, *>) {
         if (snackbarErrorRetry?.isShown != true) {
-            snackbarErrorRetry = Snackbar.make(binding.root, R.string.failed_search, Snackbar.LENGTH_INDEFINITE)
-            snackbarErrorRetry?.setAction(R.string.action_retry) {
-                snackbarErrorRetry = null
-                adapter.retry()
-            }
-            snackbarErrorRetry?.show()
+            snackbarErrorRetry =
+                Snackbar.make(binding.root, R.string.failed_search, Snackbar.LENGTH_INDEFINITE)
+                    .setAction(R.string.action_retry) {
+                        snackbarErrorRetry = null
+                        adapter.retry()
+                    }.also {
+                        it.show()
+                    }
         }
     }
 
     override fun onViewAccount(id: String) {
-        bottomSheetActivity?.startActivityWithSlideInAnimation(AccountActivity.getIntent(requireContext(), id))
+        bottomSheetActivity?.startActivityWithSlideInAnimation(
+            AccountActivity.getIntent(requireContext(), id)
+        )
     }
 
     override fun onViewTag(tag: String) {
-        bottomSheetActivity?.startActivityWithSlideInAnimation(StatusListActivity.newHashtagIntent(requireContext(), tag))
+        bottomSheetActivity?.startActivityWithSlideInAnimation(
+            StatusListActivity.newHashtagIntent(requireContext(), tag)
+        )
     }
 
     override fun onViewUrl(url: String) {
@@ -162,6 +176,8 @@ abstract class SearchFragment<T : Any> :
         get() = (activity as? BottomSheetActivity)
 
     override fun onRefresh() {
-        adapter.refresh()
+        snackbarErrorRetry?.dismiss()
+        snackbarErrorRetry = null
+        adapter?.refresh()
     }
 }

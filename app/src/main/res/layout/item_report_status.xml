@@ -41,7 +41,6 @@
         android:paddingTop="4dp"
         android:paddingRight="16dp"
         android:paddingBottom="4dp"
-        android:textAllCaps="true"
         android:textSize="?attr/status_text_medium"
         android:visibility="gone"
         app:layout_constraintStart_toStartOf="@id/guideBegin"
@@ -74,7 +73,6 @@
         android:paddingTop="4dp"
         android:paddingRight="16dp"
         android:paddingBottom="4dp"
-        android:textAllCaps="true"
         android:textSize="?attr/status_text_medium"
         android:visibility="gone"
         app:layout_constraintStart_toStartOf="@id/guideBegin"
@@ -191,14 +189,15 @@
             android:id="@+id/status_sensitive_media_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:alpha="0.7"
+            android:layout_margin="3dp"
+            android:background="@drawable/media_warning_bg"
             android:contentDescription="@null"
             android:padding="@dimen/status_sensitive_media_button_padding"
             android:visibility="gone"
             app:layout_constraintLeft_toLeftOf="@+id/status_media_preview_container"
             app:layout_constraintTop_toTopOf="@+id/status_media_preview_container"
             app:srcCompat="@drawable/ic_eye_24dp"
-            app:tint="@color/white"
+            app:tint="?android:attr/textColorSecondary"
             tools:visibility="visible" />
 
         <TextView

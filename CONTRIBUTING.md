@@ -22,8 +22,9 @@ We try to follow the [Guide to app architecture](https://developer.android.com/t
 
 ### Kotlin
 Tusky was originally written in Java, but is in the process of migrating to Kotlin. All new code must be written in Kotlin.
-We try to follow the [Kotlin Style Guide](https://developer.android.com/kotlin/style-guide) and make format the code according to the default [ktlint codestyle](https://github.com/pinterest/ktlint).
-You can check the codestyle by running `./gradlew ktlintCheck`.
+We try to follow the [Kotlin Style Guide](https://developer.android.com/kotlin/style-guide) and format the code according to the default [ktlint codestyle](https://github.com/pinterest/ktlint).
+You can check the codestyle by running `./gradlew ktlintCheck lint`. This will fail if you have any errors, and produces a detailed report which also lists warnings.
+We intentionally have very few hard linting errors, so that new contributors can focus on what they want to achieve instead of fighting the linter.
 
 ### Text
 All English text that will be visible to users must be put in `app/src/main/res/values/strings.xml` so it is translateable into other languages.
@@ -42,12 +43,15 @@ All icons are from the Material iconset, find new icons [here](https://fonts.goo
 We try to make Tusky as accessible as possible for as many people as possible. Please make sure that all touch targets are at least 48dpx48dp in size, Text has sufficient contrast and images or icons have a image description. See [this guide](https://developer.android.com/guide/topics/ui/accessibility/apps) for more information.
 
 ### Supported servers
-Tusky is primarily a Mastodon client and aims to always support the newest Mastodon version. Other platforms implementing the Mastodon Api, e.g. Akkoma, GoToSocial or Pixelfed should also work with Tusky but no special effort is made to support their quirks or additional features.
+Tusky is primarily a Mastodon client and aims to always support the newest Mastodon version. Other platforms implementing the Mastodon API, e.g. Akkoma, GoToSocial or Pixelfed should also work with Tusky, but no special effort is made to support their quirks or additional features.
+
+### Payment Policy
+Our payment policy may be viewed [here](https://github.com/tuskyapp/Tusky/blob/develop/doc/PaymentPolicy.md).
 
 ## Troubleshooting / FAQ
 
-- Tusky should be built with the newest version of Android Studio
+- Tusky should be built with the newest version of Android Studio.
 - Tusky comes with two sets of build variants, "blue" and "green", which can be installed simultaneously and are distinguished by the colors of their icons. Green is intended for local development and testing, whereas blue is for releases.
 
 ## Resources
-- [Mastodon Api documentation](https://docs.joinmastodon.org/api/)
+- [Mastodon API documentation](https://docs.joinmastodon.org/api/)

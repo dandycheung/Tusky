@@ -1,3 +1,18 @@
+/* Copyright 2019 Tusky Contributors
+ *
+ * This file is a part of Tusky.
+ *
+ * This program is free software; you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation; either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * Tusky is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+ * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ * Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with Tusky; if not,
+ * see <http://www.gnu.org/licenses>. */
+
 package com.keylesspalace.tusky.service
 
 import android.app.Notification
@@ -16,28 +31,30 @@ import android.util.Log
 import androidx.annotation.StringRes
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
-import androidx.core.content.IntentCompat
 import at.connyduck.calladapter.networkresult.fold
 import com.keylesspalace.tusky.MainActivity
 import com.keylesspalace.tusky.R
 import com.keylesspalace.tusky.appstore.EventHub
+import com.keylesspalace.tusky.appstore.StatusChangedEvent
 import com.keylesspalace.tusky.appstore.StatusComposedEvent
-import com.keylesspalace.tusky.appstore.StatusEditedEvent
 import com.keylesspalace.tusky.appstore.StatusScheduledEvent
 import com.keylesspalace.tusky.components.compose.MediaUploader
 import com.keylesspalace.tusky.components.compose.UploadEvent
 import com.keylesspalace.tusky.components.drafts.DraftHelper
-import com.keylesspalace.tusky.components.notifications.NotificationHelper
 import com.keylesspalace.tusky.db.AccountManager
-import com.keylesspalace.tusky.di.Injectable
 import com.keylesspalace.tusky.entity.Attachment
 import com.keylesspalace.tusky.entity.MediaAttribute
 import com.keylesspalace.tusky.entity.NewPoll
 import com.keylesspalace.tusky.entity.NewStatus
+import com.keylesspalace.tusky.entity.ScheduledStatusReply
 import com.keylesspalace.tusky.entity.Status
 import com.keylesspalace.tusky.network.MastodonApi
+import com.keylesspalace.tusky.util.getParcelableExtraCompat
 import com.keylesspalace.tusky.util.unsafeLazy
-import dagger.android.AndroidInjection
+import dagger.hilt.android.AndroidEntryPoint
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -46,11 +63,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
 import retrofit2.HttpException
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
-import javax.inject.Inject
 
-class SendStatusService : Service(), Injectable {
+@AndroidEntryPoint
+class SendStatusService : Service() {
 
     @Inject
     lateinit var mastodonApi: MastodonApi
@@ -73,22 +88,24 @@ class SendStatusService : Service(), Injectable {
     private val statusesToSend = ConcurrentHashMap<Int, StatusToSend>()
     private val sendJobs = ConcurrentHashMap<Int, Job>()
 
-    private val notificationManager by unsafeLazy { getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager }
-
-    override fun onCreate() {
-        AndroidInjection.inject(this)
-        super.onCreate()
+    private val notificationManager by unsafeLazy {
+        getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     }
 
     override fun onBind(intent: Intent): IBinder? = null
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         if (intent.hasExtra(KEY_STATUS)) {
-            val statusToSend: StatusToSend = IntentCompat.getParcelableExtra(intent, KEY_STATUS, StatusToSend::class.java)
+            val statusToSend: StatusToSend = intent.getParcelableExtraCompat(KEY_STATUS)
                 ?: throw IllegalStateException("SendStatusService started without $KEY_STATUS extra")
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val channel = NotificationChannel(CHANNEL_ID, getString(R.string.send_post_notification_channel_name), NotificationManager.IMPORTANCE_LOW)
+                val channel =
+                    NotificationChannel(
+                        CHANNEL_ID,
+                        getString(R.string.send_post_notification_channel_name),
+                        NotificationManager.IMPORTANCE_LOW
+                    )
                 notificationManager.createNotificationChannel(channel)
             }
 
@@ -104,7 +121,11 @@ class SendStatusService : Service(), Injectable {
                 .setProgress(1, 0, true)
                 .setOngoing(true)
                 .setColor(getColor(R.color.notification_color))
-                .addAction(0, getString(android.R.string.cancel), cancelSendingIntent(sendingNotificationId))
+                .addAction(
+                    0,
+                    getString(android.R.string.cancel),
+                    cancelSendingIntent(sendingNotificationId)
+                )
 
             if (statusesToSend.size == 0 || Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_DETACH)
@@ -115,13 +136,21 @@ class SendStatusService : Service(), Injectable {
 
             statusesToSend[sendingNotificationId] = statusToSend
             sendStatus(sendingNotificationId--)
-        } else {
-            if (intent.hasExtra(KEY_CANCEL)) {
-                cancelSending(intent.getIntExtra(KEY_CANCEL, 0))
-            }
+        } else if (intent.hasExtra(KEY_CANCEL)) {
+            cancelSending(intent.getIntExtra(KEY_CANCEL, 0))
         }
 
         return START_NOT_STICKY
+    }
+
+    override fun onTimeout(startId: Int) {
+        // https://developer.android.com/about/versions/14/changes/fgs-types-required#short-service
+        // max time for short service reached on Android 14+, stop sending
+        statusesToSend.forEach { (statusId, _) ->
+            serviceScope.launch {
+                failSending(statusId)
+            }
+        }
     }
 
     private fun sendStatus(statusId: Int) {
@@ -212,23 +241,34 @@ class SendStatusService : Service(), Injectable {
                 scheduledAt = statusToSend.scheduledAt,
                 poll = statusToSend.poll,
                 language = statusToSend.language,
-                mediaAttributes = media.map { media ->
+                mediaAttributes = media.map { mediaItem ->
                     MediaAttribute(
-                        id = media.id!!,
-                        description = media.description,
-                        focus = media.focus?.toMastodonApiString(),
+                        id = mediaItem.id!!,
+                        description = mediaItem.description,
+                        focus = mediaItem.focus?.toMastodonApiString(),
                         thumbnail = null
                     )
                 }
             )
 
+            val scheduled = !statusToSend.scheduledAt.isNullOrEmpty()
+
             val sendResult = if (isNew) {
-                mastodonApi.createStatus(
-                    "Bearer " + account.accessToken,
-                    account.domain,
-                    statusToSend.idempotencyKey,
-                    newStatus
-                )
+                if (!scheduled) {
+                    mastodonApi.createStatus(
+                        "Bearer " + account.accessToken,
+                        account.domain,
+                        statusToSend.idempotencyKey,
+                        newStatus
+                    )
+                } else {
+                    mastodonApi.createScheduledStatus(
+                        "Bearer " + account.accessToken,
+                        account.domain,
+                        statusToSend.idempotencyKey,
+                        newStatus
+                    )
+                }
             } else {
                 mastodonApi.editStatus(
                     statusToSend.statusId!!,
@@ -248,14 +288,12 @@ class SendStatusService : Service(), Injectable {
 
                 mediaUploader.cancelUploadScope(*statusToSend.media.map { it.localId }.toIntArray())
 
-                val scheduled = !statusToSend.scheduledAt.isNullOrEmpty()
-
                 if (scheduled) {
-                    eventHub.dispatch(StatusScheduledEvent(sentStatus))
+                    eventHub.dispatch(StatusScheduledEvent((sentStatus as ScheduledStatusReply).id))
                 } else if (!isNew) {
-                    eventHub.dispatch(StatusEditedEvent(statusToSend.statusId!!, sentStatus))
+                    eventHub.dispatch(StatusChangedEvent(sentStatus as Status))
                 } else {
-                    eventHub.dispatch(StatusComposedEvent(sentStatus))
+                    eventHub.dispatch(StatusComposedEvent(sentStatus as Status))
                 }
 
                 notificationManager.cancel(statusId)
@@ -281,7 +319,9 @@ class SendStatusService : Service(), Injectable {
         // when statusToSend == null, sending has been canceled
         val statusToSend = statusesToSend[statusId] ?: return
 
-        val backoff = TimeUnit.SECONDS.toMillis(statusToSend.retries.toLong()).coerceAtMost(MAX_RETRY_INTERVAL)
+        val backoff = TimeUnit.SECONDS.toMillis(
+            statusToSend.retries.toLong()
+        ).coerceAtMost(MAX_RETRY_INTERVAL)
 
         delay(backoff)
         sendStatus(statusId)
@@ -289,7 +329,10 @@ class SendStatusService : Service(), Injectable {
 
     private fun stopSelfWhenDone() {
         if (statusesToSend.isEmpty()) {
-            ServiceCompat.stopForeground(this@SendStatusService, ServiceCompat.STOP_FOREGROUND_REMOVE)
+            ServiceCompat.stopForeground(
+                this@SendStatusService,
+                ServiceCompat.STOP_FOREGROUND_REMOVE
+            )
             stopSelf()
         }
     }
@@ -349,7 +392,7 @@ class SendStatusService : Service(), Injectable {
             content = status.text,
             contentWarning = status.warningText,
             sensitive = status.sensitive,
-            visibility = Status.Visibility.byString(status.visibility),
+            visibility = Status.Visibility.fromStringValue(status.visibility),
             mediaUris = status.media.map { it.uri },
             mediaDescriptions = status.media.map { it.description },
             mediaFocus = status.media.map { it.focus },
@@ -369,7 +412,7 @@ class SendStatusService : Service(), Injectable {
             this,
             statusId,
             intent,
-            NotificationHelper.pendingIntentFlags(false)
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
     }
 
@@ -379,15 +422,13 @@ class SendStatusService : Service(), Injectable {
         accountId: Long,
         statusId: Int
     ): Notification {
-        val intent = Intent(this, MainActivity::class.java)
-        intent.putExtra(NotificationHelper.ACCOUNT_ID, accountId)
-        intent.putExtra(MainActivity.OPEN_DRAFTS, true)
+        val intent = MainActivity.draftIntent(this, accountId)
 
         val pendingIntent = PendingIntent.getActivity(
             this,
             statusId,
             intent,
-            NotificationHelper.pendingIntentFlags(false)
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
         return NotificationCompat.Builder(this@SendStatusService, CHANNEL_ID)
@@ -418,10 +459,7 @@ class SendStatusService : Service(), Injectable {
         private var sendingNotificationId = -1 // use negative ids to not clash with other notis
         private var errorNotificationId = Int.MIN_VALUE // use even more negative ids to not clash with other notis
 
-        fun sendStatusIntent(
-            context: Context,
-            statusToSend: StatusToSend
-        ): Intent {
+        fun sendStatusIntent(context: Context, statusToSend: StatusToSend): Intent {
             val intent = Intent(context, SendStatusService::class.java)
             intent.putExtra(KEY_STATUS, statusToSend)
 
@@ -469,7 +507,8 @@ data class StatusToSend(
 @Parcelize
 data class MediaToSend(
     val localId: Int,
-    val id: String?, // null if media is not yet completely uploaded
+    // null if media is not yet completely uploaded
+    val id: String?,
     val uri: String,
     val description: String?,
     val focus: Attachment.Focus?,

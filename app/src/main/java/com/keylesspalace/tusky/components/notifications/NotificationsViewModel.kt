@@ -1,5 +1,4 @@
-/*
- * Copyright 2023 Tusky Contributors
+/* Copyright 2024 Tusky Contributors
  *
  * This file is a part of Tusky.
  *
@@ -12,546 +11,427 @@
  * Public License for more details.
  *
  * You should have received a copy of the GNU General Public License along with Tusky; if not,
- * see <http://www.gnu.org/licenses>.
- */
+ * see <http://www.gnu.org/licenses>. */
 
 package com.keylesspalace.tusky.components.notifications
 
 import android.content.SharedPreferences
 import android.util.Log
-import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.paging.PagingData
+import androidx.paging.ExperimentalPagingApi
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
 import androidx.paging.cachedIn
+import androidx.paging.filter
 import androidx.paging.map
-import at.connyduck.calladapter.networkresult.getOrThrow
-import com.keylesspalace.tusky.R
-import com.keylesspalace.tusky.appstore.BlockEvent
+import androidx.room.withTransaction
+import at.connyduck.calladapter.networkresult.NetworkResult
+import at.connyduck.calladapter.networkresult.fold
+import at.connyduck.calladapter.networkresult.map
+import at.connyduck.calladapter.networkresult.onFailure
 import com.keylesspalace.tusky.appstore.EventHub
-import com.keylesspalace.tusky.appstore.MuteConversationEvent
-import com.keylesspalace.tusky.appstore.MuteEvent
+import com.keylesspalace.tusky.appstore.FilterUpdatedEvent
 import com.keylesspalace.tusky.appstore.PreferenceChangedEvent
+import com.keylesspalace.tusky.components.preference.PreferencesFragment.ReadingOrder
+import com.keylesspalace.tusky.components.timeline.Placeholder
+import com.keylesspalace.tusky.components.timeline.toEntity
 import com.keylesspalace.tusky.components.timeline.util.ifExpected
+import com.keylesspalace.tusky.components.timeline.viewmodel.TimelineViewModel
 import com.keylesspalace.tusky.db.AccountManager
+import com.keylesspalace.tusky.db.AppDatabase
+import com.keylesspalace.tusky.entity.Filter
 import com.keylesspalace.tusky.entity.Notification
-import com.keylesspalace.tusky.entity.Poll
+import com.keylesspalace.tusky.network.FilterModel
+import com.keylesspalace.tusky.network.MastodonApi
 import com.keylesspalace.tusky.settings.PrefKeys
+import com.keylesspalace.tusky.usecase.NotificationPolicyState
+import com.keylesspalace.tusky.usecase.NotificationPolicyUsecase
 import com.keylesspalace.tusky.usecase.TimelineCases
-import com.keylesspalace.tusky.util.StatusDisplayOptions
-import com.keylesspalace.tusky.util.deserialize
-import com.keylesspalace.tusky.util.serialize
-import com.keylesspalace.tusky.util.throttleFirst
-import com.keylesspalace.tusky.util.toViewData
 import com.keylesspalace.tusky.viewdata.NotificationViewData
 import com.keylesspalace.tusky.viewdata.StatusViewData
+import com.keylesspalace.tusky.viewdata.TranslationViewData
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.getAndUpdate
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.rx3.await
 import retrofit2.HttpException
-import javax.inject.Inject
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.ExperimentalTime
 
-data class UiState(
-    /** Filtered notification types */
-    val activeFilter: Set<Notification.Type> = emptySet(),
-
-    /** True if the UI to filter and clear notifications should be shown */
-    val showFilterOptions: Boolean = false,
-
-    /** True if the FAB should be shown while scrolling */
-    val showFabWhileScrolling: Boolean = true
-)
-
-/** Preferences the UI reacts to */
-data class UiPrefs(
-    val showFabWhileScrolling: Boolean,
-    val showFilter: Boolean
-) {
-    companion object {
-        /** Relevant preference keys. Changes to any of these trigger a display update */
-        val prefKeys = setOf(
-            PrefKeys.FAB_HIDE,
-            PrefKeys.SHOW_NOTIFICATIONS_FILTER
-        )
-    }
-}
-
-/** Parent class for all UI actions, fallible or infallible. */
-sealed class UiAction
-
-/** Actions the user can trigger from the UI. These actions may fail. */
-sealed class FallibleUiAction : UiAction() {
-    /** Clear all notifications */
-    object ClearNotifications : FallibleUiAction()
-}
-
-/**
- * Actions the user can trigger from the UI that either cannot fail, or if they do fail,
- * do not show an error.
- */
-sealed class InfallibleUiAction : UiAction() {
-    /** Apply a new filter to the notification list */
-    // This saves the list to the local database, which triggers a refresh of the data.
-    // Saving the data can't fail, which is why this is infallible. Refreshing the
-    // data may fail, but that's handled by the paging system / adapter refresh logic.
-    data class ApplyFilter(val filter: Set<Notification.Type>) : InfallibleUiAction()
-
-    /**
-     * User is leaving the fragment, save the ID of the visible notification.
-     *
-     * Infallible because if it fails there's nowhere to show the error, and nothing the user
-     * can do.
-     */
-    data class SaveVisibleId(val visibleId: String) : InfallibleUiAction()
-
-    /** Ignore the saved reading position, load the page with the newest items */
-    // Resets the account's `lastNotificationId`, which can't fail, which is why this is
-    // infallible. Reloading the data may fail, but that's handled by the paging system /
-    // adapter refresh logic.
-    object LoadNewest : InfallibleUiAction()
-}
-
-/** Actions the user can trigger on an individual notification. These may fail. */
-sealed class NotificationAction : FallibleUiAction() {
-    data class AcceptFollowRequest(val accountId: String) : NotificationAction()
-
-    data class RejectFollowRequest(val accountId: String) : NotificationAction()
-}
-
-sealed class UiSuccess {
-    // These three are from menu items on the status. Currently they don't come to the
-    // viewModel as actions, they're noticed when events are posted. That will change,
-    // but for the moment we can still report them to the UI. Typically, receiving any
-    // of these three should trigger the UI to refresh.
-
-    /** A user was blocked */
-    object Block : UiSuccess()
-
-    /** A user was muted */
-    object Mute : UiSuccess()
-
-    /** A conversation was muted */
-    object MuteConversation : UiSuccess()
-}
-
-/** The result of a successful action on a notification */
-sealed class NotificationActionSuccess(
-    /** String resource with an error message to show the user */
-    @StringRes val msg: Int,
-
-    /**
-     * The original action, in case additional information is required from it to display the
-     * message.
-     */
-    open val action: NotificationAction
-) : UiSuccess() {
-    data class AcceptFollowRequest(override val action: NotificationAction) :
-        NotificationActionSuccess(R.string.ui_success_accepted_follow_request, action)
-    data class RejectFollowRequest(override val action: NotificationAction) :
-        NotificationActionSuccess(R.string.ui_success_rejected_follow_request, action)
-
-    companion object {
-        fun from(action: NotificationAction) = when (action) {
-            is NotificationAction.AcceptFollowRequest -> AcceptFollowRequest(action)
-            is NotificationAction.RejectFollowRequest -> RejectFollowRequest(action)
-        }
-    }
-}
-
-/** Actions the user can trigger on an individual status */
-sealed class StatusAction(
-    open val statusViewData: StatusViewData.Concrete
-) : FallibleUiAction() {
-    /** Set the bookmark state for a status */
-    data class Bookmark(val state: Boolean, override val statusViewData: StatusViewData.Concrete) :
-        StatusAction(statusViewData)
-
-    /** Set the favourite state for a status */
-    data class Favourite(val state: Boolean, override val statusViewData: StatusViewData.Concrete) :
-        StatusAction(statusViewData)
-
-    /** Set the reblog state for a status */
-    data class Reblog(val state: Boolean, override val statusViewData: StatusViewData.Concrete) :
-        StatusAction(statusViewData)
-
-    /** Vote in a poll */
-    data class VoteInPoll(
-        val poll: Poll,
-        val choices: List<Int>,
-        override val statusViewData: StatusViewData.Concrete
-    ) : StatusAction(statusViewData)
-}
-
-/** Changes to a status' visible state after API calls */
-sealed class StatusActionSuccess(open val action: StatusAction) : UiSuccess() {
-    data class Bookmark(override val action: StatusAction.Bookmark) :
-        StatusActionSuccess(action)
-
-    data class Favourite(override val action: StatusAction.Favourite) :
-        StatusActionSuccess(action)
-
-    data class Reblog(override val action: StatusAction.Reblog) :
-        StatusActionSuccess(action)
-
-    data class VoteInPoll(override val action: StatusAction.VoteInPoll) :
-        StatusActionSuccess(action)
-
-    companion object {
-        fun from(action: StatusAction) = when (action) {
-            is StatusAction.Bookmark -> Bookmark(action)
-            is StatusAction.Favourite -> Favourite(action)
-            is StatusAction.Reblog -> Reblog(action)
-            is StatusAction.VoteInPoll -> VoteInPoll(action)
-        }
-    }
-}
-
-/** Errors from fallible view model actions that the UI will need to show */
-sealed class UiError(
-    /** The exception associated with the error */
-    open val throwable: Throwable,
-
-    /** String resource with an error message to show the user */
-    @StringRes val message: Int,
-
-    /** The action that failed. Can be resent to retry the action */
-    open val action: UiAction? = null
-) {
-    data class ClearNotifications(override val throwable: Throwable) : UiError(
-        throwable,
-        R.string.ui_error_clear_notifications
-    )
-
-    data class Bookmark(
-        override val throwable: Throwable,
-        override val action: StatusAction.Bookmark
-    ) : UiError(throwable, R.string.ui_error_bookmark, action)
-
-    data class Favourite(
-        override val throwable: Throwable,
-        override val action: StatusAction.Favourite
-    ) : UiError(throwable, R.string.ui_error_favourite, action)
-
-    data class Reblog(
-        override val throwable: Throwable,
-        override val action: StatusAction.Reblog
-    ) : UiError(throwable, R.string.ui_error_reblog, action)
-
-    data class VoteInPoll(
-        override val throwable: Throwable,
-        override val action: StatusAction.VoteInPoll
-    ) : UiError(throwable, R.string.ui_error_vote, action)
-
-    data class AcceptFollowRequest(
-        override val throwable: Throwable,
-        override val action: NotificationAction.AcceptFollowRequest
-    ) : UiError(throwable, R.string.ui_error_accept_follow_request, action)
-
-    data class RejectFollowRequest(
-        override val throwable: Throwable,
-        override val action: NotificationAction.RejectFollowRequest
-    ) : UiError(throwable, R.string.ui_error_reject_follow_request, action)
-
-    companion object {
-        fun make(throwable: Throwable, action: FallibleUiAction) = when (action) {
-            is StatusAction.Bookmark -> Bookmark(throwable, action)
-            is StatusAction.Favourite -> Favourite(throwable, action)
-            is StatusAction.Reblog -> Reblog(throwable, action)
-            is StatusAction.VoteInPoll -> VoteInPoll(throwable, action)
-            is NotificationAction.AcceptFollowRequest -> AcceptFollowRequest(throwable, action)
-            is NotificationAction.RejectFollowRequest -> RejectFollowRequest(throwable, action)
-            FallibleUiAction.ClearNotifications -> ClearNotifications(throwable)
-        }
-    }
-}
-
-@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class, ExperimentalTime::class)
+@HiltViewModel
 class NotificationsViewModel @Inject constructor(
-    private val repository: NotificationsRepository,
-    private val preferences: SharedPreferences,
-    private val accountManager: AccountManager,
     private val timelineCases: TimelineCases,
-    private val eventHub: EventHub
+    private val api: MastodonApi,
+    eventHub: EventHub,
+    private val accountManager: AccountManager,
+    private val preferences: SharedPreferences,
+    private val filterModel: FilterModel,
+    private val db: AppDatabase,
+    private val notificationPolicyUsecase: NotificationPolicyUsecase
 ) : ViewModel() {
-    /** The account to display notifications for */
-    val account = accountManager.activeAccount!!
 
-    val uiState: StateFlow<UiState>
+    val activeAccountFlow = accountManager.activeAccount(viewModelScope)
+    private val accountId: Long = activeAccountFlow.value!!.id
 
-    /** Flow of changes to statusDisplayOptions, for use by the UI */
-    val statusDisplayOptions: StateFlow<StatusDisplayOptions>
+    private val refreshTrigger = MutableStateFlow(0L)
 
-    val pagingData: Flow<PagingData<NotificationViewData>>
+    val excludes: StateFlow<Set<Notification.Type>> = activeAccountFlow
+        .map { account -> account?.notificationsFilter.orEmpty() }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, activeAccountFlow.value?.notificationsFilter.orEmpty())
 
-    /** Flow of user actions received from the UI */
-    private val uiAction = MutableSharedFlow<UiAction>()
+    /** Map from notification id to translation. */
+    private val translations = MutableStateFlow(mapOf<String, TranslationViewData>())
 
-    /** Flow that can be used to trigger a full reload */
-    private val reload = MutableStateFlow(0)
+    private var remoteMediator = NotificationsRemoteMediator(this, accountManager, api, db)
 
-    /** Flow of successful action results */
-    // Note: This is a SharedFlow instead of a StateFlow because success state does not need to be
-    // retained. A message is shown once to a user and then dismissed. Re-collecting the flow
-    // (e.g., after a device orientation change) should not re-show the most recent success
-    // message, as it will be confusing to the user.
-    val uiSuccess = MutableSharedFlow<UiSuccess>()
+    private var readingOrder: ReadingOrder =
+        ReadingOrder.from(preferences.getString(PrefKeys.READING_ORDER, null))
 
-    /** Channel for error results */
-    // Errors are sent to a channel to ensure that any errors that occur *before* there are any
-    // subscribers are retained. If this was a SharedFlow any errors would be dropped, and if it
-    // was a StateFlow any errors would be retained, and there would need to be an explicit
-    // mechanism to dismiss them.
-    private val _uiErrorChannel = Channel<UiError>()
-
-    /** Expose UI errors as a flow */
-    val uiError = _uiErrorChannel.receiveAsFlow()
-
-    /** Accept UI actions in to actionStateFlow */
-    val accept: (UiAction) -> Unit = { action ->
-        viewModelScope.launch { uiAction.emit(action) }
+    @OptIn(ExperimentalPagingApi::class, ExperimentalCoroutinesApi::class)
+    val notifications = refreshTrigger.flatMapLatest {
+        Pager(
+            config = PagingConfig(
+                pageSize = LOAD_AT_ONCE
+            ),
+            remoteMediator = remoteMediator,
+            pagingSourceFactory = {
+                db.notificationsDao().getNotifications(accountId)
+            }
+        ).flow
+            .cachedIn(viewModelScope)
+            .combine(translations) { pagingData, translations ->
+                pagingData.map { notification ->
+                    val translation = translations[notification.status?.serverId]
+                    notification.toViewData(translation = translation)
+                }.filter { notificationViewData ->
+                    shouldFilterStatus(notificationViewData) != Filter.Action.HIDE
+                }
+            }
     }
+        .flowOn(Dispatchers.Default)
+
+    val notificationPolicy: StateFlow<NotificationPolicyState> = notificationPolicyUsecase.state
 
     init {
-        // Handle changes to notification filters
-        val notificationFilter = uiAction
-            .filterIsInstance<InfallibleUiAction.ApplyFilter>()
-            .distinctUntilChanged()
-            // Save each change back to the active account
-            .onEach { action ->
-                Log.d(TAG, "notificationFilter: $action")
-                account.notificationsFilter = serialize(action.filter)
-                accountManager.saveAccount(account)
+        viewModelScope.launch {
+            eventHub.events.collect { event ->
+                if (event is PreferenceChangedEvent) {
+                    onPreferenceChanged(event.preferenceKey)
+                }
+                if (event is FilterUpdatedEvent && event.filterContext.contains(Filter.Kind.NOTIFICATIONS.kind)) {
+                    filterModel.init(Filter.Kind.NOTIFICATIONS)
+                    refreshTrigger.value += 1
+                }
             }
-            // Load the initial filter from the active account
-            .onStart {
-                emit(
-                    InfallibleUiAction.ApplyFilter(
-                        filter = deserialize(account.notificationsFilter)
+        }
+        viewModelScope.launch {
+            val needsRefresh = filterModel.init(Filter.Kind.NOTIFICATIONS)
+            if (needsRefresh) {
+                refreshTrigger.value++
+            }
+        }
+        loadNotificationPolicy()
+    }
+
+    fun loadNotificationPolicy() {
+        viewModelScope.launch {
+            notificationPolicyUsecase.getNotificationPolicy()
+        }
+    }
+
+    fun updateNotificationFilters(newFilters: Set<Notification.Type>) {
+        val account = activeAccountFlow.value
+        if (newFilters != excludes.value && account != null) {
+            viewModelScope.launch {
+                accountManager.updateAccount(account) {
+                    copy(notificationsFilter = newFilters)
+                }
+                db.notificationsDao().cleanupNotifications(accountId, 0)
+                refreshTrigger.value++
+            }
+        }
+    }
+
+    private fun shouldFilterStatus(notificationViewData: NotificationViewData): Filter.Action {
+        return when ((notificationViewData as? NotificationViewData.Concrete)?.type) {
+            Notification.Type.MENTION, Notification.Type.POLL -> {
+                val account = activeAccountFlow.value
+                notificationViewData.statusViewData?.let { statusViewData ->
+                    if (statusViewData.status.account.id == account?.accountId) {
+                        return Filter.Action.NONE
+                    }
+                    statusViewData.filterAction = filterModel.shouldFilterStatus(statusViewData.actionable)
+                    return statusViewData.filterAction
+                }
+                Filter.Action.NONE
+            }
+
+            else -> Filter.Action.NONE
+        }
+    }
+
+    fun respondToFollowRequest(accept: Boolean, accountIdRequestingFollow: String, notificationId: String) {
+        viewModelScope.launch {
+            if (accept) {
+                api.authorizeFollowRequest(accountIdRequestingFollow)
+            } else {
+                api.rejectFollowRequest(accountIdRequestingFollow)
+            }.fold(
+                onSuccess = {
+                    // since the follow request has been responded, the notification can be deleted. The Ui will update automatically.
+                    db.notificationsDao().delete(accountId, notificationId)
+                    if (accept) {
+                        // refresh the notifications so the new follow notification will be loaded
+                        refreshTrigger.value++
+                    }
+                },
+                onFailure = { t ->
+                    Log.e(TAG, "Failed to to respond to follow request from account id $accountIdRequestingFollow.", t)
+                }
+            )
+        }
+    }
+
+    fun reblog(reblog: Boolean, status: StatusViewData.Concrete): Job = viewModelScope.launch {
+        timelineCases.reblog(status.actionableId, reblog).onFailure { t ->
+            ifExpected(t) {
+                Log.w(TAG, "Failed to reblog status " + status.actionableId, t)
+            }
+        }
+    }
+
+    fun favorite(favorite: Boolean, status: StatusViewData.Concrete): Job = viewModelScope.launch {
+        timelineCases.favourite(status.actionableId, favorite).onFailure { t ->
+            ifExpected(t) {
+                Log.d(TAG, "Failed to favourite status " + status.actionableId, t)
+            }
+        }
+    }
+
+    fun bookmark(bookmark: Boolean, status: StatusViewData.Concrete): Job = viewModelScope.launch {
+        timelineCases.bookmark(status.actionableId, bookmark).onFailure { t ->
+            ifExpected(t) {
+                Log.d(TAG, "Failed to bookmark status " + status.actionableId, t)
+            }
+        }
+    }
+
+    fun voteInPoll(choices: List<Int>, status: StatusViewData.Concrete) = viewModelScope.launch {
+        val poll = status.status.actionableStatus.poll ?: run {
+            Log.d(TAG, "No poll on status ${status.id}")
+            return@launch
+        }
+        timelineCases.voteInPoll(status.actionableId, poll.id, choices).onFailure { t ->
+            ifExpected(t) {
+                Log.d(TAG, "Failed to vote in poll: " + status.actionableId, t)
+            }
+        }
+    }
+
+    fun changeExpanded(expanded: Boolean, status: StatusViewData.Concrete) {
+        viewModelScope.launch {
+            db.timelineStatusDao()
+                .setExpanded(accountId, status.id, expanded)
+        }
+    }
+
+    fun changeContentShowing(isShowing: Boolean, status: StatusViewData.Concrete) {
+        viewModelScope.launch {
+            db.timelineStatusDao()
+                .setContentShowing(accountId, status.id, isShowing)
+        }
+    }
+
+    fun changeContentCollapsed(isCollapsed: Boolean, status: StatusViewData.Concrete) {
+        viewModelScope.launch {
+            db.timelineStatusDao()
+                .setContentCollapsed(accountId, status.id, isCollapsed)
+        }
+    }
+
+    fun remove(notificationId: String) {
+        viewModelScope.launch {
+            db.notificationsDao().delete(accountId, notificationId)
+        }
+    }
+
+    fun clearWarning(status: StatusViewData.Concrete) {
+        viewModelScope.launch {
+            db.timelineStatusDao().clearWarning(accountId, status.actionableId)
+        }
+    }
+
+    fun clearNotifications() {
+        viewModelScope.launch {
+            api.clearNotifications().fold(
+                {
+                    db.notificationsDao().cleanupNotifications(accountId, 0)
+                },
+                { t ->
+                    Log.w(TAG, "failed to clear notifications", t)
+                }
+            )
+        }
+    }
+
+    suspend fun translate(status: StatusViewData.Concrete): NetworkResult<Unit> {
+        translations.value += (status.id to TranslationViewData.Loading)
+        return timelineCases.translate(status.actionableId)
+            .map { translation ->
+                translations.value += (status.id to TranslationViewData.Loaded(translation))
+            }
+            .onFailure {
+                translations.value -= status.id
+            }
+    }
+
+    fun untranslate(status: StatusViewData.Concrete) {
+        translations.value -= status.id
+    }
+
+    fun loadMore(placeholderId: String) {
+        viewModelScope.launch {
+            try {
+                val notificationsDao = db.notificationsDao()
+
+                notificationsDao.insertNotification(
+                    Placeholder(placeholderId, loading = true).toNotificationEntity(
+                        accountId
                     )
                 )
-            }
 
-        // Reset the last notification ID to "0" to fetch the newest notifications, and
-        // increment `reload` to trigger creation of a new PagingSource.
-        viewModelScope.launch {
-            uiAction
-                .filterIsInstance<InfallibleUiAction.LoadNewest>()
-                .collectLatest {
-                    account.lastNotificationId = "0"
-                    accountManager.saveAccount(account)
-                    reload.getAndUpdate { it + 1 }
+                val (idAbovePlaceholder, idBelowPlaceholder) = db.withTransaction {
+                    notificationsDao.getIdAbove(accountId, placeholderId) to
+                        notificationsDao.getIdBelow(accountId, placeholderId)
                 }
-        }
-
-        // Save the visible notification ID
-        viewModelScope.launch {
-            uiAction
-                .filterIsInstance<InfallibleUiAction.SaveVisibleId>()
-                .distinctUntilChanged()
-                .collectLatest { action ->
-                    Log.d(TAG, "Saving visible ID: ${action.visibleId}, active account = ${account.id}")
-                    account.lastNotificationId = action.visibleId
-                    accountManager.saveAccount(account)
-                }
-        }
-
-        // Set initial status display options from the user's preferences.
-        //
-        // Then collect future preference changes and emit new values in to
-        // statusDisplayOptions if necessary.
-        statusDisplayOptions = MutableStateFlow(
-            StatusDisplayOptions.from(
-                preferences,
-                account
-            )
-        )
-
-        viewModelScope.launch {
-            eventHub.events
-                .filterIsInstance<PreferenceChangedEvent>()
-                .filter { StatusDisplayOptions.prefKeys.contains(it.preferenceKey) }
-                .map {
-                    statusDisplayOptions.value.make(
-                        preferences,
-                        it.preferenceKey,
-                        account
+                val response = when (readingOrder) {
+                    // Using minId, loads up to LOAD_AT_ONCE statuses with IDs immediately
+                    // after minId and no larger than maxId
+                    ReadingOrder.OLDEST_FIRST -> api.notifications(
+                        maxId = idAbovePlaceholder,
+                        minId = idBelowPlaceholder,
+                        limit = TimelineViewModel.LOAD_AT_ONCE,
+                        excludes = excludes.value
+                    )
+                    // Using sinceId, loads up to LOAD_AT_ONCE statuses immediately before
+                    // maxId, and no smaller than minId.
+                    ReadingOrder.NEWEST_FIRST -> api.notifications(
+                        maxId = idAbovePlaceholder,
+                        sinceId = idBelowPlaceholder,
+                        limit = TimelineViewModel.LOAD_AT_ONCE,
+                        excludes = excludes.value
                     )
                 }
-                .collect {
-                    statusDisplayOptions.emit(it)
-                }
-        }
 
-        // Handle UiAction.ClearNotifications
-        viewModelScope.launch {
-            uiAction.filterIsInstance<FallibleUiAction.ClearNotifications>()
-                .collectLatest {
-                    try {
-                        repository.clearNotifications().apply {
-                            if (this.isSuccessful) {
-                                repository.invalidate()
-                            } else {
-                                _uiErrorChannel.send(UiError.make(HttpException(this), it))
-                            }
+                val notifications = response.body()
+                if (!response.isSuccessful || notifications == null) {
+                    loadMoreFailed(placeholderId, HttpException(response))
+                    return@launch
+                }
+
+                val account = activeAccountFlow.value
+                if (account == null) {
+                    return@launch
+                }
+
+                val statusDao = db.timelineStatusDao()
+                val accountDao = db.timelineAccountDao()
+
+                db.withTransaction {
+                    notificationsDao.delete(accountId, placeholderId)
+
+                    val overlappedNotifications = if (notifications.isNotEmpty()) {
+                        notificationsDao.deleteRange(
+                            accountId,
+                            notifications.last().id,
+                            notifications.first().id
+                        )
+                    } else {
+                        0
+                    }
+
+                    for (notification in notifications) {
+                        accountDao.insert(notification.account.toEntity(accountId))
+                        notification.report?.let { report ->
+                            accountDao.insert(report.targetAccount.toEntity(accountId))
+                            notificationsDao.insertReport(report.toEntity(accountId))
                         }
-                    } catch (e: Exception) {
-                        ifExpected(e) { _uiErrorChannel.send(UiError.make(e, it)) }
-                    }
-                }
-        }
+                        notification.status?.let { status ->
+                            val statusToInsert = status.reblog ?: status
+                            accountDao.insert(statusToInsert.account.toEntity(accountId))
 
-        // Handle NotificationAction.*
-        viewModelScope.launch {
-            uiAction.filterIsInstance<NotificationAction>()
-                .throttleFirst(THROTTLE_TIMEOUT)
-                .collect { action ->
-                    try {
-                        when (action) {
-                            is NotificationAction.AcceptFollowRequest ->
-                                timelineCases.acceptFollowRequest(action.accountId).await()
-                            is NotificationAction.RejectFollowRequest ->
-                                timelineCases.rejectFollowRequest(action.accountId).await()
+                            statusDao.insert(
+                                statusToInsert.toEntity(
+                                    tuskyAccountId = accountId,
+                                    expanded = account.alwaysOpenSpoiler,
+                                    contentShowing = account.alwaysShowSensitiveMedia || !status.sensitive,
+                                    contentCollapsed = true
+                                )
+                            )
                         }
-                        uiSuccess.emit(NotificationActionSuccess.from(action))
-                    } catch (e: Exception) {
-                        ifExpected(e) { _uiErrorChannel.send(UiError.make(e, action)) }
+                        notificationsDao.insertNotification(
+                            notification.toEntity(
+                                accountId
+                            )
+                        )
+                    }
+
+                    /* In case we loaded a whole page and there was no overlap with existing notifications,
+                       we insert a placeholder because there might be even more unknown notifications */
+                    if (overlappedNotifications == 0 && notifications.size == TimelineViewModel.LOAD_AT_ONCE) {
+                        /* This overrides the first/last of the newly loaded notifications with a placeholder
+                           to guarantee the placeholder has an id that exists on the server as not all
+                           servers handle client generated ids as expected */
+                        val idToConvert = when (readingOrder) {
+                            ReadingOrder.OLDEST_FIRST -> notifications.first().id
+                            ReadingOrder.NEWEST_FIRST -> notifications.last().id
+                        }
+                        notificationsDao.insertNotification(
+                            Placeholder(
+                                idToConvert,
+                                loading = false
+                            ).toNotificationEntity(accountId)
+                        )
                     }
                 }
-        }
-
-        // Handle StatusAction.*
-        viewModelScope.launch {
-            uiAction.filterIsInstance<StatusAction>()
-                .throttleFirst(THROTTLE_TIMEOUT) // avoid double-taps
-                .collect { action ->
-                    try {
-                        when (action) {
-                            is StatusAction.Bookmark ->
-                                timelineCases.bookmark(
-                                    action.statusViewData.actionableId,
-                                    action.state
-                                )
-                            is StatusAction.Favourite ->
-                                timelineCases.favourite(
-                                    action.statusViewData.actionableId,
-                                    action.state
-                                )
-                            is StatusAction.Reblog ->
-                                timelineCases.reblog(
-                                    action.statusViewData.actionableId,
-                                    action.state
-                                )
-                            is StatusAction.VoteInPoll ->
-                                timelineCases.voteInPoll(
-                                    action.statusViewData.actionableId,
-                                    action.poll.id,
-                                    action.choices
-                                )
-                        }.getOrThrow()
-                        uiSuccess.emit(StatusActionSuccess.from(action))
-                    } catch (t: Throwable) {
-                        _uiErrorChannel.send(UiError.make(t, action))
-                    }
-                }
-        }
-
-        // Handle events that should refresh the list
-        viewModelScope.launch {
-            eventHub.events.collectLatest {
-                when (it) {
-                    is BlockEvent -> uiSuccess.emit(UiSuccess.Block)
-                    is MuteEvent -> uiSuccess.emit(UiSuccess.Mute)
-                    is MuteConversationEvent -> uiSuccess.emit(UiSuccess.MuteConversation)
+            } catch (e: Exception) {
+                ifExpected(e) {
+                    loadMoreFailed(placeholderId, e)
                 }
             }
         }
+    }
 
-        // Re-fetch notifications if either of `notificationFilter` or `reload` flows have
-        // new items.
-        pagingData = combine(notificationFilter, reload) { action, _ -> action }
-            .flatMapLatest { action ->
-                getNotifications(filters = action.filter, initialKey = getInitialKey())
-            }.cachedIn(viewModelScope)
-
-        uiState = combine(notificationFilter, getUiPrefs()) { filter, prefs ->
-            UiState(
-                activeFilter = filter.filter,
-                showFilterOptions = prefs.showFilter,
-                showFabWhileScrolling = prefs.showFabWhileScrolling
+    private suspend fun loadMoreFailed(placeholderId: String, e: Exception) {
+        Log.w(TAG, "failed loading notifications", e)
+        val activeAccount = accountManager.activeAccount!!
+        db.notificationsDao()
+            .insertNotification(
+                Placeholder(placeholderId, loading = false).toNotificationEntity(activeAccount.id)
             )
-        }.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
-            initialValue = UiState()
-        )
     }
 
-    private fun getNotifications(
-        filters: Set<Notification.Type>,
-        initialKey: String? = null
-    ): Flow<PagingData<NotificationViewData>> {
-        return repository.getNotificationsStream(filter = filters, initialKey = initialKey)
-            .map { pagingData ->
-                pagingData.map { notification ->
-                    notification.toViewData(
-                        isShowingContent = statusDisplayOptions.value.showSensitiveMedia ||
-                            !(notification.status?.actionableStatus?.sensitive ?: false),
-                        isExpanded = statusDisplayOptions.value.openSpoiler,
-                        isCollapsed = true
-                    )
-                }
+    private fun onPreferenceChanged(key: String) {
+        when (key) {
+            PrefKeys.READING_ORDER -> {
+                readingOrder = ReadingOrder.from(
+                    preferences.getString(PrefKeys.READING_ORDER, null)
+                )
             }
-    }
-
-    // The database stores "0" as the last notification ID if notifications have not been
-    // fetched. Convert to null to ensure a full fetch in this case
-    private fun getInitialKey(): String? {
-        val initialKey = when (val id = account.lastNotificationId) {
-            "0" -> null
-            else -> id
         }
-        Log.d(TAG, "Restoring at $initialKey")
-        return initialKey
     }
-
-    /**
-     * @return Flow of relevant preferences that change the UI
-     */
-    // TODO: Preferences should be in a repository
-    private fun getUiPrefs() = eventHub.events
-        .filterIsInstance<PreferenceChangedEvent>()
-        .filter { UiPrefs.prefKeys.contains(it.preferenceKey) }
-        .map { toPrefs() }
-        .onStart { emit(toPrefs()) }
-
-    private fun toPrefs() = UiPrefs(
-        showFabWhileScrolling = !preferences.getBoolean(PrefKeys.FAB_HIDE, false),
-        showFilter = preferences.getBoolean(PrefKeys.SHOW_NOTIFICATIONS_FILTER, true)
-    )
 
     companion object {
+        private const val LOAD_AT_ONCE = 30
         private const val TAG = "NotificationsViewModel"
-        private val THROTTLE_TIMEOUT = 500.milliseconds
     }
 }

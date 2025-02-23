@@ -20,54 +20,91 @@ import android.content.SharedPreferences
 import android.os.Build
 import android.util.Log
 import at.connyduck.calladapter.networkresult.NetworkResultCallAdapterFactory
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
 import com.keylesspalace.tusky.BuildConfig
 import com.keylesspalace.tusky.db.AccountManager
-import com.keylesspalace.tusky.json.Rfc3339DateJsonAdapter
-import com.keylesspalace.tusky.network.InstanceSwitchAuthInterceptor
+import com.keylesspalace.tusky.entity.Attachment
+import com.keylesspalace.tusky.entity.Notification
+import com.keylesspalace.tusky.entity.Status
+import com.keylesspalace.tusky.json.GuardedAdapter
 import com.keylesspalace.tusky.network.MastodonApi
 import com.keylesspalace.tusky.network.MediaUploadApi
+import com.keylesspalace.tusky.network.apiForAccount
 import com.keylesspalace.tusky.settings.PrefKeys.HTTP_PROXY_ENABLED
 import com.keylesspalace.tusky.settings.PrefKeys.HTTP_PROXY_PORT
 import com.keylesspalace.tusky.settings.PrefKeys.HTTP_PROXY_SERVER
 import com.keylesspalace.tusky.settings.ProxyConfiguration
 import com.keylesspalace.tusky.util.getNonNullString
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.adapters.EnumJsonAdapter
+import com.squareup.moshi.adapters.Rfc3339DateJsonAdapter
 import dagger.Module
 import dagger.Provides
-import okhttp3.Cache
-import okhttp3.OkHttp
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
-import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.create
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
 import java.net.IDN
 import java.net.InetSocketAddress
 import java.net.Proxy
 import java.util.Date
 import java.util.concurrent.TimeUnit
+import javax.inject.Named
 import javax.inject.Singleton
+import okhttp3.Cache
+import okhttp3.OkHttp
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.moshi.MoshiConverterFactory
 
 /**
  * Created by charlag on 3/24/18.
  */
 
 @Module
-class NetworkModule {
+@InstallIn(SingletonComponent::class)
+object NetworkModule {
+
+    private const val TAG = "NetworkModule"
+
+    @Provides
+    @Named("defaultPort")
+    fun providesDefaultPort(): Int {
+        return 443
+    }
+
+    @Provides
+    @Named("defaultScheme")
+    fun providesDefaultScheme(): String {
+        return "https://"
+    }
 
     @Provides
     @Singleton
-    fun providesGson(): Gson = GsonBuilder()
-        .registerTypeAdapter(Date::class.java, Rfc3339DateJsonAdapter())
-        .create()
+    fun providesMoshi(): Moshi = Moshi.Builder()
+        .add(Date::class.java, Rfc3339DateJsonAdapter())
+        .add(GuardedAdapter.ANNOTATION_FACTORY)
+        // Enum types with fallback value
+        .add(
+            Attachment.Type::class.java,
+            EnumJsonAdapter.create(Attachment.Type::class.java)
+                .withUnknownFallback(Attachment.Type.UNKNOWN)
+        )
+        .add(
+            Notification.Type::class.java,
+            EnumJsonAdapter.create(Notification.Type::class.java)
+                .withUnknownFallback(Notification.Type.UNKNOWN)
+        )
+        .add(
+            Status.Visibility::class.java,
+            EnumJsonAdapter.create(Status.Visibility::class.java)
+                .withUnknownFallback(Status.Visibility.UNKNOWN)
+        )
+        .build()
 
     @Provides
     @Singleton
     fun providesHttpClient(
-        accountManager: AccountManager,
-        context: Context,
+        @ApplicationContext context: Context,
         preferences: SharedPreferences
     ): OkHttpClient {
         val httpProxyEnabled = preferences.getBoolean(HTTP_PROXY_ENABLED, false)
@@ -99,50 +136,48 @@ class NetworkModule {
                 builder.proxy(Proxy(Proxy.Type.HTTP, address))
             } ?: Log.w(TAG, "Invalid proxy configuration: ($httpServer, $httpPort)")
         }
-
-        return builder
-            .apply {
-                addInterceptor(InstanceSwitchAuthInterceptor(accountManager))
-                if (BuildConfig.DEBUG) {
-                    addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC })
-                }
-            }
-            .build()
+        if (BuildConfig.DEBUG) {
+            builder.addInterceptor(
+                HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC }
+            )
+        }
+        return builder.build()
     }
 
     @Provides
     @Singleton
     fun providesRetrofit(
         httpClient: OkHttpClient,
-        gson: Gson
+        moshi: Moshi
     ): Retrofit {
-        return Retrofit.Builder().baseUrl("https://" + MastodonApi.PLACEHOLDER_DOMAIN)
+        return Retrofit.Builder()
+            .baseUrl("https://${MastodonApi.PLACEHOLDER_DOMAIN}")
             .client(httpClient)
-            .addConverterFactory(GsonConverterFactory.create(gson))
-            .addCallAdapterFactory(RxJava3CallAdapterFactory.create())
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
             .addCallAdapterFactory(NetworkResultCallAdapterFactory.create())
             .build()
     }
 
     @Provides
-    @Singleton
-    fun providesApi(retrofit: Retrofit): MastodonApi = retrofit.create()
+    fun providesMastodonApi(
+        httpClient: OkHttpClient,
+        retrofit: Retrofit,
+        accountManager: AccountManager
+    ): MastodonApi {
+        return apiForAccount(accountManager.activeAccount, httpClient, retrofit)
+    }
 
     @Provides
-    @Singleton
-    fun providesMediaUploadApi(retrofit: Retrofit, okHttpClient: OkHttpClient): MediaUploadApi {
+    fun providesMediaUploadApi(
+        retrofit: Retrofit,
+        okHttpClient: OkHttpClient,
+        accountManager: AccountManager
+    ): MediaUploadApi {
         val longTimeOutOkHttpClient = okHttpClient.newBuilder()
             .readTimeout(100, TimeUnit.SECONDS)
             .writeTimeout(100, TimeUnit.SECONDS)
             .build()
 
-        return retrofit.newBuilder()
-            .client(longTimeOutOkHttpClient)
-            .build()
-            .create()
-    }
-
-    companion object {
-        private const val TAG = "NetworkModule"
+        return apiForAccount(accountManager.activeAccount, longTimeOutOkHttpClient, retrofit)
     }
 }

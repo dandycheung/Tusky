@@ -23,27 +23,28 @@ import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import com.keylesspalace.tusky.BuildConfig
 import com.keylesspalace.tusky.db.AppDatabase
-import com.keylesspalace.tusky.db.DraftAttachment
-import com.keylesspalace.tusky.db.DraftEntity
+import com.keylesspalace.tusky.db.entity.DraftAttachment
+import com.keylesspalace.tusky.db.entity.DraftEntity
 import com.keylesspalace.tusky.entity.Attachment
 import com.keylesspalace.tusky.entity.NewPoll
 import com.keylesspalace.tusky.entity.Status
 import com.keylesspalace.tusky.util.copyToFile
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okio.buffer
-import okio.sink
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okio.buffer
+import okio.sink
 
 class DraftHelper @Inject constructor(
-    val context: Context,
+    @ApplicationContext val context: Context,
     private val okHttpClient: OkHttpClient,
     db: AppDatabase
 ) {
@@ -101,16 +102,17 @@ class DraftHelper @Inject constructor(
             }
         }
 
-        val attachments: MutableList<DraftAttachment> = mutableListOf()
-        for (i in mediaUris.indices) {
-            attachments.add(
-                DraftAttachment(
-                    uriString = uris[i].toString(),
-                    description = mediaDescriptions[i],
-                    focus = mediaFocus[i],
-                    type = types[i]
+        val attachments: List<DraftAttachment> = buildList(mediaUris.size) {
+            for (i in mediaUris.indices) {
+                add(
+                    DraftAttachment(
+                        uriString = uris[i].toString(),
+                        description = mediaDescriptions[i],
+                        focus = mediaFocus[i],
+                        type = types[i]
+                    )
                 )
-            )
+            }
         }
 
         val draft = DraftEntity(
@@ -176,7 +178,7 @@ class DraftHelper @Inject constructor(
             map.getExtensionFromMimeType(mimeType)
         }
 
-        val filename = String.format("Tusky_Draft_Media_%s_%d.%s", timeStamp, index, fileExtension)
+        val filename = "Tusky_Draft_Media_${timeStamp}_$index.$fileExtension"
         val file = File(folder, filename)
 
         if (scheme == "https") {
@@ -186,10 +188,8 @@ class DraftHelper @Inject constructor(
 
                 val response = okHttpClient.newCall(request).execute()
 
-                val sink = file.sink().buffer()
-
-                response.body?.source()?.use { input ->
-                    sink.use { output ->
+                file.sink().buffer().use { output ->
+                    response.body?.source()?.use { input ->
                         output.writeAll(input)
                     }
                 }
@@ -200,6 +200,10 @@ class DraftHelper @Inject constructor(
         } else {
             this.copyToFile(contentResolver, file)
         }
-        return FileProvider.getUriForFile(context, BuildConfig.APPLICATION_ID + ".fileprovider", file)
+        return FileProvider.getUriForFile(
+            context,
+            BuildConfig.APPLICATION_ID + ".fileprovider",
+            file
+        )
     }
 }

@@ -15,10 +15,13 @@
 
 package com.keylesspalace.tusky.entity
 
-import com.google.gson.annotations.SerializedName
+import com.squareup.moshi.Json
+import com.squareup.moshi.JsonClass
 
+@JsonClass(generateAdapter = true)
 data class NotificationSubscribeResult(
     val id: Int,
     val endpoint: String,
-    @SerializedName("server_key") val serverKey: String
+    val alerts: Map<String, Boolean>,
+    @Json(name = "server_key") val serverKey: String
 )

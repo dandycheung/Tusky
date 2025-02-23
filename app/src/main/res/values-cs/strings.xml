@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="error_generic">Vyskytla se chyba.</string>
-    <string name="error_network">Vyskytla se chyba sítě! Prosím zkontrolujte své připojení a zkuste to znovu!</string>
+    <string name="error_network">Vyskytla se chyba sítě. Prosím zkontrolujte své připojení a zkuste to znovu.</string>
     <string name="error_empty">Toto nemůže být prázdné.</string>
     <string name="error_invalid_domain">Byla zadána neplatná doména</string>
-    <string name="error_failed_app_registration">Autentizace s tímto serverem nebyla úspěšná.</string>
+    <string name="error_failed_app_registration">Autentizace s tímto serverem nebyla úspěšná. Pokud se chyba objeví znovu, zkuste se přihlásit v prohlížeči z menu.</string>
     <string name="error_no_web_browser_found">Nepodařilo se najít webový prohlížeč, který lze použít.</string>
-    <string name="error_authorization_unknown">Vyskytla se neidentifikovaná chyba autorizace.</string>
-    <string name="error_authorization_denied">Autorizace byla zamítnuta.</string>
-    <string name="error_retrieving_oauth_token">Nepodařilo se získat přihlašovací token.</string>
+    <string name="error_authorization_unknown">Vyskytla se neidentifikovaná chyba autorizace. Pokud se chyba objeví znovu, zkuste se přihlásit v prohlížeči z menu.</string>
+    <string name="error_authorization_denied">Autorizace byla zamítnuta. Pokud jste si jisti že jste zadali správné přihlašovací údaje, zkuste se přihlásit v prohlížeči z menu.</string>
+    <string name="error_retrieving_oauth_token">Nepodařilo se získat přihlašovací token. Pokud se chyba objeví znovu, zkuste se přihlásit v prohlížeči z menu.</string>
     <string name="error_compose_character_limit">Příspěvek je příliš dlouhý!</string>
     <string name="error_media_upload_type">Tento typ souboru nemůže být nahrán.</string>
     <string name="error_media_upload_opening">Tento soubor se nepodařilo otevřít.</string>
@@ -36,8 +36,8 @@
     <string name="title_edit_profile">Upravit váš profil</string>
     <string name="title_drafts">Koncepty</string>
     <string name="title_licenses">Licence</string>
-    <string name="post_username_format">\@%s</string>
-    <string name="post_boosted_format">%s boostnul/a</string>
+    <string name="post_username_format">\@%1$s</string>
+    <string name="post_boosted_format">%1$s boostnul/a</string>
     <string name="post_sensitive_media_title">Citlivý obsah</string>
     <string name="post_media_hidden_title">Média skryta</string>
     <string name="post_sensitive_media_directions">Klikněte pro zobrazení</string>
@@ -47,10 +47,10 @@
     <string name="post_content_show_less">Sbalit</string>
     <string name="message_empty">Tady nic není.</string>
     <string name="footer_empty">Tady nic není. Obnovte přetažením dolů!</string>
-    <string name="notification_reblog_format">%s boostnul/a váš příspěvek</string>
-    <string name="notification_favourite_format">%s si oblíbil/a váš příspěvek</string>
-    <string name="notification_follow_format">%s vás nyní sleduje</string>
-    <string name="report_username_format">Nahlásit uživatele @%s</string>
+    <string name="notification_reblog_format">%1$s boostnul/a váš příspěvek</string>
+    <string name="notification_favourite_format">%1$s si oblíbil/a váš příspěvek</string>
+    <string name="notification_follow_format">%1$s vás nyní sleduje</string>
+    <string name="report_username_format">Nahlásit uživatele @%1$s</string>
     <string name="report_comment_hint">Další komentáře\?</string>
     <string name="action_quick_reply">Rychlá odpověď</string>
     <string name="action_reply">Odpovědět</string>
@@ -60,9 +60,9 @@
     <string name="action_unfavourite">Odstranit oblíbení</string>
     <string name="action_more">Více</string>
     <string name="action_compose">Napsat</string>
-    <string name="action_login">Přihlásit se účtem Mastodon</string>
+    <string name="action_login">Přihlásit se s Tusky</string>
     <string name="action_logout">Odhlásit se</string>
-    <string name="action_logout_confirm">Jste si jistý/á, že se chcete odhlásit z účtu %1$s?</string>
+    <string name="action_logout_confirm">Jste si jistí, že se chcete odhlásit z účtu %1$s? Tato akce smaže všechna lokální data tohoto účtu, včetně konceptů a předvoleb.</string>
     <string name="action_follow">Sledovat</string>
     <string name="action_unfollow">Přestat sledovat</string>
     <string name="action_block">Blokovat</string>
@@ -113,10 +113,10 @@
     <string name="title_hashtags_dialog">Hashtagy</string>
     <string name="title_mentions_dialog">Zmínky</string>
     <string name="title_links_dialog">Odkazy</string>
-    <string name="action_open_media_n">Otevřít médium #%d</string>
+    <string name="action_open_media_n">Otevřít médium #%1$d</string>
     <string name="download_image">Stahuji %1$s</string>
     <string name="action_copy_link">Zkopírovat odkaz</string>
-    <string name="action_open_as">Otevřít jako %s</string>
+    <string name="action_open_as">Otevřít jako %1$s</string>
     <string name="action_share_as">Sdílet jako…</string>
     <string name="download_media">Stáhnout média</string>
     <string name="downloading_media">Stahuji média</string>
@@ -126,8 +126,6 @@
     <string name="confirmation_reported">Odesláno!</string>
     <string name="confirmation_unblocked">Uživatel byl odblokován</string>
     <string name="confirmation_unmuted">Skrytí uživatele bylo zrušeno</string>
-    <string name="post_sent">Odesláno!</string>
-    <string name="post_sent_long">Odpověď byla úspěšně odeslána.</string>
     <string name="hint_domain">Který server?</string>
     <string name="hint_compose">Co se právě děje?</string>
     <string name="hint_content_warning">Varování o obsahu</string>
@@ -140,15 +138,13 @@
     <string name="label_header">Záhlaví</string>
     <string name="link_whats_an_instance">Co je to server\?</string>
     <string name="login_connection">Připojuji se…</string>
-    <string name="dialog_whats_an_instance">Sem může být zadána adresa či doména jakéhokoliv
-        serveru, například mastodon.social, icosahedron.website, social.tchncs.de
-        a <a href="https://instances.social">další!</a>
-        \n\nPokud ještě nemáte účet, můžete zadat název instance, ke které se chcete
-        připojit, a vytvořit si tam účet.\n\nServer je jedno místo, kde je hostován váš
-        účet, můžete však jednoduše komunikovat a sledovat lidi na jiných serverech, jako by
-        byli na stejné stránce.
-        \n\nDalší informace mohou být nalezeny na stránce <a href="https://joinmastodon.org">joinmastodon.org</a>.
-    </string>
+    <string name="dialog_whats_an_instance">Sem může být zadána adresa či doména jakéhokoliv serveru, například mastodon.social, icosahedron.website, social.tchncs.de a <a href="https://instances.social">další!</a>
+\n
+\nPokud ještě nemáte účet, můžete zadat název instance, ke které se chcete připojit, a vytvořit si tam účet.
+\n
+\nServer je jedno místo, kde je hostován váš účet, můžete však jednoduše komunikovat a sledovat lidi na jiných serverech, jako by byli na stejné stránce.
+\n
+\nDalší informace mohou být nalezeny na stránce <a href="https://joinmastodon.org">joinmastodon.org</a>.</string>
     <string name="dialog_title_finishing_media_upload">Dokončuji nahrávání médií</string>
     <string name="dialog_message_uploading_media">Nahrávám…</string>
     <string name="dialog_download_image">Stáhnout</string>
@@ -181,10 +177,9 @@
     <string name="app_theme_system">Použít systémový design</string>
     <string name="pref_title_browser_settings">Prohlížeč</string>
     <string name="pref_title_custom_tabs">Používat Vlastní karty Chrome</string>
-    <string name="pref_title_hide_follow_button">Skrýt tlačítko pro psaní při rolování</string>
     <string name="pref_title_language">Jazyk</string>
     <string name="pref_title_post_filter">Filtrování časových os</string>
-    <string name="pref_title_post_tabs">Panely</string>
+    <string name="pref_title_post_tabs">Domovská timeline</string>
     <string name="pref_title_show_boosts">Zobrazit boosty</string>
     <string name="pref_title_show_replies">Zobrazit odpovědi</string>
     <string name="pref_title_show_media_preview">Stahovat náhledy médií</string>
@@ -193,9 +188,9 @@
     <string name="pref_title_http_proxy_enable">Povolit HTTP proxy</string>
     <string name="pref_title_http_proxy_server">HTTP proxy server</string>
     <string name="pref_title_http_proxy_port">HTTP proxy port</string>
-    <string name="pref_default_post_privacy">Výchozí soukromí příspěvků</string>
-    <string name="pref_default_media_sensitivity">Vždy označovat média jako citlivá</string>
-    <string name="pref_publishing">Publikování (synchronizováno se serverem)</string>
+    <string name="pref_default_post_privacy">Soukromí příspěvků (synchronizováno se serverem)</string>
+    <string name="pref_default_media_sensitivity">Vždy označovat média jako citlivá (synchronizováno se serverem)</string>
+    <string name="pref_publishing">Výchozí publikování</string>
     <string name="pref_failed_to_sync">Nepodařilo se synchronizovat nastavení</string>
     <string name="post_privacy_public">Veřejné</string>
     <string name="post_privacy_unlisted">Neuvedené</string>
@@ -214,18 +209,18 @@
     <string name="notification_boost_description">Oznámení, když jsou vaše příspěvky boostnuty</string>
     <string name="notification_favourite_name">Oblíbení</string>
     <string name="notification_favourite_description">Oznámení, když jsou vaše příspěvky označeny jako oblíbené</string>
-    <string name="notification_mention_format">%s vás zmínil/a</string>
+    <string name="notification_mention_format">%1$s vás zmínil/a</string>
     <string name="notification_summary_large">%1$s, %2$s, %3$s a dalších %4$d</string>
     <string name="notification_summary_medium">%1$s, %2$s a %3$s</string>
     <string name="notification_summary_small">%1$s a %2$s</string>
     <plurals name="notification_title_summary">
-        <item quantity="one">%d nová interakce</item>
-        <item quantity="few">%d nové interakce</item>
-        <item quantity="other">%d nových interakcí</item>
+        <item quantity="one">%1$d nová interakce</item>
+        <item quantity="few">%1$d nové interakce</item>
+        <item quantity="other">%1$d nových interakcí</item>
     </plurals>
     <string name="description_account_locked">Uzamčený účet</string>
     <string name="about_title_activity">O této aplikaci</string>
-    <string name="about_tusky_version">Tusky %s</string>
+    <string name="about_tusky_version">Tusky %1$s</string>
     <string name="about_tusky_license">Tusky je svobodný a otevřený software.
         Je dostupný pod licencí GNU General Public License, verze 3.
         Licenci můžete zobrazit zde: https://www.gnu.org/licenses/gpl-3.0.en.html</string>
@@ -235,12 +230,9 @@
            to show we do not mean the software is gratis. Source: https://www.gnu.org/philosophy/free-sw.html
          * the url can be changed to link to the localized version of the license.
     -->
-    <string name="about_project_site">        Webová stránka projektu:\n
-        https://tusky.app
-    </string>
-    <string name="about_bug_feature_request_site">        Hlášení chyb a návrhy na nové vlastnosti:\n
-        https://github.com/tuskyapp/Tusky/issues
-    </string>
+    <string name="about_project_site">Webová stránka projektu: https://tusky.app</string>
+    <string name="about_bug_feature_request_site">Hlášení chyb a návrhy na nové vlastnosti:
+\nhttps://github.com/tuskyapp/Tusky/issues</string>
     <string name="about_tusky_account">Profil aplikace Tusky</string>
     <string name="post_share_content">Sdílet obsah příspěvku</string>
     <string name="post_share_link">Sdílet odkaz na příspěvek</string>
@@ -248,21 +240,21 @@
     <string name="post_media_video">Video</string>
     <string name="state_follow_requested">Vyžádáno sledování</string>
     <!--These are for timestamps on statuses. For example: "16s" or "2d"-->
-    <string name="abbreviated_in_years">za %d let</string>
-    <string name="abbreviated_in_days">za %d d</string>
-    <string name="abbreviated_in_hours">za %d h</string>
-    <string name="abbreviated_in_minutes">za %d m</string>
-    <string name="abbreviated_in_seconds">za %d s</string>
-    <string name="abbreviated_years_ago">%d let</string>
-    <string name="abbreviated_days_ago">%d d</string>
-    <string name="abbreviated_hours_ago">%d h</string>
-    <string name="abbreviated_minutes_ago">%d min</string>
-    <string name="abbreviated_seconds_ago">%d s</string>
+    <string name="abbreviated_in_years">za %1$d let</string>
+    <string name="abbreviated_in_days">za %1$d d</string>
+    <string name="abbreviated_in_hours">za %1$d h</string>
+    <string name="abbreviated_in_minutes">za %1$d m</string>
+    <string name="abbreviated_in_seconds">za %1$d s</string>
+    <string name="abbreviated_years_ago">%1$d let</string>
+    <string name="abbreviated_days_ago">%1$d d</string>
+    <string name="abbreviated_hours_ago">%1$d h</string>
+    <string name="abbreviated_minutes_ago">%1$d min</string>
+    <string name="abbreviated_seconds_ago">%1$d s</string>
     <string name="follows_you">Sleduje vás</string>
-    <string name="pref_title_alway_show_sensitive_media">Vždy zobrazovat citlivý obsah</string>
+    <string name="pref_title_alway_show_sensitive_media">Vždy zobrazovat citlivá média</string>
     <string name="title_media">Média</string>
-    <string name="replying_to">Odpověď uživateli @%s</string>
-    <string name="load_more_placeholder_text">načíst více</string>
+    <string name="replying_to">Odpověď uživateli @%1$s</string>
+    <string name="load_more_placeholder_text">Načíst více</string>
     <string name="pref_title_public_filter_keywords">Veřejné časové osy</string>
     <string name="pref_title_thread_filter_keywords">Konverzace</string>
     <string name="filter_addition_title">Přidat filtr</string>
@@ -275,23 +267,22 @@
     <string name="action_lists">Seznamy</string>
     <string name="title_lists">Seznamy</string>
     <string name="error_create_list">Nelze vytvořit seznam</string>
-    <string name="error_rename_list">Nelze přejmenovat seznam</string>
+    <string name="error_rename_list">Nelze aktualizovat seznam</string>
     <string name="error_delete_list">Nelze smazat seznam</string>
     <string name="action_create_list">Vytvořit seznam</string>
-    <string name="action_rename_list">Přejmenovat seznam</string>
+    <string name="action_rename_list">Aktualizovat seznam</string>
     <string name="action_delete_list">Smazat seznam</string>
-    <string name="action_edit_list">Upravit seznam</string>
     <string name="hint_search_people_list">Hledejte mezi lidmi, které sledujete</string>
     <string name="action_add_to_list">Přidat účet na seznam</string>
     <string name="action_remove_from_list">Odstranit účet ze seznamu</string>
     <string name="compose_active_account_description">Píšete jako %1$s</string>
     <plurals name="hint_describe_for_visually_impaired">
         <item quantity="one">Popis pro zrakově postižené
-\n(limit %d znak)</item>
+\n(limit %1$d znak)</item>
         <item quantity="few">Popis pro zrakově postižené
-\n(limit %d znaky)</item>
+\n(limit %1$d znaky)</item>
         <item quantity="other">Popis pro zrakově postižené
-\n(limit %d znaků)</item>
+\n(limit %1$d znaků)</item>
     </plurals>
     <string name="action_set_caption">Nastavit popisek</string>
     <string name="action_remove">Odstranit</string>
@@ -304,7 +295,7 @@
     <string name="send_post_notification_cancel_title">Odesílání bylo zrušeno</string>
     <string name="send_post_notification_saved_content">Kopie vašeho příspěvku byla uložena do vašich konceptů</string>
     <string name="action_compose_shortcut">Napsat</string>
-    <string name="error_no_custom_emojis">Vaše instance %s nemá žádná vlastní emoji</string>
+    <string name="error_no_custom_emojis">Vaše instance %1$s nemá žádná vlastní emoji</string>
     <string name="emoji_style">Styl emoji</string>
     <string name="system_default">Výchozí nastavení systému</string>
     <string name="download_fonts">Musíte si nejprve stáhnout tyto sady emoji</string>
@@ -341,22 +332,17 @@
         <item quantity="other"><b>%1$s</b> oblíbení</item>
     </plurals>
     <plurals name="reblogs">
-        <item quantity="one"><b>%s</b> boost</item>
-        <item quantity="few"><b>%s</b> boosty</item>
-        <item quantity="other"><b>%s</b> boostů</item>
+        <item quantity="one"><b>%1$s</b> boost</item>
+        <item quantity="few"><b>%1$s</b> boosty</item>
+        <item quantity="other"><b>%1$s</b> boostů</item>
     </plurals>
     <string name="title_reblogged_by">Boostnuto uživatelem</string>
     <string name="title_favourited_by">Oblíbeno uživatelem</string>
     <string name="conversation_1_recipients">%1$s</string>
     <string name="conversation_2_recipients">%1$s a %2$s</string>
     <string name="conversation_more_recipients">%1$s, %2$s a %3$d další</string>
-    <plurals name="max_tab_number_reached">
-        <item quantity="one">bylo dosaženo maxima %1$d panelu</item>
-        <item quantity="few">bylo dosaženo maxima %1$d panelů</item>
-        <item quantity="other"/>
-    </plurals>
-    <string name="description_post_media">Média %s</string>
-    <string name="description_post_cw">Varování o obsahu: %s</string>
+    <string name="description_post_media">Média %1$s</string>
+    <string name="description_post_cw">Varování o obsahu: %1$s</string>
     <string name="description_post_media_no_description_placeholder">Žádný popis</string>
     <string name="description_post_reblogged">Boostnutý</string>
     <string name="description_post_favourited">Oblíbený</string>
@@ -365,7 +351,7 @@
     <string name="description_visibility_private">Pro sledující</string>
     <string name="description_visibility_direct">Přímý</string>
     <string name="hint_list_name">Název seznamu</string>
-    <string name="edit_hashtag_hint">Hashtag bez #</string>
+    <string name="pick_hashtag_hint">Hashtag bez #</string>
     <string name="compose_shortcut_long_label">Napsat příspěvek</string>
     <string name="compose_shortcut_short_label">Napsat</string>
     <string name="notifications_clear">Vyčistit</string>
@@ -375,56 +361,55 @@
     <string name="notification_clear_text">Jste si jistý/á, že chcete trvale vymazat všechna vaše oznámení\?</string>
     <string name="action_delete_and_redraft">Smazat a přepsat</string>
     <string name="dialog_redraft_post_warning">Smazat a přepsat tento příspěvek\?</string>
-    <string name="poll_info_format"> <!-- 15 hlasů • 1 hodina do konce --> %1$s • %2$s</string>
+    <string name="poll_info_format"> \u0020<!-- 15 hlasů • 1 hodina do konce --> \u0020%1$s • %2$s</string>
     <plurals name="poll_info_votes">
-        <item quantity="one">%s hlas</item>
-        <item quantity="few">%s hlasy</item>
-        <item quantity="other">%s hlasů</item>
+        <item quantity="one">%1$s hlas</item>
+        <item quantity="few">%1$s hlasy</item>
+        <item quantity="other">%1$s hlasů</item>
     </plurals>
-    <string name="poll_info_time_absolute">končí v %s</string>
+    <string name="poll_info_time_absolute">končí v %1$s</string>
     <string name="poll_info_closed">uzavřena</string>
     <string name="poll_vote">Hlasovat</string>
     <string name="pref_title_notification_filter_poll">skončí ankety</string>
     <string name="notification_poll_name">Ankety</string>
     <string name="notification_poll_description">Oznámení o anketách, které skončily</string>
-    <string name="compose_preview_image_description">Akce pro obrázek %s</string>
+    <string name="compose_preview_image_description">Akce pro obrázek %1$s</string>
     <string name="poll_ended_voted">Anketa, ve které jste hlasoval/a, skončila</string>
     <string name="poll_ended_created">Anketa, kterou jste vytvořil/a, skončila</string>
     <plurals name="poll_timespan_days">
-        <item quantity="one">zbývá %d den</item>
-        <item quantity="few">zbývá %d dny</item>
-        <item quantity="other">zbývá %d dní</item>
+        <item quantity="one">zbývá %1$d den</item>
+        <item quantity="few">zbývá %1$d dny</item>
+        <item quantity="other">zbývá %1$d dní</item>
     </plurals>
     <plurals name="poll_timespan_minutes">
-        <item quantity="one">zbývá %d minuta</item>
-        <item quantity="few">zbývá %d minuty</item>
-        <item quantity="other">zbývá %d minut</item>
+        <item quantity="one">zbývá %1$d minuta</item>
+        <item quantity="few">zbývá %1$d minuty</item>
+        <item quantity="other">zbývá %1$d minut</item>
     </plurals>
     <plurals name="poll_timespan_seconds">
-        <item quantity="one">zbývá %d sekunda</item>
-        <item quantity="few">zbývá %d sekundy</item>
-        <item quantity="other">zbývá %d sekund</item>
+        <item quantity="one">zbývá %1$d sekunda</item>
+        <item quantity="few">zbývá %1$d sekundy</item>
+        <item quantity="other">zbývá %1$d sekund</item>
     </plurals>
     <string name="pref_title_animate_gif_avatars">Animovat GIF avatary</string>
     <string name="description_poll">Anketa s volbami: %1$s, %2$s, %3$s, %4$s; %5$s</string>
     <string name="title_domain_mutes">Skryté domény</string>
     <string name="action_view_domain_mutes">Skryté domény</string>
-    <string name="action_mute_domain">Skrýt doménu %s</string>
-    <string name="confirmation_domain_unmuted">Skrytí domény %s bylo zrušeno</string>
-    <string name="mute_domain_warning">Jste si jistý/á, že chcete zablokovat vše z domény %s\? Z této domény neuvidíte obsah v žádné veřejné časové ose ani v oznámeních. Vaši sledující z této domény budou odstraněni.</string>
+    <string name="action_mute_domain">Skrýt doménu %1$s</string>
+    <string name="confirmation_domain_unmuted">Skrytí domény %1$s bylo zrušeno</string>
+    <string name="mute_domain_warning">Jste si jistý/á, že chcete zablokovat vše z domény %1$s\? Z této domény neuvidíte obsah v žádné veřejné časové ose ani v oznámeních. Vaši sledující z této domény budou odstraněni.</string>
     <string name="mute_domain_warning_dialog_ok">Skrýt celou doménu</string>
     <string name="caption_notoemoji">Aktuální sada emoji od Googlu</string>
     <string name="button_continue">Pokračovat</string>
     <string name="button_back">Zpět</string>
     <string name="button_done">Hotovo</string>
-    <string name="report_sent_success">\@%s byla/a úspěšně nahlášen/a</string>
+    <string name="report_sent_success">\@%1$s byla/a úspěšně nahlášen/a</string>
     <string name="hint_additional_info">Další komentáře</string>
-    <string name="report_remote_instance">Přeposlat na %s</string>
+    <string name="report_remote_instance">Přeposlat na %1$s</string>
     <string name="failed_report">Nahlášení selhalo</string>
     <string name="failed_fetch_posts">Stahování příspěvků selhalo</string>
-    <string name="report_description_1">Nahlášení bude zasláno moderátorovi vašeho serveru. Níže můžete uvést, proč tento účet nahlašujete:</string>
+    <string name="report_description_1">Hlášení bude zasláno moderátorům vašeho serveru. Níže můžete uvést, proč tento účet nahlašujete:</string>
     <string name="report_description_remote_instance">Tento účet je z jiného serveru. Chcete na něj také poslat anonymizovanou kopii nahlášení\?</string>
-    <string name="pref_title_show_notifications_filter">Zobrazit filtr oznámení</string>
     <string name="create_poll_title">Anketa</string>
     <string name="duration_5_min">5 minut</string>
     <string name="duration_30_min">30 minut</string>
@@ -435,7 +420,7 @@
     <string name="duration_7_days">7 dní</string>
     <string name="add_poll_choice">Přidat možnost</string>
     <string name="poll_allow_multiple_choices">Lze zvolit více možností</string>
-    <string name="poll_new_choice_hint">Možnost %d</string>
+    <string name="poll_new_choice_hint">Možnost %1$d</string>
     <string name="edit_poll">Upravit</string>
     <string name="title_scheduled_posts">Naplánováné příspěvky</string>
     <string name="action_edit">Upravit</string>
@@ -448,7 +433,7 @@
     <string name="filter_dialog_whole_word_description">Je-li klíčové slovo nebo fráze pouze alfanumerická, bude použita pouze, pokud odpovídá celému slovu</string>
     <string name="title_accounts">Účty</string>
     <string name="failed_search">Hledání selhalo</string>
-    <string name="post_lookup_error_format">Chyba při hledání příspěvku %s</string>
+    <string name="post_lookup_error_format">Chyba při hledání příspěvku %1$s</string>
     <string name="notification_follow_request_description">Upozornění na žádosti o sledování</string>
     <string name="notification_follow_request_name">Žádosti o sledování</string>
     <string name="pref_main_nav_position_option_bottom">Dole</string>
@@ -471,32 +456,31 @@
     <string name="pref_main_nav_position">Umístění hlavní navigační lišty</string>
     <string name="hashtags">Hashtagy</string>
     <string name="about_powered_by_tusky">Powered by Tusky</string>
-    <string name="dialog_block_warning">Zablokovat @%s\?</string>
+    <string name="dialog_block_warning">Zablokovat @%1$s\?</string>
     <string name="pref_main_nav_position_option_top">Nahoře</string>
-    <string name="action_unmute_domain">Zrušit skrytí domény %s</string>
-    <string name="action_unmute_desc">Zrušit skrytí %s</string>
-    <string name="dialog_mute_warning">Skrýt @%s\?</string>
-    <string name="notification_follow_request_format">%s požádal/a aby vás mohl/a sledovat</string>
-    <string name="pref_title_confirm_reblogs">Zobrazit dialogové okno s potvrzením při boostování</string>
-    <string name="notification_subscription_format">%s právě zveřejnil/a příspěvek</string>
+    <string name="action_unmute_domain">Zrušit skrytí domény %1$s</string>
+    <string name="action_unmute_desc">Zrušit skrytí %1$s</string>
+    <string name="dialog_mute_warning">Skrýt @%1$s\?</string>
+    <string name="notification_follow_request_format">%1$s požádal/a aby vás mohl/a sledovat</string>
+    <string name="pref_title_confirm_reblogs">Zobrazit potvrzení při boostování</string>
+    <string name="notification_subscription_format">%1$s právě zveřejnil/a příspěvek</string>
     <string name="title_announcements">Oznámení</string>
     <string name="title_login">Přihlášení</string>
-    <string name="notification_sign_up_format">%s se zaregistroval/a</string>
-    <string name="title_migration_relogin">Přihlaste se znovu pro push oznámení</string>
+    <string name="notification_sign_up_format">%1$s se zaregistroval/a</string>
     <string name="error_could_not_load_login_page">Nepodařilo se načíst přihlášovací stránku.</string>
     <string name="drafts_post_failed_to_send">Tento příspěvek se nepodařilo odeslat!</string>
     <string name="error_loading_account_details">Nepodařilo se načíst detaily účtu</string>
     <string name="drafts_failed_loading_reply">Nepodařilo se načíst informace o odpovědi</string>
     <string name="error_image_edit_failed">Obrázek se nepodařilo upravit.</string>
     <plurals name="poll_info_people">
-        <item quantity="one">%s osoba</item>
-        <item quantity="few">%s lidi</item>
-        <item quantity="other">%s lidí</item>
+        <item quantity="one">%1$s osoba</item>
+        <item quantity="few">%1$s lidi</item>
+        <item quantity="other">%1$s lidí</item>
     </plurals>
     <plurals name="poll_timespan_hours">
-        <item quantity="one">zbývá %d hodina</item>
-        <item quantity="few">zbývají %d hodiny</item>
-        <item quantity="other">zbývá %d hodin</item>
+        <item quantity="one">zbývá %1$d hodina</item>
+        <item quantity="few">zbývají %1$d hodiny</item>
+        <item quantity="other">zbývá %1$d hodin</item>
     </plurals>
     <plurals name="error_upload_max_media_reached">
         <item quantity="one">Nemůžete nahrát více než %1$d mediální přílohu.</item>
@@ -505,41 +489,37 @@
     </plurals>
     <string name="delete_scheduled_post_warning">Smazat tento naplánovaný příspěvek\?</string>
     <string name="notification_subscription_description">Upozornění na nový toot někoho, koho sledujete.</string>
-    <string name="instance_rule_info">Přihlášením souhlasíte s pravidly serveru %s.</string>
-    <string name="instance_rule_title">Pravidla serveru %s</string>
+    <string name="instance_rule_info">Přihlášením souhlasíte s pravidly serveru %1$s.</string>
+    <string name="instance_rule_title">Pravidla serveru %1$s</string>
     <string name="wellbeing_mode_notice">Některé informace, které mohou ovlivnit Vaši duševní pohodu, mohou být skryty. To zahrnuje:
 \n
-\n - Upozornění na boosty, oblíbené a sledování
-\n - Počty boostů a oblíbení u příspěvků
-\n - Statistiky sledujících a příspěvků na profilech
+\n- Upozornění na boosty, oblíbené a sledování
+\n- Počty boostů a oblíbení u příspěvků
+\n- Statistiky sledujících a příspěvků na profilech
 \n
 \nPush oznámení nebudou ovlivněna, ale můžete si zkontrolovat jejich nastavení manuálně.</string>
-    <string name="dialog_push_notification_migration_other_accounts">Znovu jste se přihlásili ke svému aktuálnímu účtu, abyste aplikaci Tusky udělili oprávnění k odběru push. Stále však máte další účty, které tímto způsobem migrovány nebyly. Přepněte se na ně a znovu se přihlaste na jednom po druhém, abyste povolili podporu oznámení UnifiedPush.</string>
     <string name="compose_save_draft_loses_media">Uložit koncept\? (Přílohy budou znovu nahrány, když obnovíte koncept.)</string>
     <string name="set_focus_description">Klepnutím nebo přetažením kruhu vyberte ohnisko, které bude vždy viditelné v miniaturách.</string>
-    <string name="pref_title_confirm_favourites">Před oblíbením zobrazit dialog pro potvrzení</string>
+    <string name="pref_title_confirm_favourites">Zobrazit potvrzení při oblíbení</string>
     <string name="pref_title_hide_top_toolbar">Skrýt nadpis horního panelu nástrojů</string>
     <string name="wellbeing_hide_stats_profile">Skrýt kvantitativní statistiky profilů</string>
-    <string name="dialog_delete_list_warning">Opravdu chcete smazat seznam %s\?</string>
+    <string name="dialog_delete_list_warning">Opravdu chcete smazat seznam %1$s\?</string>
     <string name="follow_requests_info">I když váš účet není uzamčen, zaměstnanci %1$s si myslí, že byste mohli chtít zkontrolovat žádosti o sledování z těchto účtů ručně.</string>
     <string name="action_subscribe_account">Odebírat</string>
     <string name="action_unsubscribe_account">Přestat odebírat</string>
     <string name="tusky_compose_post_quicksetting_label">Vytvořit příspěvek</string>
     <string name="draft_deleted">Koncept byl smazán</string>
-    <string name="error_multimedia_size_limit">Video a audio soubory nesmí překročit velikost %s MB.</string>
+    <string name="error_multimedia_size_limit">Video a audio soubory nesmí překročit velikost %1$s MB.</string>
     <string name="failed_to_pin">Připnutí se nezdařilo</string>
     <string name="failed_to_unpin">Zrušení připnutí se nezdařilo</string>
     <string name="pref_show_self_username_always">Vždy</string>
     <string name="pref_show_self_username_never">Nikdy</string>
-    <string name="filter_expiration_format">%s (%s)</string>
+    <string name="filter_expiration_format">%1$s (%2$s)</string>
     <string name="action_edit_image">Upravit obrázek</string>
     <string name="duration_14_days">14 dní</string>
     <string name="duration_30_days">30 dní</string>
     <string name="drafts_post_reply_removed">Příspěvek, na který jste připravili odpověď, byl odstraněn</string>
-    <string name="url_domain_notifier">%s (🔗 %s)</string>
     <string name="action_set_focus">Nastavit bod zaostření</string>
-    <string name="tips_push_notification_migration">Znovu se přihlaste ke všem účtům, abyste povolili podporu push oznámení.</string>
-    <string name="dialog_push_notification_migration">Aby bylo možné používat push oznámení prostřednictvím UnifiedPush, Tusky potřebuje oprávnění k odběru oznámení na vašem serveru Mastodon. To vyžaduje opětovné přihlášení ke změně rozsahů OAuth udělených aplikaci Tusky. Použitím možnosti opětovného přihlášení zde nebo v předvolbách účtu zachováte všechny vaše místní koncepty a mezipaměť.</string>
     <string name="action_add_reaction">přidat reakci</string>
     <string name="pref_title_notification_filter_updates">příspěvek, se kterým jsem interagoval/a, je upraven</string>
     <string name="pref_title_notification_filter_sign_ups">někdo se zaregistroval</string>
@@ -571,9 +551,9 @@
     <string name="wellbeing_hide_stats_posts">Skrýt kvantitativní statistiky příspěvků</string>
     <string name="account_date_joined">Připojil/a se %1$s</string>
     <string name="saving_draft">Koncept se ukládá…</string>
-    <string name="error_following_hashtag_format">Chyba při sledování #%s</string>
-    <string name="error_unfollowing_hashtag_format">Chyba při rušení sledování #%s</string>
-    <string name="notification_update_format">%s upravil/a svůj příspěvek</string>
+    <string name="error_following_hashtag_format">Chyba při sledování #%1$s</string>
+    <string name="error_unfollowing_hashtag_format">Chyba při rušení sledování #%1$s</string>
+    <string name="notification_update_format">%1$s upravil/a svůj příspěvek</string>
     <string name="action_unbookmark">Odebrat záložku</string>
     <string name="action_delete_conversation">Smazat konverzaci</string>
     <string name="action_dismiss">Zavřít</string>
@@ -581,4 +561,207 @@
     <string name="dialog_delete_conversation_warning">Smazat tuto konverzaci\?</string>
     <string name="pref_title_notification_filter_follow_requests">Požádáno o sledování</string>
     <string name="pref_title_animate_custom_emojis">Animovat vlastní emotikony</string>
+    <string name="action_follow_hashtag">Sleduj nový hashtag</string>
+    <string name="action_translate">Přeložit</string>
+    <string name="action_show_original">Ukaž originál</string>
+    <string name="send_account_link_to">Sdílej odkaz na účet do…</string>
+    <string name="send_account_username_to">Sdílej uživatelské jméno účtu do…</string>
+    <string name="account_username_copied">Uživatelské jméno zkopírováno</string>
+    <string name="url_copied">Odkaz zkopírován</string>
+    <string name="confirmation_hashtag_copied">\'#%1$s\' zkopírováno</string>
+    <string name="reply_sending">Posílání…</string>
+    <string name="reply_sending_long">Tvá odpověď se posílá.</string>
+    <string name="hint_media_description_missing">Média by měla mít popisek.</string>
+    <string name="label_image">Obrázek</string>
+    <string name="pref_title_notification_filter_reports">máme nové hlášení</string>
+    <string name="pref_title_http_proxy_port_message">Port by měl být mezi %1$d a %2$d</string>
+    <string name="pref_summary_http_proxy_disabled">Zakázáno</string>
+    <string name="pref_summary_http_proxy_missing">&lt;nenastaveno&gt;</string>
+    <string name="pref_summary_http_proxy_invalid">&lt;neplatné&gt;</string>
+    <string name="pref_default_post_language">Jazyk postu (synchronizováno se serverem)</string>
+    <string name="pref_ui_text_size">Velikost textu v UI</string>
+    <string name="notification_notification_worker">Získávám upozornění…</string>
+    <string name="notification_prune_cache">Údržba cache…</string>
+    <string name="pref_title_show_stat_inline">Ukazovat statistiky postu v timeline</string>
+    <string name="pref_title_show_notifications_filter">Ukaž filtr upozornění</string>
+    <string name="ui_error_unknown">neznámý důvod</string>
+    <string name="about_device_info">%1$s %2$s
+\nVerze Androidu: %3$s
+\nVerze SDK: %4$d</string>
+    <string name="about_account_info_title">Tvůj účet</string>
+    <string name="about_account_info">\@%1$s@%2$s
+\nVerze: %3$s</string>
+    <string name="error_following_hashtags_unsupported">Tato instalace nepodporuje sledování hashtagů.</string>
+    <string name="error_muting_hashtag_format">Umlčení selhalo #%1$s</string>
+    <string name="error_unmuting_hashtag_format">Chyba při rušení ztlumení #%1$s</string>
+    <string name="action_post_failed_show_drafts">Ukaž koncepty</string>
+    <string name="action_post_failed_do_nothing">Zrušit</string>
+    <string name="post_edited">Změněno %1$s</string>
+    <string name="post_media_alt">ALT</string>
+    <string name="action_discard">Zrušit změny</string>
+    <string name="action_continue_edit">Pokračovat v úpravách</string>
+    <string name="report_category_other">Ostatní</string>
+    <string name="label_expires_after">Vyprší za</string>
+    <string name="language_display_name_format">%1$s (%2$s)</string>
+    <string name="report_category_violation">Porušení pravidla</string>
+    <string name="report_category_legal">Právní</string>
+    <string name="action_unfollow_hashtag_format">Přestat sledovat #%1$s?</string>
+    <string name="pref_title_reading_order">Pořadí čtení</string>
+    <string name="pref_reading_order_oldest_first">Od nejstarších</string>
+    <string name="pref_reading_order_newest_first">Od nejnovějších</string>
+    <string name="status_edit_info">Upraveno: %1$s</string>
+    <string name="ui_error_bookmark">Vytvoření záložky pro post selhalo: %1$s</string>
+    <string name="ui_error_vote">Hlasování v anketě selhalo: %1$s</string>
+    <string name="ui_error_reject_follow_request">Odmítnutí žádosti o sledování selhalo: %1$s</string>
+    <string name="ui_error_translate">Nelze přeložit: %1$s</string>
+    <string name="ui_success_rejected_follow_request">Žádost o sledování zablokována</string>
+    <string name="label_filter_title">Nadpis</string>
+    <string name="filter_action_hide">Skrýt</string>
+    <string name="filter_description_warn">Skrýt s varováním</string>
+    <string name="filter_description_hide">Zcela skrýt</string>
+    <string name="label_filter_action">Filtrovat akci</string>
+    <string name="label_filter_context">Filtrovat kontexty</string>
+    <string name="filter_keyword_display_format">%1$s (celé slovo)</string>
+    <string name="filter_keyword_addition_title">Přidat klíčové slovo</string>
+    <string name="filter_edit_keyword_title">Upravit klíčové slovo</string>
+    <string name="filter_description_format">%1$s: %2$s</string>
+    <string name="help_empty_home">Toto je tvá <b>domovská timeline</b>. Ukazuje poslední posty účtů které sleduješ.
+\n
+\nChceš-li prozkoumat účty, můžeš je objevit v jedné z dalších timelines. Například místní timeline vaší instance [iconics gmd_group]. Nebo je můžete hledat podle jména [ikony gmd_search]; například vyhledejte \"Tusky\" pro náš Mastodon účet.</string>
+    <string name="status_created_at_now">nyní</string>
+    <string name="action_refresh">Obnovit</string>
+    <string name="action_browser_login">Přihlásit se s prohlížečem</string>
+    <string name="confirmation_hashtag_unfollowed">Zrušeno sledování #%1$s</string>
+    <string name="mute_notifications_switch">Ztlumit oznámení</string>
+    <string name="notification_unknown_name">Neznámé</string>
+    <string name="ui_error_clear_notifications">Výmaz upozornění selhal: %1$s</string>
+    <string name="app_theme_system_black">Použij systémový vzhled (černý)</string>
+    <string name="ui_error_favourite">Oblíbení postu selhalo: %1$s</string>
+    <string name="ui_error_reblog">Boostování postu selhalo: %1$s</string>
+    <string name="action_share_account_link">Sdílej odkaz na účet</string>
+    <string name="action_share_account_username">Sdílej uživatelské jméno účtu</string>
+    <string name="select_list_manage">Spravovat seznamy</string>
+    <string name="error_status_source_load">Nepodařilo se načíst zprávu ze serveru.</string>
+    <string name="status_filtered_show_anyway">Přesto ukaž</string>
+    <string name="status_filter_placeholder_label_format">Filtrované: %1$s</string>
+    <string name="pref_title_account_filter_keywords">Profily</string>
+    <string name="hint_filter_title">Můj filtr</string>
+    <string name="muting_hashtag_success_format">Ztlumení hashtagu #%1$s jako varování</string>
+    <string name="action_view_filter">Zobrazit filtr</string>
+    <string name="pref_default_reply_privacy_explanation">Přednastavené soukromí bude záležet na postu na který odpovídáte.</string>
+    <string name="pref_match_default_post_privacy">Sladit výchozí soukromí příspěvků</string>
+    <string name="notification_report_name">Hlášení</string>
+    <string name="notification_report_description">Upozornění na hlášení moderátorů</string>
+    <string name="notification_listenable_worker_name">Aktivita v pozadí</string>
+    <string name="post_media_image">Obrázek</string>
+    <string name="action_add_or_remove_from_list">Přidat nebo odebrat ze seznamu</string>
+    <string name="failed_to_add_to_list">Selhalo přidání účtu do seznamu</string>
+    <string name="failed_to_remove_from_list">Selhalo odebrání účtu ze seznamu</string>
+    <string name="compose_delete_draft">Smazat koncept?</string>
+    <string name="label_translating">Překládání…</string>
+    <string name="label_translated">Přeloženo z %1$s s %2$s</string>
+    <string name="following_hashtag_success_format">Nyní sleduji hashtag #%1$s</string>
+    <string name="unfollowing_hashtag_success_format">Nyní již nesleduješ hashtag #%1$s</string>
+    <string name="pref_title_confirm_follows">Zobrazit potvrzení před sledováním</string>
+    <string name="status_created_info">Vytvořeno: %1$s</string>
+    <string name="error_missing_edits">Tvůj server ví, že tento post byl upraven, ale nemá kopii změn takže nemohou být zobrazeny.
+\n
+\nToto je <a href="https://github.com/mastodon/mastodon/issues/25398">chyba v Mastodonu #25398</a>.</string>
+    <string name="a11y_label_loading_thread">Načítání vlákna</string>
+    <string name="accessibility_talking_about_tag">%1$d lidí mluví o hashtagu %2$s</string>
+    <string name="total_usage">Celkově použito</string>
+    <string name="title_public_trending_statuses">Populární příspěvky</string>
+    <string name="list_exclusive_label">Skrýt z domovské timeline</string>
+    <string name="action_add">Přidat</string>
+    <string name="label_filter_keywords">Klíčová slova nebo fráze k filtrování</string>
+    <string name="error_blocking_domain">Nezdařilo se ztlumení %1$s: %2$s</string>
+    <string name="error_unblocking_domain">Nezdařilo se zrušit ztlumení %1$s: %2$s</string>
+    <string name="title_public_trending_hashtags">Populární hashtagy</string>
+    <string name="error_media_upload_sending_fmt">Nahrávání selhalo: %1$s</string>
+    <string name="title_followed_hashtags">Sledované hashtagy</string>
+    <plurals name="action_post_failed_detail">
+        <item quantity="one">Nahrávání tvého postu selhalo a post byl uložen mezi koncepty.
+\n
+\nServer buď nemohl být kontaktován, nebo post odmítl.</item>
+        <item quantity="other">Nahrávání tvých postuů selhalo a posty byly uloženy mezi koncepty.
+\n
+\nServer buď nemohl být kontaktován, nebo posty odmítl.</item>
+    </plurals>
+    <string name="post_privacy_direct">Přímo</string>
+    <string name="notification_listenable_worker_description">Upozornění když Tusky běží na pozadí</string>
+    <string name="about_device_info_title">Tvé zařízení</string>
+    <string name="compose_unsaved_changes">Máš neuložené změny.</string>
+    <string name="unmuting_hashtag_success_format">Zrušení ztlumení hashtagu #%1$s</string>
+    <string name="description_login">Funguje ve většině případů. Žádná data nejsou dostupná jiným aplikacím.</string>
+    <string name="total_accounts">Celkově účtů</string>
+    <string name="socket_timeout_exception">Kontaktování tvého serveru se nějak protáhlo</string>
+    <string name="pref_default_reply_privacy">Soukromí odpovědí (nesynchronizováno se serverem)</string>
+    <string name="report_category_spam">Spam</string>
+    <string name="dialog_follow_warning">Sledovat tento účet?</string>
+    <string name="pref_title_show_self_boosts">Ukazuj vlastní boosty</string>
+    <string name="pref_title_show_self_boosts_description">Někdo boostuje svůj vlastní post</string>
+    <string name="description_post_edited">Upraveno</string>
+    <string name="description_browser_login">Může podporovat dodatečné metody autentikace, ale vyžaduje podporovaný prohlížeč.</string>
+    <string name="no_lists">Nemáš žádné seznamy.</string>
+    <string name="ui_success_accepted_follow_request">Žádost o sledování přijata</string>
+    <string name="filter_action_warn">Pozor</string>
+    <string name="error_deleting_filter">Chyba při mazání filtru \'%1$s\'</string>
+    <string name="error_saving_filter">Chyba při ukládání filtru \'%1$s\'</string>
+    <string name="title_edits">Změny</string>
+    <string name="dialog_follow_hashtag_title">Sleduj hashtag</string>
+    <string name="notification_report_format">Nové hlášení z %1$s</string>
+    <string name="notification_header_report_format">%1$s nahlášeno %2$s</string>
+    <string name="notification_summary_report_format">%1$s · %2$d postů připojeno</string>
+    <string name="action_post_failed">Nahrávání selhalo</string>
+    <string name="ui_error_accept_follow_request">Povolení žádosti o sledování selhalo: %1$s</string>
+    <string name="help_empty_lists">Toto je tvůj seznam <b>seznamů</b>. Můžeš si definovat různý počet soukromých seznamů a přidat do nich uživatelské účty.
+\n
+\nPoznámka: do seznamů můžeš přidat jen účty které sleduješ.
+\n
+\nTyto seznamy můžou být použity tako taby na tabu Nastavení účtu [iconics gmd_account_circle] [iconics gmd_navigate_next].</string>
+    <string name="about_copy">Zkopírovat verzi a informace o zařízení</string>
+    <string name="about_copied">Verze a informace o zařízení zkopírovány</string>
+    <string name="list_reply_policy_followed">Jakýkoli sledovaný uživatel</string>
+    <string name="list_reply_policy_label">Ukázat odpovědi na</string>
+    <string name="unknown_notification_type">Neznámý typ upozornění</string>
+    <string name="dialog_delete_filter_text">Smazat filtr \'%1$s\'?</string>
+    <string name="notification_policies_title">Politiky upozornění</string>
+    <string name="notification_policies_filter_out">Spravovat notifikace z…</string>
+    <string name="notification_policies_filter_dont_follow_title">Lidé které nesleduješ</string>
+    <string name="notification_policies_filter_dont_follow_description">Dokud je ručně neschválíš</string>
+    <string name="notification_policies_filter_not_following_title">Lidé kteří tě nesledují</string>
+    <string name="notification_policies_filter_not_following_description">Včetně lidí kteří tě sledovali méně než 3 dny</string>
+    <string name="unknown_notification_filter_new_accounts_title">Nové účty</string>
+    <string name="unknown_notification_filter_new_accounts_description">Vytvořeno během posledních 30 dnů</string>
+    <string name="unknown_notification_filter_unsolicited_private_mentions_title">Nevyžádané soukromé zmínky</string>
+    <string name="unknown_notification_filter_unsolicited_private_mentions_description">Filtrováno, pokud to není odpověď na vaše vlastní zmínění nebo pokud nesledujete odesílatele</string>
+    <string name="unknown_notification_filter_moderated_accounts">Moderovaný účet</string>
+    <string name="unknown_notification_filter_moderated_accounts_description">Omezené moderátory serveru</string>
+    <string name="notification_policies_not_supported">Tato vlastnost je podporována pouze na Mastodon serverech s verzí v4.3.0 nebo novější.</string>
+    <string name="filtered_notifications">Filtrovaná upozornění</string>
+    <string name="notifications_from_people_you_may_know">Upozornění od %1$d lidí které možná znáte</string>
+    <string name="notification_policy_accept">Přijmout</string>
+    <string name="notification_policy_filter">Filtrovat</string>
+    <string name="notification_policy_ignore">Ignorovat</string>
+    <string name="filtered_notifications_title">Filtrovaná upozornění</string>
+    <string name="accept_notification_request">Přijmout žádost o upozornění</string>
+    <string name="dismiss_notification_request">Zamítnout žádost o upozornění</string>
+    <string name="open_settings">Otevřít předvolby</string>
+    <string name="notifications_from">Upozornění od %1$s</string>
+    <string name="action_accept_notification_request">Přijmout</string>
+    <string name="action_dismiss_notification_request">Zrušit</string>
+    <string name="help_empty_conversations">Zde jsou tvé <b>soukromé zprávy</b>; někdy zvané konverzace nebo přímé zprávy (direct messages, DM).
+\n
+\nSoukromé zprávy se vytvoří nastavením viditelnosti [iconics gmd_public] postu na [iconics gmd_mail] <i>Přímé</i> a zmíněním jednoho nebo více uživatelů v textu.
+\n
+\nNa příklad můžeš začít na profilu uživatele a tapnout na tlačítko vytvoření zprávy [iconics gmd_edit] a změnit viditelnost.</string>
+    <string name="dialog_delete_filter_positive_action">Smazat</string>
+    <string name="dialog_save_profile_changes_message">Chceš uložit změnu ve svém profilu?</string>
+    <string name="load_newest_notifications">Načti nejnovější upozornění</string>
+    <string name="error_media_playback">Přehrávání selhalo: %1$s</string>
+    <string name="list_reply_policy_none">Nikdo</string>
+    <string name="list_reply_policy_list">Členové seznamu</string>
+    <string name="preview_card_by_author">Od %1$s</string>
+    <string name="preview_card_more_by_author">Více od %1$s</string>
+    <string name="post_replied_self">Pokračování vlákna</string>
 </resources>

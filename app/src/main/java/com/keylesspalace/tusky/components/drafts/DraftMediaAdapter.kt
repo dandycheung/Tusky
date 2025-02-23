@@ -24,7 +24,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.keylesspalace.tusky.R
-import com.keylesspalace.tusky.db.DraftAttachment
+import com.keylesspalace.tusky.db.entity.DraftAttachment
 import com.keylesspalace.tusky.view.MediaPreviewImageView
 
 class DraftMediaAdapter(
@@ -35,7 +35,10 @@ class DraftMediaAdapter(
             return oldItem == newItem
         }
 
-        override fun areContentsTheSame(oldItem: DraftAttachment, newItem: DraftAttachment): Boolean {
+        override fun areContentsTheSame(
+            oldItem: DraftAttachment,
+            newItem: DraftAttachment
+        ): Boolean {
             return oldItem == newItem
         }
     }
@@ -75,7 +78,9 @@ class DraftMediaAdapter(
         RecyclerView.ViewHolder(imageView) {
         init {
             val thumbnailViewSize =
-                imageView.context.resources.getDimensionPixelSize(R.dimen.compose_media_preview_size)
+                imageView.context.resources.getDimensionPixelSize(
+                    R.dimen.compose_media_preview_size
+                )
             val layoutParams = ConstraintLayout.LayoutParams(thumbnailViewSize, thumbnailViewSize)
             val margin = itemView.context.resources
                 .getDimensionPixelSize(R.dimen.compose_media_preview_margin)

@@ -1,27 +1,38 @@
 package com.keylesspalace.tusky.components.filters
 
+import android.content.DialogInterface.BUTTON_POSITIVE
 import android.content.Intent
 import android.os.Bundle
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.DividerItemDecoration
 import com.keylesspalace.tusky.BaseActivity
 import com.keylesspalace.tusky.R
 import com.keylesspalace.tusky.databinding.ActivityFiltersBinding
-import com.keylesspalace.tusky.di.ViewModelFactory
 import com.keylesspalace.tusky.entity.Filter
+import com.keylesspalace.tusky.util.ensureBottomMargin
+import com.keylesspalace.tusky.util.ensureBottomPadding
 import com.keylesspalace.tusky.util.hide
+import com.keylesspalace.tusky.util.launchAndRepeatOnLifecycle
 import com.keylesspalace.tusky.util.show
 import com.keylesspalace.tusky.util.viewBinding
 import com.keylesspalace.tusky.util.visible
+import com.keylesspalace.tusky.util.withSlideInAnimation
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
+@AndroidEntryPoint
 class FiltersActivity : BaseActivity(), FiltersListener {
-    @Inject
-    lateinit var viewModelFactory: ViewModelFactory
 
     private val binding by viewBinding(ActivityFiltersBinding::inflate)
-    private val viewModel: FiltersViewModel by viewModels { viewModelFactory }
+    private val viewModel: FiltersViewModel by viewModels()
+
+    private val editFilterLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            // refresh the filters upon returning from EditFilterActivity
+            reloadFilters()
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,44 +45,57 @@ class FiltersActivity : BaseActivity(), FiltersListener {
             setDisplayShowHomeEnabled(true)
         }
 
+        binding.filtersList.ensureBottomPadding(fab = true)
+        binding.addFilterButton.ensureBottomMargin()
+
         binding.addFilterButton.setOnClickListener {
             launchEditFilterActivity()
         }
 
-        binding.swipeRefreshLayout.setOnRefreshListener { loadFilters() }
-        binding.swipeRefreshLayout.setColorSchemeResources(R.color.tusky_blue)
+        binding.swipeRefreshLayout.setOnRefreshListener { reloadFilters() }
 
         setTitle(R.string.pref_title_timeline_filters)
-    }
 
-    override fun onResume() {
-        super.onResume()
-        loadFilters()
+        binding.filtersList.addItemDecoration(
+            DividerItemDecoration(this, DividerItemDecoration.VERTICAL)
+        )
+
         observeViewModel()
     }
 
     private fun observeViewModel() {
-        lifecycleScope.launch {
+        launchAndRepeatOnLifecycle {
             viewModel.state.collect { state ->
-                binding.progressBar.visible(state.loadingState == FiltersViewModel.LoadingState.LOADING)
+                binding.progressBar.visible(
+                    state.loadingState == FiltersViewModel.LoadingState.LOADING
+                )
                 binding.swipeRefreshLayout.isRefreshing = state.loadingState == FiltersViewModel.LoadingState.LOADING
-                binding.addFilterButton.visible(state.loadingState == FiltersViewModel.LoadingState.LOADED)
+                binding.addFilterButton.visible(
+                    state.loadingState == FiltersViewModel.LoadingState.LOADED
+                )
 
                 when (state.loadingState) {
                     FiltersViewModel.LoadingState.INITIAL, FiltersViewModel.LoadingState.LOADING -> binding.messageView.hide()
                     FiltersViewModel.LoadingState.ERROR_NETWORK -> {
-                        binding.messageView.setup(R.drawable.elephant_offline, R.string.error_network) {
-                            loadFilters()
+                        binding.messageView.setup(
+                            R.drawable.errorphant_offline,
+                            R.string.error_network
+                        ) {
+                            reloadFilters()
                         }
                         binding.messageView.show()
                     }
                     FiltersViewModel.LoadingState.ERROR_OTHER -> {
-                        binding.messageView.setup(R.drawable.elephant_error, R.string.error_generic) {
-                            loadFilters()
+                        binding.messageView.setup(
+                            R.drawable.errorphant_error,
+                            R.string.error_generic
+                        ) {
+                            reloadFilters()
                         }
                         binding.messageView.show()
                     }
                     FiltersViewModel.LoadingState.LOADED -> {
+                        binding.filtersList.adapter = FiltersAdapter(this@FiltersActivity, state.filters)
                         if (state.filters.isEmpty()) {
                             binding.messageView.setup(
                                 R.drawable.elephant_friend_empty,
@@ -81,7 +105,6 @@ class FiltersActivity : BaseActivity(), FiltersListener {
                             binding.messageView.show()
                         } else {
                             binding.messageView.hide()
-                            binding.filtersList.adapter = FiltersAdapter(this@FiltersActivity, state.filters)
                         }
                     }
                 }
@@ -89,8 +112,8 @@ class FiltersActivity : BaseActivity(), FiltersListener {
         }
     }
 
-    private fun loadFilters() {
-        viewModel.load()
+    private fun reloadFilters() {
+        viewModel.reload()
     }
 
     private fun launchEditFilterActivity(filter: Filter? = null) {
@@ -98,13 +121,16 @@ class FiltersActivity : BaseActivity(), FiltersListener {
             if (filter != null) {
                 putExtra(EditFilterActivity.FILTER_TO_EDIT, filter)
             }
-        }
-        startActivity(intent)
-        overridePendingTransition(R.anim.slide_from_right, R.anim.slide_to_left)
+        }.withSlideInAnimation()
+        editFilterLauncher.launch(intent)
     }
 
     override fun deleteFilter(filter: Filter) {
-        viewModel.deleteFilter(filter, binding.root)
+        lifecycleScope.launch {
+            if (showDeleteFilterDialog(filter.title) == BUTTON_POSITIVE) {
+                viewModel.deleteFilter(filter, binding.root)
+            }
+        }
     }
 
     override fun updateFilter(updatedFilter: Filter) {

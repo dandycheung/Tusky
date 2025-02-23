@@ -23,7 +23,7 @@ import com.keylesspalace.tusky.components.conversation.ConversationsFragment
 import com.keylesspalace.tusky.components.notifications.NotificationsFragment
 import com.keylesspalace.tusky.components.timeline.TimelineFragment
 import com.keylesspalace.tusky.components.timeline.viewmodel.TimelineViewModel
-import com.keylesspalace.tusky.components.trending.TrendingFragment
+import com.keylesspalace.tusky.components.trending.TrendingTagsFragment
 import java.util.Objects
 
 /** this would be a good case for a sealed class, but that does not work nice with Room */
@@ -33,9 +33,11 @@ const val NOTIFICATIONS = "Notifications"
 const val LOCAL = "Local"
 const val FEDERATED = "Federated"
 const val DIRECT = "Direct"
-const val TRENDING = "Trending"
+const val TRENDING_TAGS = "TrendingTags"
+const val TRENDING_STATUSES = "TrendingStatuses"
 const val HASHTAG = "Hashtag"
 const val LIST = "List"
+const val BOOKMARKS = "Bookmarks"
 
 data class TabData(
     val id: String,
@@ -52,15 +54,13 @@ data class TabData(
         other as TabData
 
         if (id != other.id) return false
-        if (arguments != other.arguments) return false
-
-        return true
+        return arguments == other.arguments
     }
 
     override fun hashCode() = Objects.hash(id, arguments)
 }
 
-fun List<TabData>.hasTab(id: String): Boolean = this.find { it.id == id } != null
+fun List<TabData>.hasTab(id: String): Boolean = this.any { it.id == id }
 
 fun createTabDataFromId(id: String, arguments: List<String> = emptyList()): TabData {
     return when (id) {
@@ -94,11 +94,21 @@ fun createTabDataFromId(id: String, arguments: List<String> = emptyList()): TabD
             icon = R.drawable.ic_reblog_direct_24dp,
             fragment = { ConversationsFragment.newInstance() }
         )
-        TRENDING -> TabData(
-            id = TRENDING,
+        TRENDING_TAGS -> TabData(
+            id = TRENDING_TAGS,
             text = R.string.title_public_trending_hashtags,
             icon = R.drawable.ic_trending_up_24px,
-            fragment = { TrendingFragment.newInstance() }
+            fragment = { TrendingTagsFragment.newInstance() }
+        )
+        TRENDING_STATUSES -> TabData(
+            id = TRENDING_STATUSES,
+            text = R.string.title_public_trending_statuses,
+            icon = R.drawable.ic_hot_24dp,
+            fragment = {
+                TimelineFragment.newInstance(
+                    TimelineViewModel.Kind.PUBLIC_TRENDING_STATUSES
+                )
+            }
         )
         HASHTAG -> TabData(
             id = HASHTAG,
@@ -106,15 +116,30 @@ fun createTabDataFromId(id: String, arguments: List<String> = emptyList()): TabD
             icon = R.drawable.ic_hashtag,
             fragment = { args -> TimelineFragment.newHashtagInstance(args) },
             arguments = arguments,
-            title = { context -> arguments.joinToString(separator = " ") { context.getString(R.string.title_tag, it) } }
+            title = { context ->
+                arguments.joinToString(separator = " ") {
+                    context.getString(R.string.hashtag_format, it)
+                }
+            }
         )
         LIST -> TabData(
             id = LIST,
             text = R.string.list,
             icon = R.drawable.ic_list,
-            fragment = { args -> TimelineFragment.newInstance(TimelineViewModel.Kind.LIST, args.getOrNull(0).orEmpty()) },
+            fragment = { args ->
+                TimelineFragment.newInstance(
+                    TimelineViewModel.Kind.LIST,
+                    args.getOrNull(0).orEmpty()
+                )
+            },
             arguments = arguments,
             title = { arguments.getOrNull(1).orEmpty() }
+        )
+        BOOKMARKS -> TabData(
+            id = BOOKMARKS,
+            text = R.string.title_bookmarks,
+            icon = R.drawable.ic_bookmark_active_24dp,
+            fragment = { TimelineFragment.newInstance(TimelineViewModel.Kind.BOOKMARKS) }
         )
         else -> throw IllegalArgumentException("unknown tab type")
     }

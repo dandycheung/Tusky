@@ -41,8 +41,15 @@ class AddPollOptionsAdapter(
         notifyItemInserted(options.size - 1)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BindingHolder<ItemAddPollOptionBinding> {
-        val binding = ItemAddPollOptionBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int
+    ): BindingHolder<ItemAddPollOptionBinding> {
+        val binding = ItemAddPollOptionBinding.inflate(
+            LayoutInflater.from(parent.context),
+            parent,
+            false
+        )
         val holder = BindingHolder(binding)
         binding.optionEditText.filters = arrayOf(InputFilter.LengthFilter(maxOptionLength))
 
@@ -75,10 +82,6 @@ class AddPollOptionsAdapter(
     }
 
     private fun validateInput(): Boolean {
-        if (options.contains("") || options.distinct().size != options.size) {
-            return false
-        }
-
-        return true
+        return !(options.contains("") || options.distinct().size != options.size)
     }
 }

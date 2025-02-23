@@ -22,36 +22,29 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
+import android.view.MotionEvent
 import androidx.activity.viewModels
 import androidx.appcompat.widget.SearchView
 import androidx.core.view.MenuProvider
-import androidx.preference.PreferenceManager
+import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import com.keylesspalace.tusky.BottomSheetActivity
 import com.keylesspalace.tusky.R
 import com.keylesspalace.tusky.components.search.adapter.SearchPagerAdapter
 import com.keylesspalace.tusky.databinding.ActivitySearchBinding
-import com.keylesspalace.tusky.di.ViewModelFactory
 import com.keylesspalace.tusky.settings.PrefKeys
 import com.keylesspalace.tusky.util.reduceSwipeSensitivity
-import com.keylesspalace.tusky.util.unsafeLazy
 import com.keylesspalace.tusky.util.viewBinding
-import dagger.android.DispatchingAndroidInjector
-import dagger.android.HasAndroidInjector
-import javax.inject.Inject
+import dagger.hilt.android.AndroidEntryPoint
 
-class SearchActivity : BottomSheetActivity(), HasAndroidInjector, MenuProvider {
-    @Inject
-    lateinit var androidInjector: DispatchingAndroidInjector<Any>
+@AndroidEntryPoint
+class SearchActivity : BottomSheetActivity(), MenuProvider, SearchView.OnQueryTextListener {
 
-    @Inject
-    lateinit var viewModelFactory: ViewModelFactory
-
-    private val viewModel: SearchViewModel by viewModels { viewModelFactory }
+    private val viewModel: SearchViewModel by viewModels()
 
     private val binding by viewBinding(ActivitySearchBinding::inflate)
 
-    private val preferences by unsafeLazy { PreferenceManager.getDefaultSharedPreferences(this) }
+    private lateinit var searchView: SearchView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,18 +82,13 @@ class SearchActivity : BottomSheetActivity(), HasAndroidInjector, MenuProvider {
         menuInflater.inflate(R.menu.search_toolbar, menu)
         val searchViewMenuItem = menu.findItem(R.id.action_search)
         searchViewMenuItem.expandActionView()
-        val searchView = searchViewMenuItem.actionView as SearchView
-        setupSearchView(searchView)
-
-        searchView.setQuery(viewModel.currentQuery, false)
+        searchView = searchViewMenuItem.actionView as SearchView
+        setupSearchView()
+        setupClearFocusOnClickListeners()
     }
 
     override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
         return false
-    }
-
-    override fun finish() {
-        super.finishWithoutSlideOutAnimation()
     }
 
     private fun getPageTitle(position: Int): CharSequence {
@@ -116,12 +104,43 @@ class SearchActivity : BottomSheetActivity(), HasAndroidInjector, MenuProvider {
         if (Intent.ACTION_SEARCH == intent.action) {
             viewModel.currentQuery = intent.getStringExtra(SearchManager.QUERY).orEmpty()
             viewModel.search(viewModel.currentQuery)
+            searchView.clearFocus()
         }
     }
 
-    private fun setupSearchView(searchView: SearchView) {
+    private fun setupClearFocusOnClickListeners() {
+        binding.overlayPagesClickView.setOnTouchListener { view, event ->
+            if (event.action == MotionEvent.ACTION_DOWN) {
+                searchView.clearFocus()
+                view.performClick()
+            }
+            false
+        }
+        binding.toolbar.setOnClickListener {
+            searchView.clearFocus()
+        }
+        binding.tabs.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(p0: TabLayout.Tab?) {
+                searchView.clearFocus()
+            }
+
+            override fun onTabUnselected(p0: TabLayout.Tab?) {}
+
+            override fun onTabReselected(p0: TabLayout.Tab?) {
+                searchView.clearFocus()
+            }
+        })
+    }
+
+    private fun setupSearchView() {
         searchView.setIconifiedByDefault(false)
-        searchView.setSearchableInfo((getSystemService(Context.SEARCH_SERVICE) as? SearchManager)?.getSearchableInfo(componentName))
+        searchView.setSearchableInfo(
+            (
+                getSystemService(
+                    Context.SEARCH_SERVICE
+                ) as? SearchManager
+                )?.getSearchableInfo(componentName)
+        )
 
         // SearchView has a bug. If it's displayed 'app:showAsAction="always"' it's too wide,
         // pushing other icons (including the options menu '...' icon) off the edge of the
@@ -150,10 +169,22 @@ class SearchActivity : BottomSheetActivity(), HasAndroidInjector, MenuProvider {
         val pxBuffer = ((48 * 2) * resources.displayMetrics.density).toInt()
         searchView.maxWidth = pxScreenWidth - pxBuffer
 
-        searchView.requestFocus()
+        // Keep text that was entered also when switching to a different tab (before the search is executed)
+        searchView.setOnQueryTextListener(this)
+        searchView.setQuery(viewModel.currentSearchFieldContent ?: "", false)
+
+        if (viewModel.currentSearchFieldContent == "") searchView.requestFocus()
     }
 
-    override fun androidInjector() = androidInjector
+    override fun onQueryTextSubmit(query: String?): Boolean {
+        return false
+    }
+
+    override fun onQueryTextChange(newText: String?): Boolean {
+        viewModel.currentSearchFieldContent = newText
+
+        return false
+    }
 
     companion object {
         const val TAG = "SearchActivity"

@@ -16,15 +16,16 @@
 package com.keylesspalace.tusky.components.account
 
 import android.animation.ArgbEvaluator
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
-import android.graphics.drawable.LayerDrawable
+import android.graphics.Typeface
+import android.os.Build
 import android.os.Bundle
+import android.text.SpannableStringBuilder
 import android.text.TextWatcher
+import android.text.style.StyleSpan
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
@@ -32,23 +33,27 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.activity.viewModels
 import androidx.annotation.ColorInt
+import androidx.annotation.DrawableRes
 import androidx.annotation.Px
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.app.ActivityOptionsCompat
+import androidx.core.graphics.ColorUtils
 import androidx.core.view.MenuProvider
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsCompat.Type.systemBars
+import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.core.widget.doAfterTextChanged
-import androidx.preference.PreferenceManager
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.viewpager2.widget.MarginPageTransformer
 import com.bumptech.glide.Glide
+import com.google.android.material.R as materialR
 import com.google.android.material.appbar.AppBarLayout
+import com.google.android.material.chip.Chip
 import com.google.android.material.color.MaterialColors
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.shape.MaterialShapeDrawable
 import com.google.android.material.shape.ShapeAppearanceModel
@@ -60,14 +65,13 @@ import com.keylesspalace.tusky.EditProfileActivity
 import com.keylesspalace.tusky.R
 import com.keylesspalace.tusky.StatusListActivity
 import com.keylesspalace.tusky.ViewMediaActivity
-import com.keylesspalace.tusky.components.account.list.ListsForAccountFragment
+import com.keylesspalace.tusky.components.account.list.ListSelectionFragment
 import com.keylesspalace.tusky.components.accountlist.AccountListActivity
 import com.keylesspalace.tusky.components.compose.ComposeActivity
 import com.keylesspalace.tusky.components.report.ReportActivity
 import com.keylesspalace.tusky.databinding.ActivityAccountBinding
-import com.keylesspalace.tusky.db.AccountEntity
 import com.keylesspalace.tusky.db.DraftsAlert
-import com.keylesspalace.tusky.di.ViewModelFactory
+import com.keylesspalace.tusky.db.entity.AccountEntity
 import com.keylesspalace.tusky.entity.Account
 import com.keylesspalace.tusky.entity.Relationship
 import com.keylesspalace.tusky.interfaces.AccountSelectionListener
@@ -78,7 +82,9 @@ import com.keylesspalace.tusky.settings.PrefKeys
 import com.keylesspalace.tusky.util.Error
 import com.keylesspalace.tusky.util.Loading
 import com.keylesspalace.tusky.util.Success
+import com.keylesspalace.tusky.util.copyToClipboard
 import com.keylesspalace.tusky.util.emojify
+import com.keylesspalace.tusky.util.ensureBottomMargin
 import com.keylesspalace.tusky.util.getDomain
 import com.keylesspalace.tusky.util.hide
 import com.keylesspalace.tusky.util.loadAvatar
@@ -86,41 +92,30 @@ import com.keylesspalace.tusky.util.parseAsMastodonHtml
 import com.keylesspalace.tusky.util.reduceSwipeSensitivity
 import com.keylesspalace.tusky.util.setClickableText
 import com.keylesspalace.tusky.util.show
-import com.keylesspalace.tusky.util.unsafeLazy
+import com.keylesspalace.tusky.util.startActivityWithSlideInAnimation
 import com.keylesspalace.tusky.util.viewBinding
 import com.keylesspalace.tusky.util.visible
 import com.keylesspalace.tusky.view.showMuteAccountDialog
-import com.mikepenz.iconics.IconicsDrawable
-import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
-import com.mikepenz.iconics.utils.colorInt
-import com.mikepenz.iconics.utils.sizeDp
-import dagger.android.DispatchingAndroidInjector
-import dagger.android.HasAndroidInjector
+import dagger.hilt.android.AndroidEntryPoint
 import java.text.NumberFormat
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
 import javax.inject.Inject
 import kotlin.math.abs
+import kotlinx.coroutines.launch
 
-class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvider, HasAndroidInjector, LinkListener {
-
-    @Inject
-    lateinit var dispatchingAndroidInjector: DispatchingAndroidInjector<Any>
-
-    @Inject
-    lateinit var viewModelFactory: ViewModelFactory
+@AndroidEntryPoint
+class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvider, LinkListener {
 
     @Inject
     lateinit var draftsAlert: DraftsAlert
 
-    private val viewModel: AccountViewModel by viewModels { viewModelFactory }
+    private val viewModel: AccountViewModel by viewModels()
 
     private val binding: ActivityAccountBinding by viewBinding(ActivityAccountBinding::inflate)
 
     private lateinit var accountFieldAdapter: AccountFieldAdapter
-
-    private val preferences by unsafeLazy { PreferenceManager.getDefaultSharedPreferences(this) }
 
     private var followState: FollowState = FollowState.NOT_FOLLOWING
     private var blocking: Boolean = false
@@ -133,8 +128,7 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
     private var animateAvatar: Boolean = false
     private var animateEmojis: Boolean = false
 
-    // fields for scroll animation
-    private var hideFab: Boolean = false
+    // for scroll animation
     private var oldOffset: Int = 0
 
     @ColorInt
@@ -172,10 +166,8 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
         // Obtain information to fill out the profile.
         viewModel.setAccountInfo(intent.getStringExtra(KEY_ACCOUNT_ID)!!)
 
-        val sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this)
-        animateAvatar = sharedPrefs.getBoolean("animateGifAvatars", false)
-        animateEmojis = sharedPrefs.getBoolean(PrefKeys.ANIMATE_CUSTOM_EMOJIS, false)
-        hideFab = sharedPrefs.getBoolean("fabHide", false)
+        animateAvatar = preferences.getBoolean(PrefKeys.ANIMATE_GIF_AVATARS, false)
+        animateEmojis = preferences.getBoolean(PrefKeys.ANIMATE_CUSTOM_EMOJIS, false)
 
         handleWindowInsets()
         setupToolbar()
@@ -196,9 +188,9 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
      * Load colors and dimensions from resources
      */
     private fun loadResources() {
-        toolbarColor = MaterialColors.getColor(this, com.google.android.material.R.attr.colorSurface, Color.BLACK)
+        toolbarColor = MaterialColors.getColor(binding.accountToolbar, materialR.attr.colorSurface)
         statusBarColorTransparent = getColor(R.color.transparent_statusbar_background)
-        statusBarColorOpaque = MaterialColors.getColor(this, androidx.appcompat.R.attr.colorPrimaryDark, Color.BLACK)
+        statusBarColorOpaque = MaterialColors.getColor(binding.accountToolbar, materialR.attr.colorPrimaryDark)
         avatarSize = resources.getDimension(R.dimen.account_activity_avatar_size)
         titleVisibleHeight = resources.getDimensionPixelSize(R.dimen.account_activity_scroll_title_visible_height)
     }
@@ -240,7 +232,6 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
         }
 
         // If wellbeing mode is enabled, follow stats and posts count should be hidden
-        val preferences = PreferenceManager.getDefaultSharedPreferences(this)
         val wellbeingEnabled = preferences.getBoolean(PrefKeys.WELLBEING_HIDE_STATS_PROFILE, false)
 
         if (wellbeingEnabled) {
@@ -261,9 +252,18 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
         binding.accountFragmentViewPager.adapter = adapter
         binding.accountFragmentViewPager.offscreenPageLimit = 2
 
-        val pageTitles = arrayOf(getString(R.string.title_posts), getString(R.string.title_posts_with_replies), getString(R.string.title_posts_pinned), getString(R.string.title_media))
+        val pageTitles =
+            arrayOf(
+                getString(R.string.title_posts),
+                getString(R.string.title_posts_with_replies),
+                getString(R.string.title_posts_pinned),
+                getString(R.string.title_media)
+            )
 
-        TabLayoutMediator(binding.accountTabLayout, binding.accountFragmentViewPager) { tab, position ->
+        TabLayoutMediator(
+            binding.accountTabLayout,
+            binding.accountFragmentViewPager
+        ) { tab, position ->
             tab.text = pageTitles[position]
         }.attach()
 
@@ -287,17 +287,21 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
     }
 
     private fun handleWindowInsets() {
+        binding.accountFloatingActionButton.ensureBottomMargin()
         ViewCompat.setOnApplyWindowInsetsListener(binding.accountCoordinatorLayout) { _, insets ->
-            val top = insets.getInsets(systemBars()).top
-            val toolbarParams = binding.accountToolbar.layoutParams as ViewGroup.MarginLayoutParams
-            toolbarParams.topMargin = top
+            val systemBarInsets = insets.getInsets(systemBars())
+            val top = systemBarInsets.top
 
-            val right = insets.getInsets(systemBars()).right
-            val bottom = insets.getInsets(systemBars()).bottom
-            val left = insets.getInsets(systemBars()).left
-            binding.accountCoordinatorLayout.updatePadding(right = right, bottom = bottom, left = left)
+            binding.accountToolbar.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                topMargin = top
+            }
 
-            WindowInsetsCompat.CONSUMED
+            binding.swipeToRefreshLayout.setProgressViewEndTarget(
+                false,
+                top + resources.getDimensionPixelSize(R.dimen.account_swiperefresh_distance)
+            )
+
+            insets.inset(0, top, 0, 0)
         }
     }
 
@@ -310,34 +314,13 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
             setDisplayShowTitleEnabled(false)
         }
 
-        val appBarElevation = resources.getDimension(R.dimen.actionbar_elevation)
+        binding.accountToolbar.setBackgroundColor(Color.TRANSPARENT)
 
-        val toolbarBackground = MaterialShapeDrawable.createWithElevationOverlay(this, appBarElevation)
-        toolbarBackground.fillColor = ColorStateList.valueOf(Color.TRANSPARENT)
-        binding.accountToolbar.background = toolbarBackground
+        binding.accountToolbar.setNavigationIcon(R.drawable.ic_arrow_back_with_background)
+        binding.accountToolbar.overflowIcon = AppCompatResources.getDrawable(this, R.drawable.ic_more_with_background)
 
-        // Provide a non-transparent background to the navigation and overflow icons to ensure
-        // they remain visible over whatever the profile background image might be.
-        val backgroundCircle = AppCompatResources.getDrawable(this, R.drawable.background_circle)!!
-        backgroundCircle.alpha = 210 // Any lower than this and the backgrounds interfere
-        binding.accountToolbar.navigationIcon = LayerDrawable(
-            arrayOf(
-                backgroundCircle,
-                binding.accountToolbar.navigationIcon
-            )
-        )
-        binding.accountToolbar.overflowIcon = LayerDrawable(
-            arrayOf(
-                backgroundCircle,
-                binding.accountToolbar.overflowIcon
-            )
-        )
-
-        binding.accountHeaderInfoContainer.background = MaterialShapeDrawable.createWithElevationOverlay(this, appBarElevation)
-
-        val avatarBackground = MaterialShapeDrawable.createWithElevationOverlay(this, appBarElevation).apply {
+        val avatarBackground = MaterialShapeDrawable().apply {
             fillColor = ColorStateList.valueOf(toolbarColor)
-            elevation = appBarElevation
             shapeAppearanceModel = ShapeAppearanceModel.builder()
                 .setAllCornerSizes(resources.getDimension(R.dimen.account_avatar_background_radius))
                 .build()
@@ -359,15 +342,6 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
                     supportActionBar?.setDisplayShowTitleEnabled(false)
                 }
 
-                if (hideFab && !blocking) {
-                    if (verticalOffset > oldOffset) {
-                        binding.accountFloatingActionButton.show()
-                    }
-                    if (verticalOffset < oldOffset) {
-                        binding.accountFloatingActionButton.hide()
-                    }
-                }
-
                 val scaledAvatarSize = (avatarSize + verticalOffset) / avatarSize
 
                 binding.accountAvatarImageView.scaleX = scaledAvatarSize
@@ -375,13 +349,23 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
 
                 binding.accountAvatarImageView.visible(scaledAvatarSize > 0)
 
-                val transparencyPercent = (abs(verticalOffset) / titleVisibleHeight.toFloat()).coerceAtMost(1f)
+                val transparencyPercent = (abs(verticalOffset) / titleVisibleHeight.toFloat()).coerceAtMost(
+                    1f
+                )
 
-                window.statusBarColor = argbEvaluator.evaluate(transparencyPercent, statusBarColorTransparent, statusBarColorOpaque) as Int
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                    @Suppress("DEPRECATION")
+                    window.statusBarColor = argbEvaluator.evaluate(transparencyPercent, statusBarColorTransparent, statusBarColorOpaque) as Int
+                }
 
-                val evaluatedToolbarColor = argbEvaluator.evaluate(transparencyPercent, Color.TRANSPARENT, toolbarColor) as Int
+                val evaluatedToolbarColor = argbEvaluator.evaluate(
+                    transparencyPercent,
+                    Color.TRANSPARENT,
+                    toolbarColor
+                ) as Int
 
-                toolbarBackground.fillColor = ColorStateList.valueOf(evaluatedToolbarColor)
+                binding.accountToolbar.setBackgroundColor(evaluatedToolbarColor)
+                binding.accountStatusBarScrim.setBackgroundColor(evaluatedToolbarColor)
 
                 binding.swipeToRefreshLayout.isEnabled = verticalOffset == 0
             }
@@ -390,38 +374,60 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
 
     private fun makeNotificationBarTransparent() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        window.statusBarColor = statusBarColorTransparent
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            @Suppress("DEPRECATION")
+            window.statusBarColor = statusBarColorTransparent
+        }
     }
 
     /**
      * Subscribe to data loaded at the view model
      */
     private fun subscribeObservables() {
-        viewModel.accountData.observe(this) {
-            when (it) {
-                is Success -> onAccountChanged(it.data)
-                is Error -> {
-                    Snackbar.make(binding.accountCoordinatorLayout, R.string.error_generic, Snackbar.LENGTH_LONG)
+        lifecycleScope.launch {
+            viewModel.accountData.collect {
+                if (it == null) return@collect
+                when (it) {
+                    is Success -> {
+                        onAccountChanged(it.data)
+                        binding.swipeToRefreshLayout.isEnabled = true
+                    }
+                    is Error -> {
+                        Snackbar.make(
+                            binding.accountCoordinatorLayout,
+                            R.string.error_generic,
+                            Snackbar.LENGTH_LONG
+                        )
+                            .setAction(R.string.action_retry) { viewModel.refresh() }
+                            .show()
+                        binding.swipeToRefreshLayout.isEnabled = true
+                    }
+                    is Loading -> { }
+                }
+            }
+        }
+        lifecycleScope.launch {
+            viewModel.relationshipData.collect {
+                val relation = it?.data
+                if (relation != null) {
+                    onRelationshipChanged(relation)
+                }
+
+                if (it is Error) {
+                    Snackbar.make(
+                        binding.accountCoordinatorLayout,
+                        R.string.error_generic,
+                        Snackbar.LENGTH_LONG
+                    )
                         .setAction(R.string.action_retry) { viewModel.refresh() }
                         .show()
                 }
-                is Loading -> { }
             }
         }
-        viewModel.relationshipData.observe(this) {
-            val relation = it?.data
-            if (relation != null) {
-                onRelationshipChanged(relation)
+        lifecycleScope.launch {
+            viewModel.noteSaved.collect {
+                binding.saveNoteInfo.visible(it, View.INVISIBLE)
             }
-
-            if (it is Error) {
-                Snackbar.make(binding.accountCoordinatorLayout, R.string.error_generic, Snackbar.LENGTH_LONG)
-                    .setAction(R.string.action_retry) { viewModel.refresh() }
-                    .show()
-            }
-        }
-        viewModel.noteSaved.observe(this) {
-            binding.saveNoteInfo.visible(it, View.INVISIBLE)
         }
 
         // "Post failed" dialog should display in this activity
@@ -437,13 +443,13 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
      * Setup swipe to refresh layout
      */
     private fun setupRefreshLayout() {
+        binding.swipeToRefreshLayout.isEnabled = false // will only be enabled after the first load completed
         binding.swipeToRefreshLayout.setOnRefreshListener { onRefresh() }
-        viewModel.isRefreshing.observe(
-            this
-        ) { isRefreshing ->
-            binding.swipeToRefreshLayout.isRefreshing = isRefreshing == true
+        lifecycleScope.launch {
+            viewModel.isRefreshing.collect {
+                binding.swipeToRefreshLayout.isRefreshing = it
+            }
         }
-        binding.swipeToRefreshLayout.setColorSchemeResources(R.color.tusky_blue)
     }
 
     private fun onAccountChanged(account: Account?) {
@@ -457,28 +463,31 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
         for (view in listOf(binding.accountUsernameTextView, binding.accountDisplayNameTextView)) {
             view.setOnLongClickListener {
                 loadedAccount?.let { loadedAccount ->
-                    val fullUsername = getFullUsername(loadedAccount)
-                    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    clipboard.setPrimaryClip(ClipData.newPlainText(null, fullUsername))
-                    Snackbar.make(binding.root, getString(R.string.account_username_copied), Snackbar.LENGTH_SHORT)
-                        .show()
+                    copyToClipboard(
+                        getFullUsername(loadedAccount),
+                        getString(R.string.account_username_copied),
+                    )
                 }
                 true
             }
         }
 
-        val emojifiedNote = account.note.parseAsMastodonHtml().emojify(account.emojis, binding.accountNoteTextView, animateEmojis)
+        val emojifiedNote = account.note.parseAsMastodonHtml().emojify(
+            account.emojis,
+            binding.accountNoteTextView,
+            animateEmojis
+        )
         setClickableText(binding.accountNoteTextView, emojifiedNote, emptyList(), null, this)
 
-        accountFieldAdapter.fields = account.fields.orEmpty()
-        accountFieldAdapter.emojis = account.emojis.orEmpty()
+        accountFieldAdapter.fields = account.fields
+        accountFieldAdapter.emojis = account.emojis
         accountFieldAdapter.notifyDataSetChanged()
 
         binding.accountLockedImageView.visible(account.locked)
-        binding.accountBadgeTextView.visible(account.bot)
 
         updateAccountAvatar()
         updateToolbar()
+        updateBadges()
         updateMovedAccount()
         updateRemoteAccount()
         updateAccountJoinedDate()
@@ -488,6 +497,39 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
         binding.accountMuteButton.setOnClickListener {
             viewModel.unmuteAccount()
             updateMuteButton()
+        }
+    }
+
+    private fun updateBadges() {
+        binding.accountBadgeContainer.removeAllViews()
+
+        val isLight = resources.getBoolean(R.bool.lightNavigationBar)
+
+        if (loadedAccount?.bot == true) {
+            val badgeView =
+                getBadge(
+                    getColor(R.color.tusky_grey_50),
+                    R.drawable.ic_bot_24dp,
+                    getString(R.string.profile_badge_bot_text),
+                    isLight
+                )
+            binding.accountBadgeContainer.addView(badgeView)
+        }
+
+        loadedAccount?.roles?.forEach { role ->
+            val badgeColor = if (role.color.isNotBlank()) {
+                Color.parseColor(role.color)
+            } else {
+                // sometimes the color is not set for a role, in this case fall back to our default blue
+                getColor(R.color.tusky_blue)
+            }
+
+            val sb = SpannableStringBuilder("${role.name} ${viewModel.domain}")
+            sb.setSpan(StyleSpan(Typeface.BOLD), 0, role.name.length, 0)
+
+            val badgeView = getBadge(badgeColor, R.drawable.profile_badge_person_24dp, sb, isLight)
+
+            binding.accountBadgeContainer.addView(badgeView)
         }
     }
 
@@ -579,7 +621,7 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
      */
     private fun updateRemoteAccount() {
         loadedAccount?.let { account ->
-            if (account.isRemote()) {
+            if (account.isRemote) {
                 binding.accountRemoveView.show()
                 binding.accountRemoveView.setOnClickListener {
                     openLink(account.url)
@@ -601,6 +643,7 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
             binding.accountFloatingActionButton.setOnClickListener { mention() }
 
             binding.accountFollowButton.setOnClickListener {
+                val confirmFollows = preferences.getBoolean(PrefKeys.CONFIRM_FOLLOWS, false)
                 if (viewModel.isSelf) {
                     val intent = Intent(this@AccountActivity, EditProfileActivity::class.java)
                     startActivity(intent)
@@ -614,7 +657,11 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
 
                 when (followState) {
                     FollowState.NOT_FOLLOWING -> {
-                        viewModel.changeFollowState()
+                        if (confirmFollows) {
+                            showFollowWarningDialog()
+                        } else {
+                            viewModel.changeFollowState()
+                        }
                     }
                     FollowState.REQUESTED -> {
                         showFollowRequestPendingDialog()
@@ -640,11 +687,7 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
         blockingDomain = relation.blockingDomain
         showingReblogs = relation.showingReblogs
 
-        // If wellbeing mode is enabled, "follows you" text should not be visible
-        val preferences = PreferenceManager.getDefaultSharedPreferences(this)
-        val wellbeingEnabled = preferences.getBoolean(PrefKeys.WELLBEING_HIDE_STATS_PROFILE, false)
-
-        binding.accountFollowsYouTextView.visible(relation.followedBy && !wellbeingEnabled)
+        binding.accountFollowsYouTextView.visible(relation.followedBy)
 
         // because subscribing is Pleroma extension, enable it __only__ when we have non-null subscribing field
         // it's also now supported in Mastodon 3.3.0rc but called notifying and use different API call
@@ -772,13 +815,16 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
             loadedAccount?.let { loadedAccount ->
                 val muteDomain = menu.findItem(R.id.action_mute_domain)
                 domain = getDomain(loadedAccount.url)
-                if (domain.isEmpty()) {
+                when {
                     // If we can't get the domain, there's no way we can mute it anyway...
-                    menu.removeItem(R.id.action_mute_domain)
-                } else {
-                    if (blockingDomain) {
+                    // If the account is from our own domain, muting it is no-op
+                    domain.isEmpty() || viewModel.isFromOwnDomain -> {
+                        menu.removeItem(R.id.action_mute_domain)
+                    }
+                    blockingDomain -> {
                         muteDomain.title = getString(R.string.action_unmute_domain, domain)
-                    } else {
+                    }
+                    else -> {
                         muteDomain.title = getString(R.string.action_mute_domain, domain)
                     }
                 }
@@ -806,17 +852,10 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
         if (!viewModel.isSelf && followState != FollowState.FOLLOWING) {
             menu.removeItem(R.id.action_add_or_remove_from_list)
         }
-
-        menu.findItem(R.id.action_search)?.apply {
-            icon = IconicsDrawable(this@AccountActivity, GoogleMaterial.Icon.gmd_search).apply {
-                sizeDp = 20
-                colorInt = MaterialColors.getColor(binding.collapsingToolbar, android.R.attr.textColorPrimary)
-            }
-        }
     }
 
     private fun showFollowRequestPendingDialog() {
-        AlertDialog.Builder(this)
+        MaterialAlertDialogBuilder(this)
             .setMessage(R.string.dialog_message_cancel_follow_request)
             .setPositiveButton(android.R.string.ok) { _, _ -> viewModel.changeFollowState() }
             .setNegativeButton(android.R.string.cancel, null)
@@ -824,8 +863,16 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
     }
 
     private fun showUnfollowWarningDialog() {
-        AlertDialog.Builder(this)
+        MaterialAlertDialogBuilder(this)
             .setMessage(R.string.dialog_unfollow_warning)
+            .setPositiveButton(android.R.string.ok) { _, _ -> viewModel.changeFollowState() }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun showFollowWarningDialog() {
+        MaterialAlertDialogBuilder(this)
+            .setMessage(R.string.dialog_follow_warning)
             .setPositiveButton(android.R.string.ok) { _, _ -> viewModel.changeFollowState() }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
@@ -835,9 +882,11 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
         if (blockingDomain) {
             viewModel.unblockDomain(instance)
         } else {
-            AlertDialog.Builder(this)
+            MaterialAlertDialogBuilder(this)
                 .setMessage(getString(R.string.mute_domain_warning, instance))
-                .setPositiveButton(getString(R.string.mute_domain_warning_dialog_ok)) { _, _ -> viewModel.blockDomain(instance) }
+                .setPositiveButton(
+                    getString(R.string.mute_domain_warning_dialog_ok)
+                ) { _, _ -> viewModel.blockDomain(instance) }
                 .setNegativeButton(android.R.string.cancel, null)
                 .show()
         }
@@ -845,7 +894,7 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
 
     private fun toggleBlock() {
         if (viewModel.relationshipData.value?.data?.blocking != true) {
-            AlertDialog.Builder(this)
+            MaterialAlertDialogBuilder(this)
                 .setMessage(getString(R.string.dialog_block_warning, loadedAccount?.username))
                 .setPositiveButton(android.R.string.ok) { _, _ -> viewModel.changeBlockState() }
                 .setNegativeButton(android.R.string.cancel, null)
@@ -930,7 +979,12 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
                     sendIntent.action = Intent.ACTION_SEND
                     sendIntent.putExtra(Intent.EXTRA_TEXT, url)
                     sendIntent.type = "text/plain"
-                    startActivity(Intent.createChooser(sendIntent, resources.getText(R.string.send_account_link_to)))
+                    startActivity(
+                        Intent.createChooser(
+                            sendIntent,
+                            resources.getText(R.string.send_account_link_to)
+                        )
+                    )
                 }
                 return true
             }
@@ -942,7 +996,12 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
                     sendIntent.action = Intent.ACTION_SEND
                     sendIntent.putExtra(Intent.EXTRA_TEXT, fullUsername)
                     sendIntent.type = "text/plain"
-                    startActivity(Intent.createChooser(sendIntent, resources.getText(R.string.send_account_username_to)))
+                    startActivity(
+                        Intent.createChooser(
+                            sendIntent,
+                            resources.getText(R.string.send_account_username_to)
+                        )
+                    )
                 }
                 return true
             }
@@ -955,7 +1014,7 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
                 return true
             }
             R.id.action_add_or_remove_from_list -> {
-                ListsForAccountFragment.newInstance(viewModel.accountId).show(supportFragmentManager, null)
+                ListSelectionFragment.newInstance(viewModel.accountId).show(supportFragmentManager, null)
                 return true
             }
             R.id.action_mute_domain -> {
@@ -967,13 +1026,14 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
                 return true
             }
             R.id.action_refresh -> {
-                binding.swipeToRefreshLayout.isRefreshing = true
                 onRefresh()
                 return true
             }
             R.id.action_report -> {
                 loadedAccount?.let { loadedAccount ->
-                    startActivity(ReportActivity.getIntent(this, viewModel.accountId, loadedAccount.username))
+                    startActivity(
+                        ReportActivity.getIntent(this, viewModel.accountId, loadedAccount.username)
+                    )
                 }
                 return true
             }
@@ -990,7 +1050,7 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
     }
 
     private fun getFullUsername(account: Account): String {
-        return if (account.isRemote()) {
+        return if (account.isRemote) {
             "@" + account.username
         } else {
             val localUsername = account.localUsername
@@ -1000,7 +1060,51 @@ class AccountActivity : BottomSheetActivity(), ActionButtonActivity, MenuProvide
         }
     }
 
-    override fun androidInjector() = dispatchingAndroidInjector
+    private fun getBadge(
+        @ColorInt baseColor: Int,
+        @DrawableRes icon: Int,
+        text: CharSequence,
+        isLight: Boolean
+    ): Chip {
+        val badge = Chip(this)
+
+        // text color with maximum contrast
+        val textColor = if (isLight) Color.BLACK else Color.WHITE
+        // badge color with 50% transparency so it blends in with the theme background
+        val backgroundColor = Color.argb(
+            128,
+            Color.red(baseColor),
+            Color.green(baseColor),
+            Color.blue(baseColor)
+        )
+        // a color between the text color and the badge color
+        val outlineColor = ColorUtils.blendARGB(textColor, baseColor, 0.7f)
+
+        // configure the badge
+        badge.text = text
+        badge.setTextColor(textColor)
+        badge.chipStrokeWidth = resources.getDimension(R.dimen.profile_badge_stroke_width)
+        badge.chipStrokeColor = ColorStateList.valueOf(outlineColor)
+        badge.setChipIconResource(icon)
+        badge.isChipIconVisible = true
+        badge.chipIconSize = resources.getDimension(R.dimen.profile_badge_icon_size)
+        badge.chipIconTint = ColorStateList.valueOf(outlineColor)
+        badge.chipBackgroundColor = ColorStateList.valueOf(backgroundColor)
+
+        // badge isn't clickable, so disable all related behavior
+        badge.isClickable = false
+        badge.isFocusable = false
+        badge.setEnsureMinTouchTargetSize(false)
+        badge.isCloseIconVisible = false
+
+        // reset some chip defaults so it looks better for our badge usecase
+        badge.iconStartPadding = resources.getDimension(R.dimen.profile_badge_icon_start_padding)
+        badge.iconEndPadding = resources.getDimension(R.dimen.profile_badge_icon_end_padding)
+        badge.minHeight = resources.getDimensionPixelSize(R.dimen.profile_badge_min_height)
+        badge.chipMinHeight = resources.getDimension(R.dimen.profile_badge_min_height)
+        badge.updatePadding(top = 0, bottom = 0)
+        return badge
+    }
 
     companion object {
 

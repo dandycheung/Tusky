@@ -15,40 +15,67 @@
 
 package com.keylesspalace.tusky.db
 
-import android.content.Context
+import android.content.SharedPreferences
 import android.util.Log
-import androidx.preference.PreferenceManager
+import androidx.room.withTransaction
+import com.keylesspalace.tusky.db.dao.AccountDao
+import com.keylesspalace.tusky.db.entity.AccountEntity
+import com.keylesspalace.tusky.di.ApplicationScope
 import com.keylesspalace.tusky.entity.Account
 import com.keylesspalace.tusky.entity.Status
 import com.keylesspalace.tusky.settings.PrefKeys
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.runBlocking
 
 /**
- * This class caches the account database and handles all account related operations
- * @author ConnyDuck
+ * This class is the main interface to all account related operations.
  */
 
 private const val TAG = "AccountManager"
 
 @Singleton
-class AccountManager @Inject constructor(db: AppDatabase) {
-
-    @Volatile
-    var activeAccount: AccountEntity? = null
-        private set
-
-    var accounts: MutableList<AccountEntity> = mutableListOf()
-        private set
+class AccountManager @Inject constructor(
+    private val db: AppDatabase,
+    private val preferences: SharedPreferences,
+    @ApplicationScope private val applicationScope: CoroutineScope
+) {
 
     private val accountDao: AccountDao = db.accountDao()
 
-    init {
-        accounts = accountDao.loadAll().toMutableList()
+    /** A StateFlow that will update everytime an account in the database changes, is added or removed.
+     *  The first account is the currently active one.
+     */
+    val accountsFlow: StateFlow<List<AccountEntity>> = runBlocking {
+        accountDao.allAccounts()
+            .stateIn(CoroutineScope(applicationScope.coroutineContext + Dispatchers.IO))
+    }
 
-        activeAccount = accounts.find { acc -> acc.isActive }
-            ?: accounts.firstOrNull()?.also { acc -> acc.isActive = true }
+    /** A snapshot of all accounts in the database with the active account first */
+    val accounts: List<AccountEntity>
+        get() = accountsFlow.value
+
+    /** A snapshot currently active account, if there is one */
+    val activeAccount: AccountEntity?
+        get() = accounts.firstOrNull()
+
+    /** Returns a StateFlow for updates to the currently active account.
+     *  Note that always the same account will be emitted,
+     *  even if it is no longer active and that it will emit null when the account got removed.
+     *  @param scope the [CoroutineScope] this flow will be active in.
+     */
+    fun activeAccount(scope: CoroutineScope): StateFlow<AccountEntity?> {
+        val activeAccount = activeAccount
+        return accountsFlow.map { accounts ->
+            accounts.find { account -> activeAccount?.id == account.id }
+        }.stateIn(scope, SharingStarted.Lazily, activeAccount)
     }
 
     /**
@@ -60,34 +87,32 @@ class AccountManager @Inject constructor(db: AppDatabase) {
      * @param oauthScopes the oauth scopes granted to the account
      * @param newAccount the [Account] as returned by the Mastodon Api
      */
-    fun addAccount(
+    suspend fun addAccount(
         accessToken: String,
         domain: String,
         clientId: String,
         clientSecret: String,
         oauthScopes: String,
         newAccount: Account
-    ) {
+    ) = db.withTransaction {
         activeAccount?.let {
-            it.isActive = false
             Log.d(TAG, "addAccount: saving account with id " + it.id)
-
-            accountDao.insertOrReplace(it)
+            accountDao.insertOrReplace(it.copy(isActive = false))
         }
         // check if this is a relogin with an existing account, if yes update it, otherwise create a new one
-        val existingAccountIndex = accounts.indexOfFirst { account ->
+        val existingAccount = accounts.find { account ->
             domain == account.domain && newAccount.id == account.accountId
         }
-        val newAccountEntity = if (existingAccountIndex != -1) {
-            accounts[existingAccountIndex].copy(
+        val newAccountEntity = if (existingAccount != null) {
+            existingAccount.copy(
                 accessToken = accessToken,
                 clientId = clientId,
                 clientSecret = clientSecret,
                 oauthScopes = oauthScopes,
                 isActive = true
-            ).also { accounts[existingAccountIndex] = it }
+            )
         } else {
-            val maxAccountId = accounts.maxByOrNull { it.id }?.id ?: 0
+            val maxAccountId = accounts.maxOfOrNull { it.id } ?: 0
             val newAccountId = maxAccountId + 1
             AccountEntity(
                 id = newAccountId,
@@ -98,107 +123,85 @@ class AccountManager @Inject constructor(db: AppDatabase) {
                 oauthScopes = oauthScopes,
                 isActive = true,
                 accountId = newAccount.id
-            ).also { accounts.add(it) }
+            )
         }
-
-        activeAccount = newAccountEntity
-        updateActiveAccount(newAccount)
+        updateAccount(newAccountEntity, newAccount)
     }
 
     /**
      * Saves an already known account to the database.
      * New accounts must be created with [addAccount]
-     * @param account the account to save
+     * @param account The account to save
+     * @param changer make the changes to save here - this is to make sure no stale data gets re-saved to the database
      */
-    fun saveAccount(account: AccountEntity) {
-        if (account.id != 0L) {
-            Log.d(TAG, "saveAccount: saving account with id " + account.id)
-            accountDao.insertOrReplace(account)
+    suspend fun updateAccount(account: AccountEntity, changer: AccountEntity.() -> AccountEntity) {
+        accounts.find { it.id == account.id }?.let { acc ->
+            Log.d(TAG, "updateAccount: saving account with id " + acc.id)
+            accountDao.insertOrReplace(changer(acc))
         }
     }
 
     /**
-     * Logs the current account out by deleting all data of the account.
+     * Updates an account with new information from the Mastodon api
+     * and saves it in the database.
+     * @param accountEntity the [AccountEntity] to update
+     * @param account the [Account] object which the newest data from the api
+     */
+    suspend fun updateAccount(accountEntity: AccountEntity, account: Account) {
+        // make sure no stale data gets re-saved to the database
+        val accountToUpdate = accounts.find { it.id == accountEntity.id } ?: accountEntity
+
+        val newAccount = accountToUpdate.copy(
+            accountId = account.id,
+            username = account.username,
+            displayName = account.name,
+            profilePictureUrl = account.avatar,
+            profileHeaderUrl = account.header,
+            defaultPostPrivacy = account.source?.privacy ?: Status.Visibility.PUBLIC,
+            defaultPostLanguage = account.source?.language.orEmpty(),
+            defaultMediaSensitivity = account.source?.sensitive == true,
+            emojis = account.emojis,
+            locked = account.locked
+        )
+
+        Log.d(TAG, "updateAccount: saving account with id " + accountToUpdate.id)
+        accountDao.insertOrReplace(newAccount)
+    }
+
+    /**
+     * Removes an account from the database.
      * @return the new active account, or null if no other account was found
      */
-    fun logActiveAccountOut(): AccountEntity? {
-        return activeAccount?.let { account ->
+    suspend fun remove(account: AccountEntity): AccountEntity? = db.withTransaction {
+        Log.d(TAG, "remove: deleting account with id " + account.id)
+        accountDao.delete(account)
 
-            account.logout()
-
-            accounts.remove(account)
-            accountDao.delete(account)
-
-            if (accounts.size > 0) {
-                accounts[0].isActive = true
-                activeAccount = accounts[0]
-                Log.d(TAG, "logActiveAccountOut: saving account with id " + accounts[0].id)
-                accountDao.insertOrReplace(accounts[0])
-            } else {
-                activeAccount = null
-            }
-            activeAccount
+        accounts.find { it.id != account.id }?.let { otherAccount ->
+            val otherAccountActive = otherAccount.copy(
+                isActive = true
+            )
+            Log.d(TAG, "remove: saving account with id " + otherAccountActive.id)
+            accountDao.insertOrReplace(otherAccountActive)
+            otherAccountActive
         }
     }
 
     /**
-     * updates the current account with new information from the mastodon api
-     * and saves it in the database
-     * @param account the [Account] object returned from the api
-     */
-    fun updateActiveAccount(account: Account) {
-        activeAccount?.let {
-            it.accountId = account.id
-            it.username = account.username
-            it.displayName = account.name
-            it.profilePictureUrl = account.avatar
-            it.defaultPostPrivacy = account.source?.privacy ?: Status.Visibility.PUBLIC
-            it.defaultPostLanguage = account.source?.language.orEmpty()
-            it.defaultMediaSensitivity = account.source?.sensitive ?: false
-            it.emojis = account.emojis.orEmpty()
-
-            Log.d(TAG, "updateActiveAccount: saving account with id " + it.id)
-            accountDao.insertOrReplace(it)
-        }
-    }
-
-    /**
-     * changes the active account
+     * Changes the active account
      * @param accountId the database id of the new active account
      */
-    fun setActiveAccount(accountId: Long) {
+    suspend fun setActiveAccount(accountId: Long) = db.withTransaction {
+        Log.d(TAG, "setActiveAccount $accountId")
+
         val newActiveAccount = accounts.find { (id) ->
             id == accountId
-        } ?: return // invalid accountId passed, do nothing
+        } ?: return@withTransaction // invalid accountId passed, do nothing
 
         activeAccount?.let {
-            Log.d(TAG, "setActiveAccount: saving account with id " + it.id)
-            it.isActive = false
-            saveAccount(it)
+            accountDao.insertOrReplace(it.copy(isActive = false))
         }
 
-        activeAccount = newActiveAccount
-
-        activeAccount?.let {
-            it.isActive = true
-            accountDao.insertOrReplace(it)
-        }
-    }
-
-    /**
-     * @return an immutable list of all accounts in the database with the active account first
-     */
-    fun getAllAccountsOrderedByActive(): List<AccountEntity> {
-        val accountsCopy = accounts.toMutableList()
-        accountsCopy.sortWith { l, r ->
-            when {
-                l.isActive && !r.isActive -> -1
-                r.isActive && !l.isActive -> 1
-                else -> 0
-            }
-        }
-
-        return accountsCopy
+        accountDao.insertOrReplace(newActiveAccount.copy(isActive = true))
     }
 
     /**
@@ -233,9 +236,11 @@ class AccountManager @Inject constructor(db: AppDatabase) {
     /**
      * @return true if the name of the currently-selected account should be displayed in UIs
      */
-    fun shouldDisplaySelfUsername(context: Context): Boolean {
-        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        val showUsernamePreference = sharedPreferences.getString(PrefKeys.SHOW_SELF_USERNAME, "disambiguate")
+    fun shouldDisplaySelfUsername(): Boolean {
+        val showUsernamePreference = preferences.getString(
+            PrefKeys.SHOW_SELF_USERNAME,
+            "disambiguate"
+        )
         if (showUsernamePreference == "always") {
             return true
         }

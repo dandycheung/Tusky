@@ -26,28 +26,31 @@ import androidx.lifecycle.lifecycleScope
 import at.connyduck.calladapter.networkresult.fold
 import com.google.android.material.snackbar.Snackbar
 import com.keylesspalace.tusky.appstore.EventHub
-import com.keylesspalace.tusky.appstore.PreferenceChangedEvent
+import com.keylesspalace.tusky.appstore.FilterUpdatedEvent
+import com.keylesspalace.tusky.components.filters.EditFilterActivity
+import com.keylesspalace.tusky.components.filters.FilterExpiration
+import com.keylesspalace.tusky.components.filters.FiltersActivity
 import com.keylesspalace.tusky.components.timeline.TimelineFragment
 import com.keylesspalace.tusky.components.timeline.viewmodel.TimelineViewModel.Kind
 import com.keylesspalace.tusky.databinding.ActivityStatuslistBinding
 import com.keylesspalace.tusky.entity.Filter
 import com.keylesspalace.tusky.entity.FilterV1
+import com.keylesspalace.tusky.util.isHttpNotFound
+import com.keylesspalace.tusky.util.startActivityWithSlideInAnimation
 import com.keylesspalace.tusky.util.viewBinding
-import dagger.android.DispatchingAndroidInjector
-import dagger.android.HasAndroidInjector
-import kotlinx.coroutines.launch
-import retrofit2.HttpException
+import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 
-class StatusListActivity : BottomSheetActivity(), HasAndroidInjector {
-
-    @Inject
-    lateinit var dispatchingAndroidInjector: DispatchingAndroidInjector<Any>
+@AndroidEntryPoint
+class StatusListActivity : BottomSheetActivity() {
 
     @Inject
     lateinit var eventHub: EventHub
 
-    private val binding: ActivityStatuslistBinding by viewBinding(ActivityStatuslistBinding::inflate)
+    private val binding: ActivityStatuslistBinding by viewBinding(
+        ActivityStatuslistBinding::inflate
+    )
     private lateinit var kind: Kind
     private var hashtag: String? = null
     private var followTagItem: MenuItem? = null
@@ -73,7 +76,8 @@ class StatusListActivity : BottomSheetActivity(), HasAndroidInjector {
         val title = when (kind) {
             Kind.FAVOURITES -> getString(R.string.title_favourites)
             Kind.BOOKMARKS -> getString(R.string.title_bookmarks)
-            Kind.TAG -> getString(R.string.title_tag).format(hashtag)
+            Kind.TAG -> getString(R.string.hashtag_format, hashtag)
+            Kind.PUBLIC_TRENDING_STATUSES -> getString(R.string.title_public_trending_statuses)
             else -> intent.getStringExtra(EXTRA_LIST_TITLE)
         }
 
@@ -132,9 +136,19 @@ class StatusListActivity : BottomSheetActivity(), HasAndroidInjector {
                     {
                         followTagItem?.isVisible = false
                         unfollowTagItem?.isVisible = true
+
+                        Snackbar.make(
+                            binding.root,
+                            getString(R.string.following_hashtag_success_format, tag),
+                            Snackbar.LENGTH_SHORT
+                        ).show()
                     },
                     {
-                        Snackbar.make(binding.root, getString(R.string.error_following_hashtag_format, tag), Snackbar.LENGTH_SHORT).show()
+                        Snackbar.make(
+                            binding.root,
+                            getString(R.string.error_following_hashtag_format, tag),
+                            Snackbar.LENGTH_SHORT
+                        ).show()
                         Log.e(TAG, "Failed to follow #$tag", it)
                     }
                 )
@@ -152,9 +166,19 @@ class StatusListActivity : BottomSheetActivity(), HasAndroidInjector {
                     {
                         followTagItem?.isVisible = true
                         unfollowTagItem?.isVisible = false
+
+                        Snackbar.make(
+                            binding.root,
+                            getString(R.string.unfollowing_hashtag_success_format, tag),
+                            Snackbar.LENGTH_SHORT
+                        ).show()
                     },
                     {
-                        Snackbar.make(binding.root, getString(R.string.error_unfollowing_hashtag_format, tag), Snackbar.LENGTH_SHORT).show()
+                        Snackbar.make(
+                            binding.root,
+                            getString(R.string.error_unfollowing_hashtag_format, tag),
+                            Snackbar.LENGTH_SHORT
+                        ).show()
                         Log.e(TAG, "Failed to unfollow #$tag", it)
                     }
                 )
@@ -169,6 +193,7 @@ class StatusListActivity : BottomSheetActivity(), HasAndroidInjector {
      */
     private fun updateMuteTagMenuItems() {
         val tag = hashtag ?: return
+        val hashedTag = "#$tag"
 
         muteTagItem?.isVisible = true
         muteTagItem?.isEnabled = false
@@ -178,23 +203,22 @@ class StatusListActivity : BottomSheetActivity(), HasAndroidInjector {
             mastodonApi.getFilters().fold(
                 { filters ->
                     mutedFilter = filters.firstOrNull { filter ->
-                        filter.context.contains(Filter.Kind.HOME.kind) && filter.keywords.any {
-                            it.keyword == tag
-                        }
+                        // TODO shouldn't this be an exact match (only one keyword; exactly the hashtag)?
+                        filter.context.contains(Filter.Kind.HOME.kind) && filter.title == hashedTag
                     }
                     updateTagMuteState(mutedFilter != null)
                 },
                 { throwable ->
-                    if (throwable is HttpException && throwable.code() == 404) {
+                    if (throwable.isHttpNotFound()) {
                         mastodonApi.getFiltersV1().fold(
                             { filters ->
                                 mutedFilterV1 = filters.firstOrNull { filter ->
-                                    tag == filter.phrase && filter.context.contains(FilterV1.HOME)
+                                    hashedTag == filter.phrase && filter.context.contains(Filter.Kind.HOME.kind)
                                 }
                                 updateTagMuteState(mutedFilterV1 != null)
                             },
-                            { throwable ->
-                                Log.e(TAG, "Error getting filters: $throwable")
+                            { throwable2 ->
+                                Log.e(TAG, "Error getting filters: $throwable2")
                             }
                         )
                     } else {
@@ -221,47 +245,91 @@ class StatusListActivity : BottomSheetActivity(), HasAndroidInjector {
         val tag = hashtag ?: return true
 
         lifecycleScope.launch {
+            var filterCreateSuccess = false
+            val hashedTag = "#$tag"
+
             mastodonApi.createFilter(
                 title = "#$tag",
-                context = listOf(FilterV1.HOME),
+                context = listOf(Filter.Kind.HOME.kind),
                 filterAction = Filter.Action.WARN.action,
-                expiresInSeconds = null
+                expiresIn = FilterExpiration.never
             ).fold(
                 { filter ->
-                    if (mastodonApi.addFilterKeyword(filterId = filter.id, keyword = tag, wholeWord = true).isSuccess) {
-                        mutedFilter = filter
-                        updateTagMuteState(true)
-                        eventHub.dispatch(PreferenceChangedEvent(filter.context[0]))
+                    if (mastodonApi.addFilterKeyword(
+                            filterId = filter.id,
+                            keyword = hashedTag,
+                            wholeWord = true
+                        ).isSuccess
+                    ) {
+                        // must be requested again; otherwise does not contain the keyword (but server does)
+                        mutedFilter = mastodonApi.getFilter(filter.id).getOrNull()
+
+                        eventHub.dispatch(FilterUpdatedEvent(filter.context))
+                        filterCreateSuccess = true
                     } else {
-                        Snackbar.make(binding.root, getString(R.string.error_muting_hashtag_format, tag), Snackbar.LENGTH_SHORT).show()
+                        Snackbar.make(
+                            binding.root,
+                            getString(R.string.error_muting_hashtag_format, tag),
+                            Snackbar.LENGTH_SHORT
+                        ).show()
                         Log.e(TAG, "Failed to mute #$tag")
                     }
                 },
                 { throwable ->
-                    if (throwable is HttpException && throwable.code() == 404) {
+                    if (throwable.isHttpNotFound()) {
                         mastodonApi.createFilterV1(
-                            tag,
-                            listOf(FilterV1.HOME),
+                            hashedTag,
+                            listOf(Filter.Kind.HOME.kind),
                             irreversible = false,
                             wholeWord = true,
-                            expiresInSeconds = null
+                            expiresIn = FilterExpiration.never
                         ).fold(
                             { filter ->
                                 mutedFilterV1 = filter
-                                updateTagMuteState(true)
-                                eventHub.dispatch(PreferenceChangedEvent(filter.context[0]))
+                                eventHub.dispatch(FilterUpdatedEvent(filter.context))
+                                filterCreateSuccess = true
                             },
-                            { throwable ->
-                                Snackbar.make(binding.root, getString(R.string.error_muting_hashtag_format, tag), Snackbar.LENGTH_SHORT).show()
-                                Log.e(TAG, "Failed to mute #$tag", throwable)
+                            { throwable2 ->
+                                Snackbar.make(
+                                    binding.root,
+                                    getString(R.string.error_muting_hashtag_format, tag),
+                                    Snackbar.LENGTH_SHORT
+                                ).show()
+                                Log.e(TAG, "Failed to mute #$tag", throwable2)
                             }
                         )
                     } else {
-                        Snackbar.make(binding.root, getString(R.string.error_muting_hashtag_format, tag), Snackbar.LENGTH_SHORT).show()
+                        Snackbar.make(
+                            binding.root,
+                            getString(R.string.error_muting_hashtag_format, tag),
+                            Snackbar.LENGTH_SHORT
+                        ).show()
                         Log.e(TAG, "Failed to mute #$tag", throwable)
                     }
                 }
             )
+
+            if (filterCreateSuccess) {
+                updateTagMuteState(true)
+                Snackbar.make(
+                    binding.root,
+                    getString(R.string.muting_hashtag_success_format, tag),
+                    Snackbar.LENGTH_LONG
+                ).apply {
+                    setAction(R.string.action_view_filter) {
+                        val intent = if (mutedFilter != null) {
+                            Intent(this@StatusListActivity, EditFilterActivity::class.java).apply {
+                                putExtra(EditFilterActivity.FILTER_TO_EDIT, mutedFilter)
+                            }
+                        } else {
+                            Intent(this@StatusListActivity, FiltersActivity::class.java)
+                        }
+
+                        startActivityWithSlideInAnimation(intent)
+                    }
+                    show()
+                }
+            }
         }
 
         return true
@@ -288,10 +356,10 @@ class StatusListActivity : BottomSheetActivity(), HasAndroidInjector {
                         mastodonApi.updateFilterV1(
                             id = filter.id,
                             phrase = filter.phrase,
-                            context = filter.context.filter { it != FilterV1.HOME },
+                            context = filter.context.filter { it != Filter.Kind.HOME.kind },
                             irreversible = null,
                             wholeWord = null,
-                            expiresInSeconds = null
+                            expiresIn = FilterExpiration.never
                         )
                     } else {
                         mastodonApi.deleteFilterV1(filter.id)
@@ -304,12 +372,22 @@ class StatusListActivity : BottomSheetActivity(), HasAndroidInjector {
             result?.fold(
                 {
                     updateTagMuteState(false)
-                    eventHub.dispatch(PreferenceChangedEvent(Filter.Kind.HOME.kind))
+                    eventHub.dispatch(FilterUpdatedEvent(listOf(Filter.Kind.HOME.kind)))
                     mutedFilterV1 = null
                     mutedFilter = null
+
+                    Snackbar.make(
+                        binding.root,
+                        getString(R.string.unmuting_hashtag_success_format, tag),
+                        Snackbar.LENGTH_SHORT
+                    ).show()
                 },
                 { throwable ->
-                    Snackbar.make(binding.root, getString(R.string.error_unmuting_hashtag_format, tag), Snackbar.LENGTH_SHORT).show()
+                    Snackbar.make(
+                        binding.root,
+                        getString(R.string.error_unmuting_hashtag_format, tag),
+                        Snackbar.LENGTH_SHORT
+                    ).show()
                     Log.e(TAG, "Failed to unmute #$tag", throwable)
                 }
             )
@@ -317,8 +395,6 @@ class StatusListActivity : BottomSheetActivity(), HasAndroidInjector {
 
         return true
     }
-
-    override fun androidInjector() = dispatchingAndroidInjector
 
     companion object {
 
@@ -350,6 +426,11 @@ class StatusListActivity : BottomSheetActivity(), HasAndroidInjector {
             Intent(context, StatusListActivity::class.java).apply {
                 putExtra(EXTRA_KIND, Kind.TAG.name)
                 putExtra(EXTRA_HASHTAG, hashtag)
+            }
+
+        fun newTrendingIntent(context: Context) =
+            Intent(context, StatusListActivity::class.java).apply {
+                putExtra(EXTRA_KIND, Kind.PUBLIC_TRENDING_STATUSES.name)
             }
     }
 }

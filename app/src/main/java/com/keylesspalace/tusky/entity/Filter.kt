@@ -1,18 +1,21 @@
 package com.keylesspalace.tusky.entity
 
 import android.os.Parcelable
-import com.google.gson.annotations.SerializedName
-import kotlinx.parcelize.Parcelize
+import com.squareup.moshi.Json
+import com.squareup.moshi.JsonClass
 import java.util.Date
+import kotlinx.parcelize.Parcelize
 
+@JsonClass(generateAdapter = true)
 @Parcelize
 data class Filter(
     val id: String,
     val title: String,
     val context: List<String>,
-    @SerializedName("expires_at") val expiresAt: Date?,
-    @SerializedName("filter_action") private val filterAction: String,
-    val keywords: List<FilterKeyword>
+    @Json(name = "expires_at") val expiresAt: Date? = null,
+    @Json(name = "filter_action") val filterAction: String,
+    // This field is mandatory according to the API documentation but is in fact optional in some instances
+    val keywords: List<FilterKeyword> = emptyList(),
     // val statuses: List<FilterStatus>,
 ) : Parcelable {
     enum class Action(val action: String) {
@@ -21,7 +24,7 @@ data class Filter(
         HIDE("hide");
 
         companion object {
-            fun from(action: String): Action = values().firstOrNull { it.action == action } ?: WARN
+            fun from(action: String): Action = entries.firstOrNull { it.action == action } ?: WARN
         }
     }
     enum class Kind(val kind: String) {
@@ -32,7 +35,7 @@ data class Filter(
         ACCOUNT("account");
 
         companion object {
-            fun from(kind: String): Kind = values().firstOrNull { it.kind == kind } ?: PUBLIC
+            fun from(kind: String): Kind = entries.firstOrNull { it.kind == kind } ?: PUBLIC
         }
     }
 

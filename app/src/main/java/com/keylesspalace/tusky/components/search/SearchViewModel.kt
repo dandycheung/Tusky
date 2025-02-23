@@ -23,70 +23,93 @@ import androidx.paging.PagingConfig
 import androidx.paging.cachedIn
 import at.connyduck.calladapter.networkresult.NetworkResult
 import at.connyduck.calladapter.networkresult.fold
+import at.connyduck.calladapter.networkresult.map
 import at.connyduck.calladapter.networkresult.onFailure
+import com.keylesspalace.tusky.components.instanceinfo.InstanceInfoRepository
 import com.keylesspalace.tusky.components.search.adapter.SearchPagingSourceFactory
-import com.keylesspalace.tusky.db.AccountEntity
 import com.keylesspalace.tusky.db.AccountManager
+import com.keylesspalace.tusky.db.entity.AccountEntity
 import com.keylesspalace.tusky.entity.DeletedStatus
 import com.keylesspalace.tusky.entity.Status
 import com.keylesspalace.tusky.network.MastodonApi
 import com.keylesspalace.tusky.usecase.TimelineCases
 import com.keylesspalace.tusky.util.toViewData
 import com.keylesspalace.tusky.viewdata.StatusViewData
+import com.keylesspalace.tusky.viewdata.TranslationViewData
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
+@HiltViewModel
 class SearchViewModel @Inject constructor(
     mastodonApi: MastodonApi,
     private val timelineCases: TimelineCases,
-    private val accountManager: AccountManager
+    private val accountManager: AccountManager,
+    private val instanceInfoRepository: InstanceInfoRepository,
 ) : ViewModel() {
 
+    init {
+        instanceInfoRepository.precache()
+    }
+
     var currentQuery: String = ""
+    var currentSearchFieldContent: String? = null
 
     val activeAccount: AccountEntity?
         get() = accountManager.activeAccount
 
-    val mediaPreviewEnabled = activeAccount?.mediaPreviewEnabled ?: false
-    val alwaysShowSensitiveMedia = activeAccount?.alwaysShowSensitiveMedia ?: false
-    val alwaysOpenSpoiler = activeAccount?.alwaysOpenSpoiler ?: false
+    val mediaPreviewEnabled = activeAccount?.mediaPreviewEnabled == true
+    val alwaysShowSensitiveMedia = activeAccount?.alwaysShowSensitiveMedia == true
+    val alwaysOpenSpoiler = activeAccount?.alwaysOpenSpoiler == true
 
     private val loadedStatuses: MutableList<StatusViewData.Concrete> = mutableListOf()
 
-    private val statusesPagingSourceFactory = SearchPagingSourceFactory(mastodonApi, SearchType.Status, loadedStatuses) {
-        it.statuses.map { status ->
-            status.toViewData(
-                isShowingContent = alwaysShowSensitiveMedia || !status.actionableStatus.sensitive,
-                isExpanded = alwaysOpenSpoiler,
-                isCollapsed = true
-            )
-        }.apply {
-            loadedStatuses.addAll(this)
+    private val statusesPagingSourceFactory =
+        SearchPagingSourceFactory(mastodonApi, SearchType.Status, loadedStatuses) {
+            it.statuses.map { status ->
+                status.toViewData(
+                    isShowingContent = alwaysShowSensitiveMedia || !status.actionableStatus.sensitive,
+                    isExpanded = alwaysOpenSpoiler,
+                    isCollapsed = true
+                )
+            }.apply {
+                loadedStatuses.addAll(this)
+            }
         }
-    }
-    private val accountsPagingSourceFactory = SearchPagingSourceFactory(mastodonApi, SearchType.Account) {
-        it.accounts
-    }
-    private val hashtagsPagingSourceFactory = SearchPagingSourceFactory(mastodonApi, SearchType.Hashtag) {
-        it.hashtags
-    }
+    private val accountsPagingSourceFactory =
+        SearchPagingSourceFactory(mastodonApi, SearchType.Account) {
+            it.accounts
+        }
+    private val hashtagsPagingSourceFactory =
+        SearchPagingSourceFactory(mastodonApi, SearchType.Hashtag) {
+            it.hashtags
+        }
 
     val statusesFlow = Pager(
-        config = PagingConfig(pageSize = DEFAULT_LOAD_SIZE, initialLoadSize = DEFAULT_LOAD_SIZE),
+        config = PagingConfig(
+            pageSize = DEFAULT_LOAD_SIZE,
+            initialLoadSize = DEFAULT_LOAD_SIZE
+        ),
         pagingSourceFactory = statusesPagingSourceFactory
     ).flow
         .cachedIn(viewModelScope)
 
     val accountsFlow = Pager(
-        config = PagingConfig(pageSize = DEFAULT_LOAD_SIZE, initialLoadSize = DEFAULT_LOAD_SIZE),
+        config = PagingConfig(
+            pageSize = DEFAULT_LOAD_SIZE,
+            initialLoadSize = DEFAULT_LOAD_SIZE
+        ),
         pagingSourceFactory = accountsPagingSourceFactory
     ).flow
         .cachedIn(viewModelScope)
 
     val hashtagsFlow = Pager(
-        config = PagingConfig(pageSize = DEFAULT_LOAD_SIZE, initialLoadSize = DEFAULT_LOAD_SIZE),
+        config = PagingConfig(
+            pageSize = DEFAULT_LOAD_SIZE,
+            initialLoadSize = DEFAULT_LOAD_SIZE
+        ),
         pagingSourceFactory = hashtagsPagingSourceFactory
     ).flow
         .cachedIn(viewModelScope)
@@ -106,6 +129,10 @@ class SearchViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun clearStatusCache() {
+        loadedStatuses.clear()
     }
 
     fun expandedChange(statusViewData: StatusViewData.Concrete, expanded: Boolean) {
@@ -187,6 +214,30 @@ class SearchViewModel @Inject constructor(
         viewModelScope.launch {
             timelineCases.muteConversation(statusViewData.id, mute)
         }
+    }
+
+    fun supportsTranslation(): Boolean =
+        instanceInfoRepository.cachedInstanceInfoOrFallback.translationEnabled == true
+
+    suspend fun translate(statusViewData: StatusViewData.Concrete): NetworkResult<Unit> {
+        updateStatusViewData(statusViewData.copy(translation = TranslationViewData.Loading))
+        return timelineCases.translate(statusViewData.actionableId)
+            .map { translation ->
+                updateStatusViewData(
+                    statusViewData.copy(
+                        translation = TranslationViewData.Loaded(
+                            translation
+                        )
+                    )
+                )
+            }
+            .onFailure {
+                updateStatusViewData(statusViewData.copy(translation = null))
+            }
+    }
+
+    fun untranslate(statusViewData: StatusViewData.Concrete) {
+        updateStatusViewData(statusViewData.copy(translation = null))
     }
 
     private fun updateStatusViewData(newStatusViewData: StatusViewData.Concrete) {

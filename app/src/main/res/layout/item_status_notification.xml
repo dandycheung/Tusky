@@ -43,6 +43,7 @@
         android:id="@+id/notification_notification_avatar"
         android:layout_width="24dp"
         android:layout_height="24dp"
+        android:contentDescription="@string/action_view_profile"
         app:layout_constraintBottom_toBottomOf="@id/notification_status_avatar"
         app:layout_constraintEnd_toEndOf="@id/notification_status_avatar" />
 
@@ -120,7 +121,6 @@
         android:paddingTop="4dp"
         android:paddingRight="16dp"
         android:paddingBottom="4dp"
-        android:textAllCaps="true"
         android:textSize="?attr/status_text_medium"
         app:layout_constraintStart_toEndOf="@id/notification_status_avatar"
         app:layout_constraintTop_toBottomOf="@id/notification_content_warning_description"
@@ -153,7 +153,6 @@
         android:paddingTop="4dp"
         android:paddingRight="16dp"
         android:paddingBottom="4dp"
-        android:textAllCaps="true"
         android:textSize="?attr/status_text_medium"
         android:visibility="gone"
         app:layout_constraintStart_toEndOf="@id/notification_status_avatar"

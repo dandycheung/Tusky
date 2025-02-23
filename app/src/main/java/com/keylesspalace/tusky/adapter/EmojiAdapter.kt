@@ -31,13 +31,21 @@ class EmojiAdapter(
     private val animate: Boolean
 ) : RecyclerView.Adapter<BindingHolder<ItemEmojiButtonBinding>>() {
 
-    private val emojiList: List<Emoji> = emojiList.filter { emoji -> emoji.visibleInPicker == null || emoji.visibleInPicker }
+    private val emojiList: List<Emoji> = emojiList.filter { emoji -> emoji.visibleInPicker }
         .sortedBy { it.shortcode.lowercase(Locale.ROOT) }
+        .sortedBy { it.category?.lowercase(Locale.ROOT) ?: "" }
 
     override fun getItemCount() = emojiList.size
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BindingHolder<ItemEmojiButtonBinding> {
-        val binding = ItemEmojiButtonBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int
+    ): BindingHolder<ItemEmojiButtonBinding> {
+        val binding = ItemEmojiButtonBinding.inflate(
+            LayoutInflater.from(parent.context),
+            parent,
+            false
+        )
         return BindingHolder(binding)
     }
 

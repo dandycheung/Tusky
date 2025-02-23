@@ -1,8 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.google.ksp)
+    alias(libs.plugins.hilt.android)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.kotlin.parcelize)
 }
 
@@ -22,15 +22,15 @@ final def CUSTOM_INSTANCE = ""
 final def SUPPORT_ACCOUNT_URL = "https://mastodon.social/@Tusky"
 
 android {
-    compileSdk 33
+    compileSdk 35
     namespace "com.keylesspalace.tusky"
     defaultConfig {
         applicationId APP_ID
         namespace "com.keylesspalace.tusky"
-        minSdk 23
-        targetSdk 33
-        versionCode 113
-        versionName "23.0"
+        minSdk 24
+        targetSdk 35
+        versionCode 129
+        versionName "27.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
 
@@ -41,10 +41,21 @@ android {
         buildConfigField("String", "SUPPORT_ACCOUNT_URL", "\"$SUPPORT_ACCOUNT_URL\"")
     }
     buildTypes {
+        debug {
+            isDefault true
+        }
         release {
             minifyEnabled true
             shrinkResources true
             proguardFiles 'proguard-rules.pro'
+
+            kotlinOptions {
+                freeCompilerArgs = [
+                    "-Xno-param-assertions",
+                    "-Xno-call-assertions",
+                    "-Xno-receiver-assertions"
+                ]
+            }
         }
     }
 
@@ -55,13 +66,13 @@ android {
             resValue "string", "app_name", APP_NAME + " Test"
             applicationIdSuffix ".test"
             versionNameSuffix "-" + gitSha
+            isDefault true
         }
     }
 
     lint {
         lintConfig file("lint.xml")
-        // Regenerate by deleting app/lint-baseline.xml, then run:
-        //   ./gradlew lintBlueDebug
+        // Regenerate by deleting the file and running `./gradlew app:lintGreenDebug`
         baseline = file("lint-baseline.xml")
     }
 
@@ -70,6 +81,7 @@ android {
         resValues true
         viewBinding true
     }
+
     testOptions {
         unitTests {
             returnDefaultValues = true
@@ -81,7 +93,9 @@ android {
         }
     }
     sourceSets {
-        androidTest.assets.srcDirs += files("$projectDir/schemas".toString())
+        // workaround to have migrations available in unit tests
+        // https://github.com/robolectric/robolectric/issues/3928#issuecomment-395309991
+        debug.assets.srcDirs += files("$projectDir/schemas".toString())
     }
 
     // Exclude unneeded files added by libraries
@@ -100,12 +114,6 @@ android {
         includeInApk false
         includeInBundle false
     }
-    // Can remove this once https://issuetracker.google.com/issues/260059413 is fixed.
-    // https://kotlinlang.org/docs/gradle-configure-project.html#gradle-java-toolchains-support
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
-    }
     applicationVariants.configureEach { variant ->
         variant.outputs.configureEach {
             outputFileName = "Tusky_${variant.versionName}_${variant.versionCode}_${gitSha}_" +
@@ -116,6 +124,7 @@ android {
 
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
+    arg("room.generateKotlin", "true")
     arg("room.incremental", "true")
 }
 
@@ -129,7 +138,6 @@ configurations {
 // library versions are in PROJECT_ROOT/gradle/libs.versions.toml
 dependencies {
     implementation libs.kotlinx.coroutines.android
-    implementation libs.kotlinx.coroutines.rx3
 
     implementation libs.bundles.androidx
     implementation libs.bundles.room
@@ -137,28 +145,28 @@ dependencies {
 
     implementation libs.android.material
 
-    implementation libs.gson
+    implementation libs.bundles.moshi
+    ksp libs.moshi.kotlin.codegen
 
     implementation libs.bundles.retrofit
     implementation libs.networkresult.calladapter
 
     implementation libs.bundles.okhttp
+    implementation libs.okio
 
     implementation libs.conscrypt.android
 
     implementation libs.bundles.glide
-    kapt libs.glide.compiler
+    ksp libs.glide.compiler
 
-    implementation libs.bundles.rxjava3
-
-    implementation libs.bundles.autodispose
-
-    implementation libs.bundles.dagger
-    kapt libs.bundles.dagger.processors
+    implementation libs.hilt.android
+    ksp libs.hilt.compiler
+    implementation libs.androidx.hilt.work
+    ksp libs.androidx.hilt.compiler
 
     implementation libs.sparkbutton
 
-    implementation libs.photoview
+    implementation libs.touchimageview
 
     implementation libs.bundles.material.drawer
     implementation libs.material.typeface
@@ -177,12 +185,8 @@ dependencies {
     testImplementation libs.bundles.mockito
     testImplementation libs.mockwebserver
     testImplementation libs.androidx.core.testing
+    testImplementation libs.androidx.room.testing
     testImplementation libs.kotlinx.coroutines.test
     testImplementation libs.androidx.work.testing
-    testImplementation libs.truth
     testImplementation libs.turbine
-
-    androidTestImplementation libs.espresso.core
-    androidTestImplementation libs.androidx.room.testing
-    androidTestImplementation libs.androidx.test.junit
 }

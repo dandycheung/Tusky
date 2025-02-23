@@ -17,7 +17,6 @@ package com.keylesspalace.tusky.components.preference
 
 import android.os.Bundle
 import androidx.preference.Preference
-import androidx.preference.PreferenceFragmentCompat
 import com.keylesspalace.tusky.R
 import com.keylesspalace.tusky.settings.PrefKeys
 import com.keylesspalace.tusky.settings.ProxyConfiguration
@@ -30,7 +29,7 @@ import com.keylesspalace.tusky.settings.validatedEditTextPreference
 import com.keylesspalace.tusky.util.getNonNullString
 import kotlin.system.exitProcess
 
-class ProxyPreferencesFragment : PreferenceFragmentCompat() {
+class ProxyPreferencesFragment : BasePreferencesFragment() {
     private var pendingRestart = false
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
@@ -59,7 +58,10 @@ class ProxyPreferencesFragment : PreferenceFragmentCompat() {
                     MAX_PROXY_PORT
                 )
 
-                validatedEditTextPreference(portErrorMessage, ProxyConfiguration::isValidProxyPort) {
+                validatedEditTextPreference(
+                    portErrorMessage,
+                    ProxyConfiguration::isValidProxyPort
+                ) {
                     setTitle(R.string.pref_title_http_proxy_port)
                     key = PrefKeys.HTTP_PROXY_PORT
                     isIconSpaceReserved = false
